@@ -488,13 +488,12 @@ function renderMessages() {
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) return;
-  // Old messages appear instantly, no typing effect
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) updateURL(chat.title);
 }
 
-// Append a message to chat box
+// Append message
 function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -502,7 +501,6 @@ function appendMessage(text, role, isNew = false) {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
-    // Only type out AI messages when they are new
     let i = 0;
     const interval = setInterval(() => {
       div.textContent += text[i];
@@ -511,19 +509,55 @@ function appendMessage(text, role, isNew = false) {
       if (i === text.length) clearInterval(interval);
     }, 30);
   } else {
-    // Old AI messages, user messages, or errors appear instantly
     div.textContent = text;
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Send message logic
+// --- New: Content moderation check ---
+function violatesRules(text) {
+  const bannedWords = [
+    "hate", "kill", "harm", "suicide", "terrorist", "nsfw", "gore", "illegal",
+    "violence", "exploit", "bomb", "weapon", "sex", "abuse"
+  ];
+  return bannedWords.some(word => text.toLowerCase().includes(word));
+}
+
+// --- New: Summarise first message into a short title ---
+function summariseTitle(text) {
+  const words = text.split(" ").slice(0, 4).join(" ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+// --- Typing effect for title ---
+function typeChatTitle(newTitle, callback) {
+  chatTitle.textContent = "";
+  let i = 0;
+  const interval = setInterval(() => {
+    chatTitle.textContent += newTitle[i];
+    i++;
+    if (i === newTitle.length) {
+      clearInterval(interval);
+      callback && callback();
+    }
+  }, 70);
+}
+
+// Send message
 function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
 
+  // 1. Check for rule violations
+  if (violatesRules(text)) {
+    appendMessage("⚠️ This message violates AI safety and use policies. Please try again with a different request.", "error", false);
+    return;
+  }
+
+  // 2. Create new chat if needed
+  let isNewChat = false;
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
     chats.unshift(newChat);
@@ -531,6 +565,7 @@ function sendMessage() {
     localStorage.setItem("activeChatId", activeChatId);
     saveChats();
     renderChatList();
+    isNewChat = true;
   }
 
   const chat = chats.find(c => c.id === activeChatId);
@@ -538,13 +573,25 @@ function sendMessage() {
   renderMessages();
   saveChats();
 
+  // 3. If this is the *first* message, auto-generate title with typing effect
+  if (chat.messages.filter(m => m.role === "user").length === 1) {
+    const newTitle = summariseTitle(text);
+    typeChatTitle(newTitle, () => {
+      chat.title = newTitle;
+      saveChats();
+      renderChatList();
+      updateURL(newTitle);
+    });
+  }
+
+  // 4. Normal AI response process
   const botMsg = findResponse(text);
   chat.messages.push(botMsg);
-  appendMessage(botMsg.text, botMsg.role, true); // Only new AI messages get typing effect
+  appendMessage(botMsg.text, botMsg.role, true);
   saveChats();
 }
 
-// Find AI response from JSON
+// Find AI response
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
@@ -627,5 +674,6 @@ renderMessages();
 </script>
 </body>
 </html>
+
 
 
