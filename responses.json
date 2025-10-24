@@ -1,6 +1,7 @@
 {
   "hello": "Hi there! I’m Genesis. How can I help you today?",
   "hi": "Hello! Genesis here — what’s up?",
+  "hey": "Hello! Genesis here — what’s up?",
   "how are you": "I’m Genesis, your AI assistant. I don’t have feelings, but I’m ready to help!",
   "what is your name": "I’m Genesis, your friendly AI chat assistant.",
   "bye": "Goodbye! Talk to you later — Genesis signing off.",
@@ -30,13 +31,13 @@
     "Have basic conversations",
     "Greet users",
     "Answer simple questions",
-    "Say goodbye politely"
+    "Say goodbye politely",
   ]
     "what can you do?": [
     "Have basic conversations",
     "Greet users",
     "Answer simple questions",
-    "Say goodbye politely"
+    "Say goodbye politely",
   ]
     "what do you do?": [
     "Have basic conversations",
@@ -45,6 +46,7 @@
     "Say goodbye politely"
   ]
 }
+
 
 
 
