@@ -568,7 +568,7 @@ function sendMessage() {
 
   // 1. Check for rule violations
   if (violatesRules(text)) {
-    appendMessage("⚠️ This message violates AI safety and use policies. Please try again with a different request.", "error", false);
+    appendMessage("This message violates AI safety and use policies. Please try again with a different request.", "error", false);
     return;
   }
 
@@ -690,6 +690,7 @@ renderMessages();
 </script>
 </body>
 </html>
+
 
 
 
