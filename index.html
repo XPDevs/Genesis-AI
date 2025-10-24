@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Chat</title>
+<title>Genesis AI Chat</title>
 <style>
 :root {
   --bg: #f5f5f5;
@@ -177,7 +177,6 @@ body {
 
 /* AI messages on the left */
 .message.ai {
-  background: #ececec;
   float: left;
   border-bottom-left-radius: 4px;
   border-top-left-radius: 4px;
@@ -410,7 +409,7 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-fetch("responses.json")
+fetch("https://xpdevs.github.io/Genisis-AI/reponses.json")
   .then(r => r.json())
   .then(data => responses = data)
   .catch(() => appendMessage("Failed to load responses.json", "error"));
@@ -492,8 +491,23 @@ function renderMessages() {
 function appendMessage(text, role) {
   const div = document.createElement("div");
   div.className = "message " + role;
-  div.textContent = text;
   chatBox.append(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  if (role === "ai") {
+    // Type out AI message character by character
+    let i = 0;
+    const interval = setInterval(() => {
+      div.textContent += text[i];
+      i++;
+      chatBox.scrollTop = chatBox.scrollHeight;
+      if (i === text.length) clearInterval(interval);
+    }, 30); // adjust speed here
+  } else {
+    // User or error messages appear instantly
+    div.textContent = text;
+  }
+
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
