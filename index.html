@@ -409,21 +409,25 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
+// Load AI responses JSON
 fetch("https://xpdevs.github.io/Genisis-AI/reponses.json")
   .then(r => r.json())
   .then(data => responses = data)
   .catch(() => appendMessage("Failed to load responses.json", "error"));
 
+// Save chats to localStorage
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
 }
 
+// Update URL with chat title
 function updateURL(chatTitle) {
   const url = new URL(window.location);
   url.searchParams.set("chat", chatTitle);
   history.pushState({}, "", url);
 }
 
+// Render chat list sidebar
 function renderChatList() {
   chatList.innerHTML = "";
   chats.forEach(chat => {
@@ -478,39 +482,43 @@ function renderChatList() {
   });
 }
 
+// Render messages in chat box
 function renderMessages() {
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) return;
-  chat.messages.forEach(msg => appendMessage(msg.text, msg.role));
+  // Old messages appear instantly, no typing effect
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) updateURL(chat.title);
 }
 
-function appendMessage(text, role) {
+// Append a message to chat box
+function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  if (role === "ai") {
-    // Type out AI message character by character
+  if (role === "ai" && isNew) {
+    // Only type out AI messages when they are new
     let i = 0;
     const interval = setInterval(() => {
       div.textContent += text[i];
       i++;
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === text.length) clearInterval(interval);
-    }, 30); // adjust speed here
+    }, 30);
   } else {
-    // User or error messages appear instantly
+    // Old AI messages, user messages, or errors appear instantly
     div.textContent = text;
   }
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// Send message logic
 function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
@@ -532,10 +540,11 @@ function sendMessage() {
 
   const botMsg = findResponse(text);
   chat.messages.push(botMsg);
-  renderMessages();
+  appendMessage(botMsg.text, botMsg.role, true); // Only new AI messages get typing effect
   saveChats();
 }
 
+// Find AI response from JSON
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
@@ -543,6 +552,7 @@ function findResponse(input) {
   return { role: "ai", text: responses[key] };
 }
 
+// Modal controls
 renameCancel.onclick = () => renameModal.style.display = "none";
 deleteCancel.onclick = () => deleteModal.style.display = "none";
 
@@ -570,6 +580,7 @@ deleteConfirm.onclick = () => {
   deleteModal.style.display = "none";
 };
 
+// New chat
 newChatBtn.onclick = () => {
   if (activeChatId) saveChats();
   const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -582,11 +593,15 @@ newChatBtn.onclick = () => {
   updateURL(newChat.title);
 };
 
+// Send message events
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
+
+// Settings
 settingsBtn.onclick = () => settingsModal.style.display = "flex";
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
+// Dark mode toggle
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
 
@@ -606,6 +621,7 @@ if (chatParam) {
   }
 }
 
+// Initial render
 renderChatList();
 renderMessages();
 </script>
