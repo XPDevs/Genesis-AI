@@ -23,7 +23,6 @@
   "motivate me": "You’ve got this! Every step forward counts, no matter how small.",
   "encourage me": "Keep going! Progress is progress, even if it’s tiny.",
   "i’m bored": "Let’s fix that! Want a joke, a fact, or a game idea?",
-  "what can you do": "I can chat, tell jokes, give facts, answer questions, and more!",
   "who is your creator?": "I was created by James Turner at XPDevs, i was created to help anyone in need for free.",
   "why were you made?": "I was made to help anyone as much as possible",
   "who made you?": "I was created by James Turner at XPDevs",
@@ -46,5 +45,6 @@
     "Say goodbye politely"
   ]
 }
+
 
 
