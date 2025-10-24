@@ -28,25 +28,8 @@
   "why were you made?": "I was made to help anyone as much as possible",
   "who made you?": "I was created by James Turner at XPDevs",
  {
-  "what things can you do?": [
-    "Have basic conversations",
-    "Greet users",
-    "Answer simple questions",
-    "Say goodbye politely"
-  ],
-  "what can you do?": [
-    "Have basic conversations",
-    "Greet users",
-    "Answer simple questions",
-    "Say goodbye politely"
-  ],
-  "what do you do?": [
-    "Have basic conversations",
-    "Greet users",
-    "Answer simple questions",
-    "Say goodbye politely"
-  ]
-}
+
+
 
 
 
