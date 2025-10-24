@@ -410,7 +410,7 @@ let currentRenameId = null;
 let currentDeleteId = null;
 
 // Load AI responses JSON
-fetch("https://xpdevs.github.io/Genisis-AI/reponses.json")
+fetch("https://xpdevs.github.io/Genesis-AI/reponses.json")
   .then(r => r.json())
   .then(data => responses = data)
   .catch(() => appendMessage("Failed to load responses.json", "error"));
@@ -627,3 +627,4 @@ renderMessages();
 </script>
 </body>
 </html>
+
