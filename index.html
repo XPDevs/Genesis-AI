@@ -409,16 +409,20 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// Load AI responses JSON
-fetch("https://xpdevs.github.io/Genesis-AI/responses.json")
+// Load JSON
+const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
+const jsonName = jsonURL.split("/").pop(); // Extracts the AI modal name
+
+fetch(jsonURL)
   .then(r => r.json())
   .then(data => responses = data)
-  .catch(() => appendMessage("Failed to load responses.json", "error"));
+  .catch(() => appendMessage(`Failed to load ${jsonName}`, "error"));
 
 // Save chats to localStorage
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
 }
+
 
 // Update URL with chat title
 function updateURL(chatTitle) {
@@ -690,6 +694,7 @@ renderMessages();
 </script>
 </body>
 </html>
+
 
 
 
