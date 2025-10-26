@@ -27,10 +27,14 @@ let currentDeleteId = null;
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
 const jsonName = jsonURL.split("/").pop(); // Extracts the AI modal name
 
-fetch(jsonURL)
-  .then(r => r.json())
+fetch(jsonURL + "?v=" + Date.now())
+  .then(r => {
+    if (!r.ok) throw new Error("File not found");
+    return r.json();
+  })
   .then(data => responses = data)
-  .catch(() => appendMessage(`Failed to load ${jsonName}`, "error"));
+  .catch(err => appendMessage(`Failed to load ${jsonName}: ${err.message}`, "error"));
+
 
 // Save chats to localStorage
 function saveChats() {
