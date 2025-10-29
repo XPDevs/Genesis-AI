@@ -1,3 +1,15 @@
+(function() {
+  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  const cssFile = isMobile ? "https://xpdevs.github.io/Genesis-AI/styles/ui-mobile.css" : "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = cssFile;
+  document.head.appendChild(link);
+
+  console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
+})();
+
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
