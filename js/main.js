@@ -1,13 +1,53 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-  const cssFile = isMobile ? "https://xpdevs.github.io/Genesis-AI/styles/ui-mobile.css" : "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
 
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = cssFile;
-  document.head.appendChild(link);
+  if (isMobile) {
+    // Create modal background
+    const modalBg = document.createElement("div");
+    modalBg.style.position = "fixed";
+    modalBg.style.top = "0";
+    modalBg.style.left = "0";
+    modalBg.style.width = "100%";
+    modalBg.style.height = "100%";
+    modalBg.style.background = "rgba(0, 0, 0, 0.6)";
+    modalBg.style.display = "flex";
+    modalBg.style.justifyContent = "center";
+    modalBg.style.alignItems = "center";
+    modalBg.style.zIndex = "9999";
 
-  console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
+    // Create modal box
+    const modalBox = document.createElement("div");
+    modalBox.style.background = "#fff";
+    modalBox.style.color = "#111";
+    modalBox.style.padding = "20px";
+    modalBox.style.borderRadius = "12px";
+    modalBox.style.maxWidth = "90%";
+    modalBox.style.textAlign = "center";
+    modalBox.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    modalBox.innerHTML = `
+      <h2 style="margin-bottom: 10px;">Mobile Compatibility</h2>
+      <p style="margin-bottom: 15px;">Genesis is not yet compatible with mobile devices.<br>
+      We’re currently working to make it fully mobile-friendly.</p>
+      <button id="closeModal" style="background:#10a37f;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">OK</button>
+    `;
+
+    modalBg.appendChild(modalBox);
+    document.body.appendChild(modalBg);
+
+    // Close button functionality
+    document.getElementById("closeModal").addEventListener("click", () => {
+      modalBg.remove();
+    });
+
+    console.log("Mobile device detected — showing compatibility modal.");
+  } else {
+    const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = cssFile;
+    document.head.appendChild(link);
+    console.log(`Loaded desktop stylesheet: ${cssFile}`);
+  }
 })();
 
 const chatList = document.getElementById("chatList");
