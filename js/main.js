@@ -140,25 +140,64 @@ function appendMessage(text, role, isNew = false) {
 // --- New: Content moderation check ---
 function violatesRules(text) {
 const bannedWords = [
-  "hate", "kill", "murder", "harm", "abuse", "assault", "attack", "stab",
-  "shoot", "bomb", "terrorist", "weapon", "gun", "explosive", "war", "torture",
-  "blood", "gore", "violence", "massacre", "execute", "slaughter",
-  "suicide", "selfharm", "self-harm", "cutting", "die", "hang", "overdose",
+  // Violence & harm
+  "hate", "kill", "murder", "harm", "abuse", "assault", "attack", "stab", "shoot",
+  "bomb", "terrorist", "weapon", "gun", "explosive", "war", "torture", "blood",
+  "gore", "violence", "massacre", "execute", "slaughter", "suicide", "selfharm",
+  "self-harm", "cutting", "die", "hang", "overdose", "behead", "decapitate",
+  "victim", "corpse", "dead", "death", "grave", "funeral", "cemetery", "bloodbath",
+  "homicide", "abduction", "taser", "lynch", "shooting", "bomber", "bombing",
+  "knife", "gunshot", "sniper", "grenade", "hostage", "execution",
+
+  // NSFW / sexual content
   "nsfw", "sex", "sexual", "porn", "pornography", "nude", "naked", "fetish",
   "explicit", "xxx", "strip", "erotic", "kink", "bdsm", "rape", "molest",
-  "incest", "orgy", "masturbate", "prostitute", "prostitution",
+  "incest", "orgy", "masturbate", "masturbation", "prostitute", "prostitution",
+  "adult", "onlyfans", "lewd", "lust", "horny", "threesome", "blowjob", "handjob",
+  "anal", "cum", "ejaculate", "intercourse", "hooker", "escort", "sperm",
+  "vibrator", "condom", "nipple", "breast", "boob", "penis", "vagina", "genital",
+  "cock", "dildo", "pussy", "clit", "clitoris", "moan", "deepthroat", "kamasutra",
+
+  // Drugs & crime
   "drug", "drugs", "cocaine", "heroin", "meth", "weed", "marijuana", "lsd",
-  "ecstasy", "crack", "opium", "inject", "snort", "high", "overdose",
-  "illegal", "crime", "criminal", "theft", "steal", "scam", "hack", "exploit",
-  "fraud", "blackmail", "piracy", "counterfeit", "bribe", "kidnap", "traffick",
-  "terror", "smuggle", "arson", "vandalism",
+  "ecstasy", "crack", "opium", "inject", "snort", "high", "illegal", "crime",
+  "criminal", "theft", "steal", "scam", "hack", "exploit", "fraud", "blackmail",
+  "piracy", "counterfeit", "bribe", "kidnap", "traffick", "terror", "smuggle",
+  "arson", "vandalism", "cartel", "deal", "dealer", "gang", "gangster", "rob",
+  "robbery", "stolen", "hijack", "loot", "burglar", "burglary", "poison", "methlab",
+  "overdose", "ransom", "hostage", "swat", "swatting", "malware", "virus",
+  "trojan", "ransomware", "spyware", "dox", "doxx", "phish", "phishing",
+
+  // Hate / discrimination
   "racist", "racism", "sexist", "homophobic", "transphobic", "bigot", "slur",
-  "nazi", "slavery", "genocide", "hatecrime",
-  "dead", "death", "corpse", "grave", "funeral", "cemetery", "bloodbath",
-  "suicidal", "homicide", "victim", "abduction", "behead", "decapitate",
-  "childporn", "cp", "underage", "minors", "pedo", "pedophile", "grooming",
-  "dox", "doxx", "swat", "swatting", "malware", "virus", "trojan", "ransomware"
+  "nazi", "slavery", "genocide", "hatecrime", "antisemitic", "islamophobic",
+  "xenophobic", "prejudice", "discriminate", "discrimination", "supremacist",
+
+  // Underage / illegal sexual activity
+  "childporn", "cp", "underage", "minors", "pedo", "pedophile", "pedophilia",
+  "grooming", "childabuse", "molestation", "teenporn", "loli", "shota",
+
+  // Swear words & offensive language
+  "fuck", "fucking", "fucker", "shit", "bullshit", "bastard", "bitch", "bitches",
+  "asshole", "ass", "dick", "dicks", "cock", "prick", "piss", "pissed", "slut",
+  "whore", "damn", "bloody", "wanker", "bugger", "bollocks", "arse", "crap",
+  "motherfucker", "cunt", "twat", "tosser", "fag", "faggot", "dyke", "retard",
+  "retarded", "moron", "idiot", "dumbass", "jackass", "shithead", "jerk", "loser",
+  "nonce", "slag", "scumbag", "skank", "tramp", "hoe", "fucker", "fuckwit",
+  "douche", "douchebag", "screw", "screwed", "hell", "bastards", "balls", "nuts",
+  "tits", "boobs", "wank", "wanking", "buggered", "bollock", "arsehole",
+
+  // Internet / harassment
+  "troll", "flame", "harass", "harassment", "threat", "threaten", "abuse",
+  "insult", "offend", "offensive", "bully", "bullying", "hatepost", "slurpost",
+  "toxic", "cancel", "doxxing",
+
+  // Misc illegal or dark topics
+  "ransom", "extortion", "blackmail", "murderer", "suicidal", "deathwish",
+  "killself", "enditall", "overdose", "poison", "execution", "funeral", "corpse",
+  "cemetery", "graveyard"
 ];
+
   return bannedWords.some(word => text.toLowerCase().includes(word));
 }
 
