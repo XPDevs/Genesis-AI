@@ -1,62 +1,16 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    // Block scrolling
-    document.body.style.overflow = "hidden";
+  const cssFile = isMobile
+    ? "https://xpdevs.github.io/Genesis-AI/styles/ui-mobile.css"
+    : "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
 
-    // Create modal background
-    const modalBg = document.createElement("div");
-    modalBg.style.position = "fixed";
-    modalBg.style.top = "0";
-    modalBg.style.left = "0";
-    modalBg.style.width = "100%";
-    modalBg.style.height = "100%";
-    modalBg.style.background = "#111"; // solid dark background
-    modalBg.style.display = "flex";
-    modalBg.style.justifyContent = "center";
-    modalBg.style.alignItems = "center";
-    modalBg.style.zIndex = "99999";
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = cssFile;
+  document.head.appendChild(link);
 
-    // Create modal box
-    const modalBox = document.createElement("div");
-    modalBox.style.background = "#fff";
-    modalBox.style.color = "#111";
-    modalBox.style.padding = "25px";
-    modalBox.style.borderRadius = "12px";
-    modalBox.style.maxWidth = "90%";
-    modalBox.style.textAlign = "center";
-    modalBox.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
-    modalBox.innerHTML = `
-      <h2 style="margin-bottom: 15px;">Mobile Compatibility</h2>
-      <p style="margin-bottom: 20px;">
-        Sorry! Genesis is not yet compatible with mobile devices.<br>
-        We are currently working to make it fully mobile-friendly.
-      </p>
-      <p style="font-size: 14px; color: #555;">Please use a desktop or laptop to access this website.</p>
-    `;
-
-    modalBg.appendChild(modalBox);
-    document.body.appendChild(modalBg);
-
-    // Block all interaction with the page
-    ["keydown", "click", "touchstart", "touchmove"].forEach(evt => {
-      document.addEventListener(evt, function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        return false;
-      }, true);
-    });
-
-    console.log("Mobile device detected — showing unclosable compatibility modal.");
-  } else {
-    const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = cssFile;
-    document.head.appendChild(link);
-    console.log(`Loaded desktop stylesheet: ${cssFile}`);
-  }
+  console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
 })();
 
 const chatList = document.getElementById("chatList");
