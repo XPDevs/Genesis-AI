@@ -29,11 +29,21 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h2>Settings</h2>
-      <label class="toggle">
-        <input type="checkbox" id="themeToggle">
-        <span class="slider"></span>
-      </label>
-      <span>Dark Mode</span>
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+        <span>Dark Mode</span>
+      </div>
+
+      <div class="setting-item">
+        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete All Chats
+        </button>
+      </div>
+
+      <button class="close-btn" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
     </div>
   </div>
 
@@ -60,14 +70,21 @@
       </div>
     </div>
   </div>
-   <script src="https://xpdevs.github.io/Genesis-AI/js/main.js" defer></script>
+
+  <!-- Delete All Chats Modal -->
+  <div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm Delete All</h2>
+      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Yes, Delete All
+        </button>
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://xpdevs.github.io/Genesis-AI/js/main.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
