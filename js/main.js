@@ -36,25 +36,14 @@
       titleWrapper.style.display = "flex";
       titleWrapper.style.alignItems = "center";
       titleWrapper.style.gap = "10px";
+      titleWrapper.id = "chatTitleWrapper";
 
       const titleSpan = document.createElement("span");
-      titleSpan.textContent = chatTitle.textContent;
       titleSpan.id = "chatTitleText";
       titleWrapper.append(toggleBtn, titleSpan);
 
       chatTitle.innerHTML = "";
       chatTitle.append(titleWrapper);
-
-      // Update title dynamically
-      const updateTitle = () => {
-        const chat = JSON.parse(localStorage.getItem("chats") || "[]").find(
-          c => c.id === localStorage.getItem("activeChatId")
-        );
-        titleSpan.textContent = chat ? chat.title : "New Chat";
-      };
-
-      const observer = new MutationObserver(updateTitle);
-      observer.observe(chatTitle, { childList: true, subtree: true });
 
       // Sidebar toggle
       toggleBtn.addEventListener("click", (e) => {
@@ -72,15 +61,6 @@
           sidebar.classList.remove("visible");
         }
       });
-
-      // Ensure hamburger remains visible after sending message
-      const keepHamburger = () => {
-        if (!chatTitle.querySelector(".menu-toggle")) {
-          chatTitle.prepend(toggleBtn);
-        }
-      };
-      document.addEventListener("click", keepHamburger);
-      document.addEventListener("keypress", keepHamburger);
 
       // Change send button to up arrow
       if (sendBtn) sendBtn.innerHTML = "↑";
@@ -217,12 +197,19 @@ function renderChatList() {
 function renderMessages() {
   const chat = chats.find(c => c.id === activeChatId);
   chatBox.innerHTML = "";
+
+  const titleSpan = document.getElementById("chatTitleText");
+  if (chat && titleSpan) {
+    titleSpan.textContent = chat.title;
+  } else if (titleSpan) {
+    titleSpan.textContent = "New Chat";
+  }
+
   if (!chat) {
-    chatTitle.textContent = "New Chat";
     if (settingsModal) settingsModal.style.display = "none";
     return;
   }
-  chatTitle.textContent = chat.title;
+
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
   chatBox.scrollTop = chatBox.scrollHeight;
   updateURL(chat.title);
@@ -273,10 +260,13 @@ function summariseTitle(text) {
 }
 
 function typeChatTitle(newTitle, callback) {
-  chatTitle.textContent = "";
+  const titleSpan = document.getElementById("chatTitleText");
+  if (!titleSpan) return;
+
+  titleSpan.textContent = "";
   let i = 0;
   const interval = setInterval(() => {
-    chatTitle.textContent += newTitle[i];
+    titleSpan.textContent += newTitle[i];
     i++;
     if (i === newTitle.length) {
       clearInterval(interval);
@@ -295,7 +285,6 @@ function sendMessage() {
     return;
   }
 
-  let isNewChat = false;
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
     chats.unshift(newChat);
@@ -303,7 +292,6 @@ function sendMessage() {
     localStorage.setItem("activeChatId", activeChatId);
     saveChats();
     renderChatList();
-    isNewChat = true;
   }
 
   const chat = chats.find(c => c.id === activeChatId);
