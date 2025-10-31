@@ -108,18 +108,22 @@ let currentRenameId = null;
 let currentDeleteId = null;
 
 window.addEventListener("DOMContentLoaded", () => {
-  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-
-  // ---------------- CONTENT WARNING FIX ----------------
   const contentWarning = document.getElementById("contentWarning");
   const userInput = document.getElementById("userInput");
+
   if (contentWarning && userInput) {
     const parent = userInput.parentElement;
-    if (parent && !parent.contains(contentWarning)) {
-      parent.insertBefore(contentWarning, userInput); // Move above input
+    if (!parent.contains(contentWarning)) {
+      parent.insertBefore(contentWarning, userInput); // move above input
     }
-    contentWarning.style.display = "block";  // Ensure visible
-    contentWarning.style.marginBottom = "5px"; // Optional spacing
+
+    // Make sure the parent stacks children vertically
+    parent.style.display = "flex";
+    parent.style.flexDirection = "column";
+
+    // Show the content warning
+    contentWarning.style.display = "block";
+    contentWarning.style.marginBottom = "5px"; // spacing from input
   }
 
   // ---------------- MODAL FIX (remove white space) ----------------
@@ -130,13 +134,13 @@ window.addEventListener("DOMContentLoaded", () => {
       left: "50%",
       transform: "translate(-50%, -50%)",
       display: "none",
-      width: "auto",        // Let modal content determine width
-      maxWidth: "90%",      
+      width: "auto",
+      maxWidth: "90%",
       maxHeight: "90vh",
-      overflow: "visible",  // no scroll or extra padding
-      padding: "0",         // remove padding
-      background: "none",   // remove white background
-      borderRadius: "0",    // remove rounded corners
+      overflow: "visible",
+      padding: "0",
+      background: "none",
+      borderRadius: "0",
       boxSizing: "border-box",
       zIndex: 9999,
       alignItems: "center",
@@ -144,8 +148,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-
-
 
 // Load AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
