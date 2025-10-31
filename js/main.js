@@ -362,6 +362,28 @@ if (chatParam) {
   }
 }
 
+const deleteAllChatsBtn = document.getElementById("deleteAllChatsBtn");
+const deleteAllModal = document.getElementById("deleteAllModal");
+const deleteAllConfirm = document.getElementById("deleteAllConfirm");
+const deleteAllCancel = document.getElementById("deleteAllCancel");
+
+// Open Delete All modal
+deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
+
+// Cancel delete all
+deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
+
+// Confirm delete all
+deleteAllConfirm.onclick = () => {
+  chats = [];
+  localStorage.removeItem("chats");
+  localStorage.removeItem("activeChatId");
+  activeChatId = null;
+  renderChatList();
+  chatBox.innerHTML = "";
+  deleteAllModal.style.display = "none";
+};
+
 // Initial render
 renderChatList();
 renderMessages();
