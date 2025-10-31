@@ -1,5 +1,6 @@
-(function () {
+(function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
   const cssFile = isMobile
     ? "https://xpdevs.github.io/Genesis-AI/styles/ui-mobile.css"
     : "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
@@ -8,17 +9,16 @@
   link.rel = "stylesheet";
   link.href = cssFile;
   document.head.appendChild(link);
+
   console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
 
   if (isMobile) {
     window.addEventListener("DOMContentLoaded", () => {
       const sidebar = document.querySelector(".sidebar");
       const chatTitle = document.getElementById("chatTitle");
-      const sendBtn = document.getElementById("sendBtn");
-
       if (!sidebar || !chatTitle) return;
 
-      // Create hamburger button
+      // Create the hamburger button
       const toggleBtn = document.createElement("button");
       toggleBtn.className = "menu-toggle";
       toggleBtn.innerHTML = "☰";
@@ -31,19 +31,32 @@
         color: "inherit",
       });
 
-      // Wrap button + title
+      // Create wrapper for button + title
       const titleWrapper = document.createElement("div");
       titleWrapper.style.display = "flex";
       titleWrapper.style.alignItems = "center";
       titleWrapper.style.gap = "10px";
-      titleWrapper.id = "chatTitleWrapper";
 
+      // Move current title content inside wrapper
       const titleSpan = document.createElement("span");
+      titleSpan.textContent = chatTitle.textContent;
       titleSpan.id = "chatTitleText";
-      titleWrapper.append(toggleBtn, titleSpan);
 
+      titleWrapper.append(toggleBtn, titleSpan);
       chatTitle.innerHTML = "";
       chatTitle.append(titleWrapper);
+
+      // Function to re-sync title text when chat changes
+      const updateTitle = () => {
+        const chat = JSON.parse(localStorage.getItem("chats") || "[]").find(
+          c => c.id === localStorage.getItem("activeChatId")
+        );
+        titleSpan.textContent = chat ? chat.title : "New Chat";
+      };
+
+      // Re-run this every time title updates dynamically
+      const observer = new MutationObserver(updateTitle);
+      observer.observe(chatTitle, { childList: true, subtree: true });
 
       // Sidebar toggle
       toggleBtn.addEventListener("click", (e) => {
@@ -51,7 +64,7 @@
         sidebar.classList.toggle("visible");
       });
 
-      // Close sidebar when clicking outside
+      // Close sidebar on outside click
       document.addEventListener("click", (e) => {
         if (
           sidebar.classList.contains("visible") &&
@@ -62,23 +75,13 @@
         }
       });
 
-      // Change send button to up arrow
-      if (sendBtn) sendBtn.innerHTML = "↑";
-
-      // Set active chat title on load
-      const activeChat = chats.find(c => c.id === activeChatId);
-      if (activeChat && titleSpan) {
-        titleSpan.textContent = activeChat.title;
-      } else if (titleSpan) {
-        titleSpan.textContent = "New Chat";
-      }
-
-      console.log("Mobile sidebar + UI initialised.");
+      console.log("Mobile sidebar toggle with persistent hamburger button initialised.");
     });
   }
 })();
 
-// ---------------- MAIN SCRIPT ----------------
+
+
 
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
@@ -99,61 +102,44 @@ const deleteModal = document.getElementById("deleteModal");
 const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
-
-
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let activeChatId = localStorage.getItem("activeChatId");
 let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// --------------- MODAL FIX (remove white space) ----------------
-document.querySelectorAll(".modal").forEach(modal => {
-  Object.assign(modal.style, {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    display: "none",
-    width: "auto",
-    maxWidth: "90%",
-    maxHeight: "90vh",
-    overflow: "visible",
-    padding: "0",
-    background: "none",
-    borderRadius: "0",
-    boxSizing: "border-box",
-    zIndex: 9999,
-    alignItems: "center",
-    justifyContent: "center",
-  });
-});
-// Load AI responses
+// Load JSON
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
+const jsonName = jsonURL.split("/").pop(); // Extracts the AI modal name
+
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => {
     if (!r.ok) throw new Error("File not found");
     return r.json();
   })
   .then(data => responses = data)
-  .catch(err => appendMessage(`Failed to load responses: ${err.message}`, "error"));
+  .catch(err => appendMessage(`Failed to load ${jsonName}: ${err.message}`, "error"));
 
+
+// Save chats to localStorage
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
 }
 
+
+// Update URL with chat title
 function updateURL(chatTitle) {
   const url = new URL(window.location);
   url.searchParams.set("chat", chatTitle);
   history.pushState({}, "", url);
 }
 
+// Render chat list sidebar
 function renderChatList() {
   chatList.innerHTML = "";
   chats.forEach(chat => {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
-
     const span = document.createElement("span");
     span.textContent = chat.title;
 
@@ -164,7 +150,6 @@ function renderChatList() {
     dots.textContent = "⋮";
     const dropdown = document.createElement("div");
     dropdown.className = "dropdown";
-
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Rename";
     const deleteBtn = document.createElement("button");
@@ -177,7 +162,6 @@ function renderChatList() {
       renameModal.style.display = "flex";
       dropdown.style.display = "none";
     };
-
     deleteBtn.onclick = e => {
       e.stopPropagation();
       currentDeleteId = chat.id;
@@ -189,7 +173,6 @@ function renderChatList() {
     options.append(dots, dropdown);
     dots.onclick = e => {
       e.stopPropagation();
-      document.querySelectorAll(".dropdown").forEach(d => d.style.display = "none");
       dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
     };
 
@@ -206,36 +189,23 @@ function renderChatList() {
   });
 }
 
+// Render messages in chat box
 function renderMessages() {
   const chat = chats.find(c => c.id === activeChatId);
+  chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
-
-  const titleSpan = document.getElementById("chatTitleText");
-  if (chat && titleSpan) {
-    titleSpan.textContent = chat.title;
-  } else if (titleSpan) {
-    titleSpan.textContent = "New Chat";
-  }
-
-  if (!chat) {
-    if (settingsModal) settingsModal.style.display = "none";
-    return;
-  }
-
+  if (!chat) return;
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
-
-  // Mobile scroll fix
-  setTimeout(() => {
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }, 50);
-
-  updateURL(chat.title);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  if (chat) updateURL(chat.title);
 }
 
+// Append message
 function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
   chatBox.append(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
     let i = 0;
@@ -245,16 +215,16 @@ function appendMessage(text, role, isNew = false) {
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === text.length) clearInterval(interval);
     }, 30);
-  } else div.textContent = text;
+  } else {
+    div.textContent = text;
+  }
 
-  // Mobile scroll fix
-  setTimeout(() => {
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }, 50);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Load banned words
 let bannedWords = [];
+
+// Load banned words from JSON
 async function loadBannedWords() {
   try {
     const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
@@ -265,27 +235,34 @@ async function loadBannedWords() {
     console.error("Error loading banned words:", err);
   }
 }
+
+// Call this at the start of your app
 loadBannedWords();
 
+// Content moderation check
 function violatesRules(text) {
-  if (!bannedWords.length) return false;
+  if (!bannedWords.length) return false; // no words loaded yet
   const lowerText = text.toLowerCase();
-  return bannedWords.some(word => new RegExp(`\\b${word}\\b`, "i").test(lowerText));
+  return bannedWords.some(word => {
+    // Match word with optional punctuation around it
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    return regex.test(lowerText);
+  });
 }
 
+
+// --- New: Summarise first message into a short title ---
 function summariseTitle(text) {
   const words = text.split(" ").slice(0, 4).join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+// --- Typing effect for title ---
 function typeChatTitle(newTitle, callback) {
-  const titleSpan = document.getElementById("chatTitleText");
-  if (!titleSpan) return;
-
-  titleSpan.textContent = "";
+  chatTitle.textContent = "";
   let i = 0;
   const interval = setInterval(() => {
-    titleSpan.textContent += newTitle[i];
+    chatTitle.textContent += newTitle[i];
     i++;
     if (i === newTitle.length) {
       clearInterval(interval);
@@ -294,16 +271,20 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
+// Send message
 function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
 
+  // 1. Check for rule violations
   if (violatesRules(text)) {
-    appendMessage("This message violates AI safety and use policies. Please try again.", "error", false);
+    appendMessage("This message violates AI safety and use policies. Please try again with a different request.", "error", false);
     return;
   }
 
+  // 2. Create new chat if needed
+  let isNewChat = false;
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
     chats.unshift(newChat);
@@ -311,6 +292,7 @@ function sendMessage() {
     localStorage.setItem("activeChatId", activeChatId);
     saveChats();
     renderChatList();
+    isNewChat = true;
   }
 
   const chat = chats.find(c => c.id === activeChatId);
@@ -318,6 +300,7 @@ function sendMessage() {
   renderMessages();
   saveChats();
 
+  // 3. If this is the *first* message, auto-generate title with typing effect
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, () => {
@@ -328,12 +311,14 @@ function sendMessage() {
     });
   }
 
+  // 4. Normal AI response process
   const botMsg = findResponse(text);
   chat.messages.push(botMsg);
   appendMessage(botMsg.text, botMsg.role, true);
   saveChats();
 }
 
+// Find AI response
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
@@ -341,9 +326,10 @@ function findResponse(input) {
   return { role: "ai", text: responses[key] };
 }
 
-// Modals
+// Modal controls
 renameCancel.onclick = () => renameModal.style.display = "none";
 deleteCancel.onclick = () => deleteModal.style.display = "none";
+
 renameConfirm.onclick = () => {
   const chat = chats.find(c => c.id === currentRenameId);
   if (chat && renameInput.value.trim()) {
@@ -355,6 +341,7 @@ renameConfirm.onclick = () => {
   }
   renameModal.style.display = "none";
 };
+
 deleteConfirm.onclick = () => {
   chats = chats.filter(c => c.id !== currentDeleteId);
   if (activeChatId === currentDeleteId) {
@@ -380,41 +367,24 @@ newChatBtn.onclick = () => {
   updateURL(newChat.title);
 };
 
-// Send button & Enter key
+// Send message events
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 
-// Settings modal
+// Settings
 settingsBtn.onclick = () => settingsModal.style.display = "flex";
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
-// Theme
+// Dark mode toggle
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
+
 themeToggle.onchange = () => {
   document.body.classList.toggle("dark", themeToggle.checked);
   localStorage.setItem("theme", themeToggle.checked ? "dark" : "light");
 };
 
-// Delete all chats
-const deleteAllChatsBtn = document.getElementById("deleteAllChatsBtn");
-const deleteAllModal = document.getElementById("deleteAllModal");
-const deleteAllConfirm = document.getElementById("deleteAllConfirm");
-const deleteAllCancel = document.getElementById("deleteAllCancel");
-
-deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
-deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
-deleteAllConfirm.onclick = () => {
-  chats = [];
-  localStorage.removeItem("chats");
-  localStorage.removeItem("activeChatId");
-  activeChatId = null;
-  renderChatList();
-  chatBox.innerHTML = "";
-  deleteAllModal.style.display = "none";
-};
-
-// Load chat from URL
+// Load chat from URL on start
 const urlParams = new URLSearchParams(window.location.search);
 const chatParam = urlParams.get("chat");
 if (chatParam) {
@@ -425,9 +395,28 @@ if (chatParam) {
   }
 }
 
+const deleteAllChatsBtn = document.getElementById("deleteAllChatsBtn");
+const deleteAllModal = document.getElementById("deleteAllModal");
+const deleteAllConfirm = document.getElementById("deleteAllConfirm");
+const deleteAllCancel = document.getElementById("deleteAllCancel");
 
-// prints a version of this script
-console.log("Version: 4.3.6")
+// Open Delete All modal
+deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
+
+// Cancel delete all
+deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
+
+// Confirm delete all
+deleteAllConfirm.onclick = () => {
+  chats = [];
+  localStorage.removeItem("chats");
+  localStorage.removeItem("activeChatId");
+  activeChatId = null;
+  renderChatList();
+  chatBox.innerHTML = "";
+  deleteAllModal.style.display = "none";
+};
+
 // Initial render
 renderChatList();
 renderMessages();
