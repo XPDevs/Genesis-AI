@@ -12,22 +12,49 @@
 
   console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
 
-  // --- Mobile-only sidebar toggle ---
+  // --- Mobile-only sidebar toggle and outside click close ---
   if (isMobile) {
     window.addEventListener("DOMContentLoaded", () => {
       const sidebar = document.querySelector(".sidebar");
-      const toggleBtn = document.querySelector(".menu-toggle");
+      const chatTitle = document.getElementById("chatTitle");
+      if (!sidebar || !chatTitle) return;
 
-      if (sidebar && toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
-          sidebar.classList.toggle("visible");
-        });
-      } else {
-        console.warn("Sidebar or menu toggle not found on mobile layout.");
+      // Create menu toggle button
+      const toggleBtn = document.createElement("button");
+      toggleBtn.className = "menu-toggle";
+      toggleBtn.textContent = "☰";
+      toggleBtn.style.marginRight = "10px";
+      toggleBtn.style.fontSize = "20px";
+      toggleBtn.style.background = "none";
+      toggleBtn.style.border = "none";
+      toggleBtn.style.cursor = "pointer";
+      toggleBtn.style.color = "inherit";
+
+      // Add button to chat title (only once)
+      if (!chatTitle.querySelector(".menu-toggle")) {
+        chatTitle.prepend(toggleBtn);
       }
+
+      // Toggle sidebar on button click
+      toggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle("visible");
+      });
+
+      // Close sidebar when clicking outside
+      document.addEventListener("click", (e) => {
+        if (
+          sidebar.classList.contains("visible") &&
+          !sidebar.contains(e.target) &&
+          !toggleBtn.contains(e.target)
+        ) {
+          sidebar.classList.remove("visible");
+        }
+      });
     });
   }
 })();
+
 
 
 const chatList = document.getElementById("chatList");
