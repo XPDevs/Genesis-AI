@@ -1,88 +1,53 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
-  const cssFile = isMobile
-    ? "https://xpdevs.github.io/Genesis-AI/styles/ui-mobile.css"
-    : "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
+  if (isMobile) {
+    // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      backgroundColor: "#f9f9f9",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+      padding: "20px",
+      zIndex: "999999",
+      fontSize: "1.2rem",
+      lineHeight: "1.5",
+      overflow: "hidden",
+      flexDirection: "column",
+      fontFamily: "Arial, sans-serif",
+      color: "#333"
+    });
 
+    modal.innerHTML = `
+      <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
+      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Prevent all interaction and scrolling
+    document.body.style.overflow = "hidden";
+    document.body.style.pointerEvents = "none";
+    return; // Stop execution on mobile
+  }
+
+  // --- DESKTOP STYLING ---
+  const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = cssFile;
   document.head.appendChild(link);
-
-  console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
-
-  if (isMobile) {
-    window.addEventListener("DOMContentLoaded", () => {
-      const sidebar = document.querySelector(".sidebar");
-      const chatTitle = document.getElementById("chatTitle");
-      if (!sidebar || !chatTitle) return;
-
-      // Create the hamburger button
-      const toggleBtn = document.createElement("button");
-      toggleBtn.className = "menu-toggle";
-      toggleBtn.innerHTML = "☰";
-      Object.assign(toggleBtn.style, {
-        marginRight: "10px",
-        fontSize: "22px",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        color: "inherit",
-      });
-
-      // Create wrapper for button + title
-      const titleWrapper = document.createElement("div");
-      titleWrapper.style.display = "flex";
-      titleWrapper.style.alignItems = "center";
-      titleWrapper.style.gap = "10px";
-
-      // Move current title content inside wrapper
-      const titleSpan = document.createElement("span");
-      titleSpan.textContent = chatTitle.textContent;
-      titleSpan.id = "chatTitleText";
-
-      titleWrapper.append(toggleBtn, titleSpan);
-      chatTitle.innerHTML = "";
-      chatTitle.append(titleWrapper);
-
-      // Function to re-sync title text when chat changes
-      const updateTitle = () => {
-        const chat = JSON.parse(localStorage.getItem("chats") || "[]").find(
-          c => c.id === localStorage.getItem("activeChatId")
-        );
-        titleSpan.textContent = chat ? chat.title : "New Chat";
-      };
-
-      // Re-run this every time title updates dynamically
-      const observer = new MutationObserver(updateTitle);
-      observer.observe(chatTitle, { childList: true, subtree: true });
-
-      // Sidebar toggle
-      toggleBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle("visible");
-      });
-
-      // Close sidebar on outside click
-      document.addEventListener("click", (e) => {
-        if (
-          sidebar.classList.contains("visible") &&
-          !sidebar.contains(e.target) &&
-          !toggleBtn.contains(e.target)
-        ) {
-          sidebar.classList.remove("visible");
-        }
-      });
-
-      console.log("Mobile sidebar toggle with persistent hamburger button initialised.");
-    });
-  }
+  console.log(`Loaded desktop stylesheet: ${cssFile}`);
 })();
 
-
-
-
+// --- CHAT APP FUNCTIONALITY ---
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
@@ -108,24 +73,19 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// Load JSON
+// Load JSON AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
-const jsonName = jsonURL.split("/").pop(); // Extracts the AI modal name
+const jsonName = jsonURL.split("/").pop();
 
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => {
-    if (!r.ok) throw new Error("File not found");
-    return r.json();
-  })
+  .then(r => r.ok ? r.json() : Promise.reject("File not found"))
   .then(data => responses = data)
-  .catch(err => appendMessage(`Failed to load ${jsonName}: ${err.message}`, "error"));
-
+  .catch(err => appendMessage(`Failed to load ${jsonName}: ${err}`, "error"));
 
 // Save chats to localStorage
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
 }
-
 
 // Update URL with chat title
 function updateURL(chatTitle) {
@@ -134,7 +94,7 @@ function updateURL(chatTitle) {
   history.pushState({}, "", url);
 }
 
-// Render chat list sidebar
+// Render chat list
 function renderChatList() {
   chatList.innerHTML = "";
   chats.forEach(chat => {
@@ -162,6 +122,7 @@ function renderChatList() {
       renameModal.style.display = "flex";
       dropdown.style.display = "none";
     };
+
     deleteBtn.onclick = e => {
       e.stopPropagation();
       currentDeleteId = chat.id;
@@ -189,7 +150,7 @@ function renderChatList() {
   });
 }
 
-// Render messages in chat box
+// Render messages
 function renderMessages() {
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
@@ -222,42 +183,32 @@ function appendMessage(text, role, isNew = false) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// Banned words
 let bannedWords = [];
-
-// Load banned words from JSON
 async function loadBannedWords() {
   try {
     const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
     if (!res.ok) throw new Error("Failed to load banned words");
     bannedWords = await res.json();
-    console.log("Banned words loaded:", bannedWords.length);
   } catch (err) {
     console.error("Error loading banned words:", err);
   }
 }
-
-// Call this at the start of your app
 loadBannedWords();
 
-// Content moderation check
 function violatesRules(text) {
-  if (!bannedWords.length) return false; // no words loaded yet
+  if (!bannedWords.length) return false;
   const lowerText = text.toLowerCase();
-  return bannedWords.some(word => {
-    // Match word with optional punctuation around it
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lowerText);
-  });
+  return bannedWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerText));
 }
 
-
-// --- New: Summarise first message into a short title ---
+// Summarise title
 function summariseTitle(text) {
   const words = text.split(" ").slice(0, 4).join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-// --- Typing effect for title ---
+// Typing effect for title
 function typeChatTitle(newTitle, callback) {
   chatTitle.textContent = "";
   let i = 0;
@@ -277,14 +228,11 @@ function sendMessage() {
   if (!text) return;
   userInput.value = "";
 
-  // 1. Check for rule violations
   if (violatesRules(text)) {
-    appendMessage("This message violates AI safety and use policies. Please try again with a different request.", "error", false);
+    appendMessage("This message violates AI safety and use policies. Please try again.", "error");
     return;
   }
 
-  // 2. Create new chat if needed
-  let isNewChat = false;
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
     chats.unshift(newChat);
@@ -292,7 +240,6 @@ function sendMessage() {
     localStorage.setItem("activeChatId", activeChatId);
     saveChats();
     renderChatList();
-    isNewChat = true;
   }
 
   const chat = chats.find(c => c.id === activeChatId);
@@ -300,7 +247,6 @@ function sendMessage() {
   renderMessages();
   saveChats();
 
-  // 3. If this is the *first* message, auto-generate title with typing effect
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, () => {
@@ -311,18 +257,16 @@ function sendMessage() {
     });
   }
 
-  // 4. Normal AI response process
   const botMsg = findResponse(text);
   chat.messages.push(botMsg);
   appendMessage(botMsg.text, botMsg.role, true);
   saveChats();
 }
 
-// Find AI response
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
-  if (!key) return { role: "error", text: "Sorry, I couldn’t process that." };
+  if (!key) return { role: "error", text: "Sorry, I don't understand this yet, please give me a chance as I am learning." };
   return { role: "ai", text: responses[key] };
 }
 
@@ -356,7 +300,6 @@ deleteConfirm.onclick = () => {
 
 // New chat
 newChatBtn.onclick = () => {
-  if (activeChatId) saveChats();
   const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
   chats.unshift(newChat);
   activeChatId = newChat.id;
@@ -367,7 +310,6 @@ newChatBtn.onclick = () => {
   updateURL(newChat.title);
 };
 
-// Send message events
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 
@@ -375,16 +317,15 @@ userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => settingsModal.style.display = "flex";
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
-// Dark mode toggle
+// Dark mode
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
-
 themeToggle.onchange = () => {
   document.body.classList.toggle("dark", themeToggle.checked);
   localStorage.setItem("theme", themeToggle.checked ? "dark" : "light");
 };
 
-// Load chat from URL on start
+// Load chat from URL
 const urlParams = new URLSearchParams(window.location.search);
 const chatParam = urlParams.get("chat");
 if (chatParam) {
@@ -395,18 +336,14 @@ if (chatParam) {
   }
 }
 
+// Delete all chats
 const deleteAllChatsBtn = document.getElementById("deleteAllChatsBtn");
 const deleteAllModal = document.getElementById("deleteAllModal");
 const deleteAllConfirm = document.getElementById("deleteAllConfirm");
 const deleteAllCancel = document.getElementById("deleteAllCancel");
 
-// Open Delete All modal
 deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
-
-// Cancel delete all
 deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
-
-// Confirm delete all
 deleteAllConfirm.onclick = () => {
   chats = [];
   localStorage.removeItem("chats");
