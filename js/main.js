@@ -266,7 +266,7 @@ function sendMessage() {
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
-  if (!key) return { role: "error", text: "Sorry, I couldn’t process that." };
+  if (!key) return { role: "error", text: "Sorry, I don't understand this yet, please give me a chance as I am learning." };
   return { role: "ai", text: responses[key] };
 }
 
