@@ -16,9 +16,11 @@
     window.addEventListener("DOMContentLoaded", () => {
       const sidebar = document.querySelector(".sidebar");
       const chatTitle = document.getElementById("chatTitle");
+      const sendBtn = document.getElementById("sendBtn");
+
       if (!sidebar || !chatTitle) return;
 
-      // Create the hamburger button
+      // Create hamburger button
       const toggleBtn = document.createElement("button");
       toggleBtn.className = "menu-toggle";
       toggleBtn.innerHTML = "☰";
@@ -31,22 +33,21 @@
         color: "inherit",
       });
 
-      // Create wrapper for button + title
+      // Wrap button + title
       const titleWrapper = document.createElement("div");
       titleWrapper.style.display = "flex";
       titleWrapper.style.alignItems = "center";
       titleWrapper.style.gap = "10px";
 
-      // Move current title content inside wrapper
       const titleSpan = document.createElement("span");
       titleSpan.textContent = chatTitle.textContent;
       titleSpan.id = "chatTitleText";
-
       titleWrapper.append(toggleBtn, titleSpan);
+
       chatTitle.innerHTML = "";
       chatTitle.append(titleWrapper);
 
-      // Function to re-sync title text when chat changes
+      // Update title dynamically
       const updateTitle = () => {
         const chat = JSON.parse(localStorage.getItem("chats") || "[]").find(
           c => c.id === localStorage.getItem("activeChatId")
@@ -54,7 +55,6 @@
         titleSpan.textContent = chat ? chat.title : "New Chat";
       };
 
-      // Re-run this every time title updates dynamically
       const observer = new MutationObserver(updateTitle);
       observer.observe(chatTitle, { childList: true, subtree: true });
 
@@ -75,14 +75,16 @@
         }
       });
 
-      console.log("Mobile sidebar toggle with persistent hamburger button initialised.");
+      // Change send button to up arrow on mobile
+      if (sendBtn) sendBtn.innerHTML = "📤";
+
+      console.log("Mobile sidebar + UI initialised.");
     });
   }
 })();
 
 
-
-
+// --- MAIN SCRIPT LOGIC ---
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
@@ -108,9 +110,17 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// Load JSON
+// --- Content Warning Position Fix ---
+const contentWarning = document.getElementById("contentWarning");
+if (contentWarning && userInput) {
+  userInput.parentElement.insertBefore(contentWarning, userInput);
+  contentWarning.style.marginBottom = "5px";
+  contentWarning.style.display = "none";
+}
+
+// Load AI responses JSON
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
-const jsonName = jsonURL.split("/").pop(); // Extracts the AI modal name
+const jsonName = jsonURL.split("/").pop();
 
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => {
@@ -120,26 +130,25 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(data => responses = data)
   .catch(err => appendMessage(`Failed to load ${jsonName}: ${err.message}`, "error"));
 
-
-// Save chats to localStorage
+// Save chats
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
 }
 
-
-// Update URL with chat title
+// Update URL
 function updateURL(chatTitle) {
   const url = new URL(window.location);
   url.searchParams.set("chat", chatTitle);
   history.pushState({}, "", url);
 }
 
-// Render chat list sidebar
+// Render chat list
 function renderChatList() {
   chatList.innerHTML = "";
   chats.forEach(chat => {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
+
     const span = document.createElement("span");
     span.textContent = chat.title;
 
@@ -150,6 +159,7 @@ function renderChatList() {
     dots.textContent = "⋮";
     const dropdown = document.createElement("div");
     dropdown.className = "dropdown";
+
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Rename";
     const deleteBtn = document.createElement("button");
@@ -173,6 +183,7 @@ function renderChatList() {
     options.append(dots, dropdown);
     dots.onclick = e => {
       e.stopPropagation();
+      document.querySelectorAll(".dropdown").forEach(d => d.style.display = "none");
       dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
     };
 
@@ -189,15 +200,19 @@ function renderChatList() {
   });
 }
 
-// Render messages in chat box
+// Render messages
 function renderMessages() {
   const chat = chats.find(c => c.id === activeChatId);
-  chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
-  if (!chat) return;
+  if (!chat) {
+    chatTitle.textContent = "New Chat";
+    if (settingsModal) settingsModal.style.display = "none";
+    return;
+  }
+  chatTitle.textContent = chat.title;
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
   chatBox.scrollTop = chatBox.scrollHeight;
-  if (chat) updateURL(chat.title);
+  updateURL(chat.title);
 }
 
 // Append message
@@ -215,16 +230,12 @@ function appendMessage(text, role, isNew = false) {
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === text.length) clearInterval(interval);
     }, 30);
-  } else {
-    div.textContent = text;
-  }
+  } else div.textContent = text;
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 let bannedWords = [];
-
-// Load banned words from JSON
 async function loadBannedWords() {
   try {
     const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
@@ -235,29 +246,19 @@ async function loadBannedWords() {
     console.error("Error loading banned words:", err);
   }
 }
-
-// Call this at the start of your app
 loadBannedWords();
 
-// Content moderation check
 function violatesRules(text) {
-  if (!bannedWords.length) return false; // no words loaded yet
+  if (!bannedWords.length) return false;
   const lowerText = text.toLowerCase();
-  return bannedWords.some(word => {
-    // Match word with optional punctuation around it
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
-    return regex.test(lowerText);
-  });
+  return bannedWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerText));
 }
 
-
-// --- New: Summarise first message into a short title ---
 function summariseTitle(text) {
   const words = text.split(" ").slice(0, 4).join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-// --- Typing effect for title ---
 function typeChatTitle(newTitle, callback) {
   chatTitle.textContent = "";
   let i = 0;
@@ -277,13 +278,11 @@ function sendMessage() {
   if (!text) return;
   userInput.value = "";
 
-  // 1. Check for rule violations
   if (violatesRules(text)) {
-    appendMessage("This message violates AI safety and use policies. Please try again with a different request.", "error", false);
+    appendMessage("This message violates AI safety and use policies. Please try again.", "error", false);
     return;
   }
 
-  // 2. Create new chat if needed
   let isNewChat = false;
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -300,7 +299,6 @@ function sendMessage() {
   renderMessages();
   saveChats();
 
-  // 3. If this is the *first* message, auto-generate title with typing effect
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, () => {
@@ -311,7 +309,6 @@ function sendMessage() {
     });
   }
 
-  // 4. Normal AI response process
   const botMsg = findResponse(text);
   chat.messages.push(botMsg);
   appendMessage(botMsg.text, botMsg.role, true);
@@ -326,7 +323,7 @@ function findResponse(input) {
   return { role: "ai", text: responses[key] };
 }
 
-// Modal controls
+// Modals
 renameCancel.onclick = () => renameModal.style.display = "none";
 deleteCancel.onclick = () => deleteModal.style.display = "none";
 
@@ -367,46 +364,30 @@ newChatBtn.onclick = () => {
   updateURL(newChat.title);
 };
 
-// Send message events
+// Send events
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 
-// Settings
+// Settings modal
 settingsBtn.onclick = () => settingsModal.style.display = "flex";
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
-// Dark mode toggle
+// Dark mode
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
-
 themeToggle.onchange = () => {
   document.body.classList.toggle("dark", themeToggle.checked);
   localStorage.setItem("theme", themeToggle.checked ? "dark" : "light");
 };
 
-// Load chat from URL on start
-const urlParams = new URLSearchParams(window.location.search);
-const chatParam = urlParams.get("chat");
-if (chatParam) {
-  const found = chats.find(c => c.title === chatParam);
-  if (found) {
-    activeChatId = found.id;
-    localStorage.setItem("activeChatId", activeChatId);
-  }
-}
-
+// Delete all chats
 const deleteAllChatsBtn = document.getElementById("deleteAllChatsBtn");
 const deleteAllModal = document.getElementById("deleteAllModal");
 const deleteAllConfirm = document.getElementById("deleteAllConfirm");
 const deleteAllCancel = document.getElementById("deleteAllCancel");
 
-// Open Delete All modal
 deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
-
-// Cancel delete all
 deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
-
-// Confirm delete all
 deleteAllConfirm.onclick = () => {
   chats = [];
   localStorage.removeItem("chats");
@@ -416,6 +397,17 @@ deleteAllConfirm.onclick = () => {
   chatBox.innerHTML = "";
   deleteAllModal.style.display = "none";
 };
+
+// Load chat from URL
+const urlParams = new URLSearchParams(window.location.search);
+const chatParam = urlParams.get("chat");
+if (chatParam) {
+  const found = chats.find(c => c.title === chatParam);
+  if (found) {
+    activeChatId = found.id;
+    localStorage.setItem("activeChatId", activeChatId);
+  }
+}
 
 // Initial render
 renderChatList();
