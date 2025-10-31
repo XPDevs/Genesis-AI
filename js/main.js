@@ -65,28 +65,6 @@
       // Change send button to up arrow
       if (sendBtn) sendBtn.innerHTML = "↑";
 
-      // ---------------- MOBILE FIXES ----------------
-      // Center all modals
-      document.querySelectorAll(".modal").forEach(modal => {
-        Object.assign(modal.style, {
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          display: "none",
-          width: "90%",
-          maxWidth: "400px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "20px",
-          borderRadius: "8px",
-          background: "#fff",
-          zIndex: 9999,
-          alignItems: "center",
-          justifyContent: "center",
-        });
-      });
-
       // Set active chat title on load
       const activeChat = chats.find(c => c.id === activeChatId);
       if (activeChat && titleSpan) {
@@ -121,27 +99,6 @@ const deleteModal = document.getElementById("deleteModal");
 const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
-// Center all modals for desktop & mobile (no white space)
-document.querySelectorAll(".modal").forEach(modal => {
-  Object.assign(modal.style, {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    display: "none",
-    width: "auto",         // let content dictate width
-    maxWidth: "90%",       // optional limit
-    maxHeight: "90vh",
-    overflow: "visible",   // no extra scroll or padding
-    padding: "0",          // remove padding
-    background: "none",    // remove background colour
-    boxSizing: "border-box",
-    borderRadius: "0",     // remove rounded corners
-    zIndex: 9999,
-    alignItems: "center",
-    justifyContent: "center",
-  });
-});
 
 
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
@@ -150,25 +107,44 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// ---------------- MOBILE CONTENT WARNING ----------------
 window.addEventListener("DOMContentLoaded", () => {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+  // ---------------- CONTENT WARNING FIX ----------------
   const contentWarning = document.getElementById("contentWarning");
   const userInput = document.getElementById("userInput");
-
-  if (!contentWarning || !userInput) return;
-
-  // Insert above input only on mobile
-  if (isMobile) {
+  if (contentWarning && userInput) {
     const parent = userInput.parentElement;
     if (parent && !parent.contains(contentWarning)) {
-      parent.insertBefore(contentWarning, userInput);
+      parent.insertBefore(contentWarning, userInput); // Move above input
     }
+    contentWarning.style.display = "block";  // Ensure visible
+    contentWarning.style.marginBottom = "5px"; // Optional spacing
   }
 
-  // Make sure it is visible
-  contentWarning.style.display = "block";
+  // ---------------- MODAL FIX (remove white space) ----------------
+  document.querySelectorAll(".modal").forEach(modal => {
+    Object.assign(modal.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      display: "none",
+      width: "auto",        // Let modal content determine width
+      maxWidth: "90%",      
+      maxHeight: "90vh",
+      overflow: "visible",  // no scroll or extra padding
+      padding: "0",         // remove padding
+      background: "none",   // remove white background
+      borderRadius: "0",    // remove rounded corners
+      boxSizing: "border-box",
+      zIndex: 9999,
+      alignItems: "center",
+      justifyContent: "center",
+    });
+  });
 });
+
 
 
 // Load AI responses
