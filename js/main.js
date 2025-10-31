@@ -11,7 +11,24 @@
   document.head.appendChild(link);
 
   console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
+
+  // --- Mobile-only sidebar toggle ---
+  if (isMobile) {
+    window.addEventListener("DOMContentLoaded", () => {
+      const sidebar = document.querySelector(".sidebar");
+      const toggleBtn = document.querySelector(".menu-toggle");
+
+      if (sidebar && toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          sidebar.classList.toggle("visible");
+        });
+      } else {
+        console.warn("Sidebar or menu toggle not found on mobile layout.");
+      }
+    });
+  }
 })();
+
 
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
