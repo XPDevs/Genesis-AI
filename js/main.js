@@ -2,41 +2,46 @@
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
+    // --- MOBILE OFFICIAL MODAL ---
+    const overlay = document.createElement("div");
+    Object.assign(overlay.style, {
       position: "fixed",
       top: "0",
       left: "0",
       width: "100vw",
       height: "100vh",
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "rgba(0,0,0,0.85)", // dark overlay
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      textAlign: "center",
-      padding: "20px",
       zIndex: "999999",
-      fontSize: "1.2rem",
-      lineHeight: "1.5",
-      overflow: "hidden",
-      flexDirection: "column",
-      fontFamily: "Arial, sans-serif",
-      color: "#333"
+      fontFamily: "Arial, sans-serif"
+    });
+
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
+      backgroundColor: "#b71c1c", // official red
+      color: "#fff",
+      padding: "30px 40px",
+      borderRadius: "12px",
+      textAlign: "center",
+      maxWidth: "400px",
+      boxShadow: "0 0 20px rgba(0,0,0,0.5)"
     });
 
     modal.innerHTML = `
-      <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
-      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
+      <h1 style="margin-bottom: 15px; font-size: 1.8rem;">Mobile Not Supported</h1>
+      <p style="font-size: 1rem; line-height: 1.6;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
     `;
 
-    document.body.appendChild(modal);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 
-    // Prevent all interaction and scrolling
+    // Block all interactions
     document.body.style.overflow = "hidden";
-    document.body.style.pointerEvents = "none";
     return; // Stop execution on mobile
   }
+})();
 
   // --- DESKTOP STYLING ---
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
