@@ -2,46 +2,41 @@
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // --- MOBILE OFFICIAL MODAL ---
-    const overlay = document.createElement("div");
-    Object.assign(overlay.style, {
+    // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
       position: "fixed",
       top: "0",
       left: "0",
       width: "100vw",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.85)", // dark overlay
+      backgroundColor: "#f9f9f9",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      zIndex: "999999",
-      fontFamily: "Arial, sans-serif"
-    });
-
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
-      backgroundColor: "#b71c1c", // official red
-      color: "#fff",
-      padding: "30px 40px",
-      borderRadius: "12px",
       textAlign: "center",
-      maxWidth: "400px",
-      boxShadow: "0 0 20px rgba(0,0,0,0.5)"
+      padding: "20px",
+      zIndex: "999999",
+      fontSize: "1.2rem",
+      lineHeight: "1.5",
+      overflow: "hidden",
+      flexDirection: "column",
+      fontFamily: "Arial, sans-serif",
+      color: "#333"
     });
 
     modal.innerHTML = `
-      <h1 style="margin-bottom: 15px; font-size: 1.8rem;">Mobile Not Supported</h1>
-      <p style="font-size: 1rem; line-height: 1.6;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
+      <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
+      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
     `;
 
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
 
-    // Block all interactions
+    // Prevent all interaction and scrolling
     document.body.style.overflow = "hidden";
+    document.body.style.pointerEvents = "none";
     return; // Stop execution on mobile
   }
-})();
 
   // --- DESKTOP STYLING ---
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
@@ -271,7 +266,7 @@ function sendMessage() {
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
-  if (!key) return { role: "error", text: "Sorry, I don't understand this yet, please give me a chance as I am learning." };
+  if (!key) return { role: "error", text: "Sorry, I couldn’t process that." };
   return { role: "ai", text: responses[key] };
 }
 
