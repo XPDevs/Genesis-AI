@@ -65,6 +65,36 @@
       // Change send button to up arrow
       if (sendBtn) sendBtn.innerHTML = "↑";
 
+      // ---------------- MOBILE FIXES ----------------
+      // Center all modals
+      document.querySelectorAll(".modal").forEach(modal => {
+        Object.assign(modal.style, {
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          display: "none",
+          width: "90%",
+          maxWidth: "400px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          padding: "20px",
+          borderRadius: "8px",
+          background: "#fff",
+          zIndex: 9999,
+          alignItems: "center",
+          justifyContent: "center",
+        });
+      });
+
+      // Set active chat title on load
+      const activeChat = chats.find(c => c.id === activeChatId);
+      if (activeChat && titleSpan) {
+        titleSpan.textContent = activeChat.title;
+      } else if (titleSpan) {
+        titleSpan.textContent = "New Chat";
+      }
+
       console.log("Mobile sidebar + UI initialised.");
     });
   }
@@ -91,19 +121,19 @@ const deleteModal = document.getElementById("deleteModal");
 const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
-// Center modals for both desktop and mobile
+// Center all modals for desktop & mobile
 document.querySelectorAll(".modal").forEach(modal => {
   Object.assign(modal.style, {
     position: "fixed",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    display: "none", // modals start hidden
-    width: "90%",    // responsive width
+    display: "none", 
+    width: "90%",   
     maxWidth: "500px",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "#fff",   // fallback background, adjust with your CSS
+    background: "#fff",   
     padding: "20px",
     boxSizing: "border-box",
     borderRadius: "8px",
@@ -112,7 +142,6 @@ document.querySelectorAll(".modal").forEach(modal => {
     justifyContent: "center",
   });
 });
-
 
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let activeChatId = localStorage.getItem("activeChatId");
@@ -223,7 +252,12 @@ function renderMessages() {
   }
 
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
-  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Mobile scroll fix
+  setTimeout(() => {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }, 50);
+
   updateURL(chat.title);
 }
 
@@ -231,7 +265,6 @@ function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
   chatBox.append(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
     let i = 0;
@@ -243,7 +276,10 @@ function appendMessage(text, role, isNew = false) {
     }, 30);
   } else div.textContent = text;
 
-  chatBox.scrollTop = chatBox.scrollHeight;
+  // Mobile scroll fix
+  setTimeout(() => {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }, 50);
 }
 
 // Load banned words
@@ -418,6 +454,9 @@ if (chatParam) {
   }
 }
 
+
+// prints a version of this script
+console.log("Version: 4.3.6")
 // Initial render
 renderChatList();
 renderMessages();
