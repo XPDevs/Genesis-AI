@@ -121,27 +121,28 @@ const deleteModal = document.getElementById("deleteModal");
 const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
-// Center all modals for desktop & mobile
+// Center all modals for desktop & mobile (no white space)
 document.querySelectorAll(".modal").forEach(modal => {
   Object.assign(modal.style, {
     position: "fixed",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    display: "none", 
-    width: "90%",   
-    maxWidth: "500px",
+    display: "none",
+    width: "auto",         // let content dictate width
+    maxWidth: "90%",       // optional limit
     maxHeight: "90vh",
-    overflowY: "auto",
-    background: "#fff",   
-    padding: "20px",
+    overflow: "visible",   // no extra scroll or padding
+    padding: "0",          // remove padding
+    background: "none",    // remove background colour
     boxSizing: "border-box",
-    borderRadius: "8px",
+    borderRadius: "0",     // remove rounded corners
     zIndex: 9999,
     alignItems: "center",
     justifyContent: "center",
   });
 });
+
 
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let activeChatId = localStorage.getItem("activeChatId");
