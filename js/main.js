@@ -150,13 +150,25 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-// Content Warning position
-const contentWarning = document.getElementById("contentWarning");
-if (contentWarning && userInput) {
-  userInput.parentElement.insertBefore(contentWarning, userInput);
-  contentWarning.style.marginBottom = "5px";
-  contentWarning.style.display = "block";
-}
+// ---------------- CONTENT WARNING ----------------
+window.addEventListener("DOMContentLoaded", () => {
+  const contentWarning = document.getElementById("contentWarning");
+  const userInput = document.getElementById("userInput");
+
+  if (contentWarning && userInput) {
+    // Insert content warning above the input
+    const parent = userInput.parentElement;
+    if (parent && !parent.contains(contentWarning)) {
+      parent.insertBefore(contentWarning, userInput);
+    }
+
+    // Style the content warning
+    contentWarning.style.display = "block";  // ensure it's visible
+    contentWarning.style.marginBottom = "5px";
+  }
+});
+
+
 
 // Load AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
