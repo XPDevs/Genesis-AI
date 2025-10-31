@@ -19,6 +19,12 @@
       <h3 id="chatTitle">New Chat</h3>
     </div>
     <div id="chatBox" class="chat-box"></div>
+    
+    <!-- Content Warning -->
+    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
+      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.
+    </div>
+
     <div class="input-area">
       <input type="text" id="userInput" placeholder="Type a message...">
       <button id="sendBtn">Send</button>
@@ -36,12 +42,13 @@
         </label>
         <span>Dark Mode</span>
       </div>
-<br>
+      <br>
       <div class="setting-item">
         <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
           Delete All Chats
         </button>
-      </div></div>
+      </div>
+    </div>
   </div>
 
   <!-- Rename Modal -->
@@ -62,7 +69,9 @@
       <h2>Delete Chat?</h2>
       <p>This action cannot be undone.</p>
       <div class="modal-actions">
-        <button class="confirm" id="deleteConfirm">Delete</button>
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete
+        </button>
         <button class="cancel" id="deleteCancel">Cancel</button>
       </div>
     </div>
@@ -85,4 +94,3 @@
   <script src="https://xpdevs.github.io/Genesis-AI/js/main.js" defer></script>
 </body>
 </html>
-
