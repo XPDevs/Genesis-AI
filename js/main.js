@@ -2,6 +2,9 @@
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
   if (isMobile) {
+    // Block scrolling
+    document.body.style.overflow = "hidden";
+
     // Create modal background
     const modalBg = document.createElement("div");
     modalBg.style.position = "fixed";
@@ -9,37 +12,43 @@
     modalBg.style.left = "0";
     modalBg.style.width = "100%";
     modalBg.style.height = "100%";
-    modalBg.style.background = "rgba(0, 0, 0, 0.6)";
+    modalBg.style.background = "#111"; // solid dark background
     modalBg.style.display = "flex";
     modalBg.style.justifyContent = "center";
     modalBg.style.alignItems = "center";
-    modalBg.style.zIndex = "9999";
+    modalBg.style.zIndex = "99999";
 
     // Create modal box
     const modalBox = document.createElement("div");
     modalBox.style.background = "#fff";
     modalBox.style.color = "#111";
-    modalBox.style.padding = "20px";
+    modalBox.style.padding = "25px";
     modalBox.style.borderRadius = "12px";
     modalBox.style.maxWidth = "90%";
     modalBox.style.textAlign = "center";
-    modalBox.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    modalBox.style.boxShadow = "0 4px 20px rgba(0,0,0,0.5)";
     modalBox.innerHTML = `
-      <h2 style="margin-bottom: 10px;">Mobile Compatibility</h2>
-      <p style="margin-bottom: 15px;">Genesis is not yet compatible with mobile devices.<br>
-      We’re currently working to make it fully mobile-friendly.</p>
-      <button id="closeModal" style="background:#10a37f;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">OK</button>
+      <h2 style="margin-bottom: 15px;">Mobile Compatibility</h2>
+      <p style="margin-bottom: 20px;">
+        Sorry! Genesis is not yet compatible with mobile devices.<br>
+        We are currently working to make it fully mobile-friendly.
+      </p>
+      <p style="font-size: 14px; color: #555;">Please use a desktop or laptop to access this website.</p>
     `;
 
     modalBg.appendChild(modalBox);
     document.body.appendChild(modalBg);
 
-    // Close button functionality
-    document.getElementById("closeModal").addEventListener("click", () => {
-      modalBg.remove();
+    // Block all interaction with the page
+    ["keydown", "click", "touchstart", "touchmove"].forEach(evt => {
+      document.addEventListener(evt, function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+      }, true);
     });
 
-    console.log("Mobile device detected — showing compatibility modal.");
+    console.log("Mobile device detected — showing unclosable compatibility modal.");
   } else {
     const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
     const link = document.createElement("link");
