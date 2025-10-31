@@ -6,14 +6,19 @@
 
   if (isMobile) {
     // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
-    // Clear entire page content
-    document.documentElement.innerHTML = ''; // blank out everything
-    document.body.style.margin = '0';
-    document.body.style.height = '100vh';
-    document.body.style.display = 'flex';
-    document.body.style.justifyContent = 'center';
-    document.body.style.alignItems = 'center';
-    document.body.style.backgroundColor = '#fff'; // blank white background
+    const modalBg = document.createElement("div");
+    Object.assign(modalBg.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: "999999",
+    });
 
     const modal = document.createElement("div");
     Object.assign(modal.style, {
@@ -33,14 +38,16 @@
       <p>Genesis AI is not functional on mobile devices.<br>Please use a desktop computer to access this application.</p>
     `;
 
-    document.body.appendChild(modal);
+    modalBg.appendChild(modal);
+    document.body.appendChild(modalBg);
 
-    // Prevent scrolling
+    // Prevent all interaction and scrolling
     document.body.style.overflow = "hidden";
-
+    document.body.style.pointerEvents = "none";
     return; // Stop execution on mobile
-  }
+  }  
 })();
+
 
 
   // --- DESKTOP STYLING ---
