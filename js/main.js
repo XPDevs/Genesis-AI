@@ -194,7 +194,7 @@ let bannedWords = [];
 // Load banned words from JSON
 async function loadBannedWords() {
   try {
-    const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json" + Date.now());
+    const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
     if (!res.ok) throw new Error("Failed to load banned words");
     bannedWords = await res.json();
     console.log("Banned words loaded:", bannedWords.length);
