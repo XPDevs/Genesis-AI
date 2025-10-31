@@ -1,36 +1,45 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
+  console.log("version: 4.5.2");
+  const version = "4.5.2";
+
   if (isMobile) {
     // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
+    const modalBg = document.createElement("div");
+    Object.assign(modalBg.style, {
       position: "fixed",
       top: "0",
       left: "0",
       width: "100vw",
       height: "100vh",
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      textAlign: "center",
-      padding: "20px",
       zIndex: "999999",
+    });
+
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
+      backgroundColor: "red",
+      color: "#fff",
+      padding: "30px",
+      borderRadius: "15px",
+      boxShadow: "0 0 20px rgba(0,0,0,0.5)",
+      maxWidth: "400px",
+      textAlign: "center",
       fontSize: "1.2rem",
-      lineHeight: "1.5",
-      overflow: "hidden",
-      flexDirection: "column",
-      fontFamily: "Arial, sans-serif",
-      color: "#333"
+      fontFamily: "Arial, sans-serif"
     });
 
     modal.innerHTML = `
       <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
-      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
+      <p>Genesis AI is not functional on mobile devices.<br>Please use a desktop computer to access this application.</p>
     `;
 
-    document.body.appendChild(modal);
+    modalBg.appendChild(modal);
+    document.body.appendChild(modalBg);
 
     // Prevent all interaction and scrolling
     document.body.style.overflow = "hidden";
@@ -82,12 +91,10 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(data => responses = data)
   .catch(err => appendMessage(`Failed to load ${jsonName}: ${err}`, "error"));
 
-// Save chats to localStorage
-function saveChats() {
-  localStorage.setItem("chats", JSON.stringify(chats));
-}
+// Save chats
+function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 
-// Update URL with chat title
+// Update URL
 function updateURL(chatTitle) {
   const url = new URL(window.location);
   url.searchParams.set("chat", chatTitle);
@@ -165,6 +172,7 @@ function renderMessages() {
 function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
+  if (role === "secret") div.style.color = "orange"; // secret command style
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -228,6 +236,12 @@ function sendMessage() {
   if (!text) return;
   userInput.value = "";
 
+  // --- Secret command check ---
+  if (text === `genesis-log<"vers"=%version%>print("%vers%")`) {
+    appendMessage(version, "secret");
+    return;
+  }
+
   if (violatesRules(text)) {
     appendMessage("This message violates AI safety and use policies. Please try again.", "error");
     return;
@@ -266,7 +280,7 @@ function sendMessage() {
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
-  if (!key) return { role: "error", text: "Sorry, I don't understand this yet, please give me a chance as I am learning." };
+  if (!key) return { role: "error", text: "Sorry, I couldn’t process that." };
   return { role: "ai", text: responses[key] };
 }
 
