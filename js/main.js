@@ -155,7 +155,7 @@ const contentWarning = document.getElementById("contentWarning");
 if (contentWarning && userInput) {
   userInput.parentElement.insertBefore(contentWarning, userInput);
   contentWarning.style.marginBottom = "5px";
-  contentWarning.style.display = "none";
+  contentWarning.style.display = "block";
 }
 
 // Load AI responses
