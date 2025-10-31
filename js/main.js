@@ -107,48 +107,27 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
-window.addEventListener("DOMContentLoaded", () => {
-  const contentWarning = document.getElementById("contentWarning");
-  const userInput = document.getElementById("userInput");
-
-  if (contentWarning && userInput) {
-    const parent = userInput.parentElement;
-    if (!parent.contains(contentWarning)) {
-      parent.insertBefore(contentWarning, userInput); // move above input
-    }
-
-    // Make sure the parent stacks children vertically
-    parent.style.display = "flex";
-    parent.style.flexDirection = "column";
-
-    // Show the content warning
-    contentWarning.style.display = "block";
-    contentWarning.style.marginBottom = "5px"; // spacing from input
-  }
-
-  // ---------------- MODAL FIX (remove white space) ----------------
-  document.querySelectorAll(".modal").forEach(modal => {
-    Object.assign(modal.style, {
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      display: "none",
-      width: "auto",
-      maxWidth: "90%",
-      maxHeight: "90vh",
-      overflow: "visible",
-      padding: "0",
-      background: "none",
-      borderRadius: "0",
-      boxSizing: "border-box",
-      zIndex: 9999,
-      alignItems: "center",
-      justifyContent: "center",
-    });
+// --------------- MODAL FIX (remove white space) ----------------
+document.querySelectorAll(".modal").forEach(modal => {
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    display: "none",
+    width: "auto",
+    maxWidth: "90%",
+    maxHeight: "90vh",
+    overflow: "visible",
+    padding: "0",
+    background: "none",
+    borderRadius: "0",
+    boxSizing: "border-box",
+    zIndex: 9999,
+    alignItems: "center",
+    justifyContent: "center",
   });
 });
-
 // Load AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
 fetch(jsonURL + "?v=" + Date.now())
