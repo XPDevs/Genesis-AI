@@ -12,36 +12,59 @@
 
   console.log(`Loaded ${isMobile ? "mobile" : "desktop"} stylesheet: ${cssFile}`);
 
-  // --- Mobile-only sidebar toggle and outside click close ---
   if (isMobile) {
     window.addEventListener("DOMContentLoaded", () => {
       const sidebar = document.querySelector(".sidebar");
       const chatTitle = document.getElementById("chatTitle");
       if (!sidebar || !chatTitle) return;
 
-      // Create menu toggle button
+      // Create the hamburger button
       const toggleBtn = document.createElement("button");
       toggleBtn.className = "menu-toggle";
-      toggleBtn.textContent = "☰";
-      toggleBtn.style.marginRight = "10px";
-      toggleBtn.style.fontSize = "20px";
-      toggleBtn.style.background = "none";
-      toggleBtn.style.border = "none";
-      toggleBtn.style.cursor = "pointer";
-      toggleBtn.style.color = "inherit";
+      toggleBtn.innerHTML = "☰";
+      Object.assign(toggleBtn.style, {
+        marginRight: "10px",
+        fontSize: "22px",
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "inherit",
+      });
 
-      // Add button to chat title (only once)
-      if (!chatTitle.querySelector(".menu-toggle")) {
-        chatTitle.prepend(toggleBtn);
-      }
+      // Create wrapper for button + title
+      const titleWrapper = document.createElement("div");
+      titleWrapper.style.display = "flex";
+      titleWrapper.style.alignItems = "center";
+      titleWrapper.style.gap = "10px";
 
-      // Toggle sidebar on button click
+      // Move current title content inside wrapper
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = chatTitle.textContent;
+      titleSpan.id = "chatTitleText";
+
+      titleWrapper.append(toggleBtn, titleSpan);
+      chatTitle.innerHTML = "";
+      chatTitle.append(titleWrapper);
+
+      // Function to re-sync title text when chat changes
+      const updateTitle = () => {
+        const chat = JSON.parse(localStorage.getItem("chats") || "[]").find(
+          c => c.id === localStorage.getItem("activeChatId")
+        );
+        titleSpan.textContent = chat ? chat.title : "New Chat";
+      };
+
+      // Re-run this every time title updates dynamically
+      const observer = new MutationObserver(updateTitle);
+      observer.observe(chatTitle, { childList: true, subtree: true });
+
+      // Sidebar toggle
       toggleBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         sidebar.classList.toggle("visible");
       });
 
-      // Close sidebar when clicking outside
+      // Close sidebar on outside click
       document.addEventListener("click", (e) => {
         if (
           sidebar.classList.contains("visible") &&
@@ -51,9 +74,12 @@
           sidebar.classList.remove("visible");
         }
       });
+
+      console.log("Mobile sidebar toggle with persistent hamburger button initialised.");
     });
   }
 })();
+
 
 
 
