@@ -150,6 +150,26 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
+// ---------------- MOBILE CONTENT WARNING ----------------
+window.addEventListener("DOMContentLoaded", () => {
+  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  const contentWarning = document.getElementById("contentWarning");
+  const userInput = document.getElementById("userInput");
+
+  if (!contentWarning || !userInput) return;
+
+  // Insert above input only on mobile
+  if (isMobile) {
+    const parent = userInput.parentElement;
+    if (parent && !parent.contains(contentWarning)) {
+      parent.insertBefore(contentWarning, userInput);
+    }
+  }
+
+  // Make sure it is visible
+  contentWarning.style.display = "block";
+});
+
 
 // Load AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
