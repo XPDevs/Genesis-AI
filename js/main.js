@@ -1,54 +1,42 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
-  console.log("version: 4.5.2");
-  const version = "4.5.2";
-
   if (isMobile) {
     // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
-    const modalBg = document.createElement("div");
-    Object.assign(modalBg.style, {
+    const modal = document.createElement("div");
+    Object.assign(modal.style, {
       position: "fixed",
       top: "0",
       left: "0",
       width: "100vw",
       height: "100vh",
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: "#f9f9f9",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      zIndex: "999999",
-    });
-
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
-      backgroundColor: "red",
-      color: "#fff",
-      padding: "30px",
-      borderRadius: "15px",
-      boxShadow: "0 0 20px rgba(0,0,0,0.5)",
-      maxWidth: "400px",
       textAlign: "center",
+      padding: "20px",
+      zIndex: "999999",
       fontSize: "1.2rem",
-      fontFamily: "Arial, sans-serif"
+      lineHeight: "1.5",
+      overflow: "hidden",
+      flexDirection: "column",
+      fontFamily: "Arial, sans-serif",
+      color: "#333"
     });
 
     modal.innerHTML = `
       <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
-      <p>Genesis AI is not functional on mobile devices.<br>Please use a desktop computer to access this application.</p>
+      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
     `;
 
-    modalBg.appendChild(modal);
-    document.body.appendChild(modalBg);
+    document.body.appendChild(modal);
 
     // Prevent all interaction and scrolling
     document.body.style.overflow = "hidden";
     document.body.style.pointerEvents = "none";
     return; // Stop execution on mobile
-  }  
-})();
-
-
+  }
 
   // --- DESKTOP STYLING ---
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
@@ -94,10 +82,12 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(data => responses = data)
   .catch(err => appendMessage(`Failed to load ${jsonName}: ${err}`, "error"));
 
-// Save chats
-function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
+// Save chats to localStorage
+function saveChats() {
+  localStorage.setItem("chats", JSON.stringify(chats));
+}
 
-// Update URL
+// Update URL with chat title
 function updateURL(chatTitle) {
   const url = new URL(window.location);
   url.searchParams.set("chat", chatTitle);
@@ -175,7 +165,6 @@ function renderMessages() {
 function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
-  if (role === "secret") div.style.color = "orange"; // secret command style
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -238,12 +227,6 @@ function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
-
-  // --- Secret command check ---
-  if (text === `genesis-log<"vers"=%version%>print("%vers%")`) {
-    appendMessage(version, "secret");
-    return;
-  }
 
   if (violatesRules(text)) {
     appendMessage("This message violates AI safety and use policies. Please try again.", "error");
