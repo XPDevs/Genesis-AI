@@ -24,5 +24,7 @@
   "im sad": "Ahh no, I'm sorry to hear that.",
   "good morning": "Good morning! I hope you have a productive day ahead, Is there anything I can help you with?",
   "good evening": "Good evening! I hop youve had a good day, can I help you with aything I can help you with before you go to bed?",
-  "good night": "Good night! I hope you have a restful night sleep."
+  "good night": "Good night! I hope you have a restful night sleep.",
+  "no": "Understood! Is there anything I can help you with!",
+  "yes": "Great, How can I help you further?"
 }
