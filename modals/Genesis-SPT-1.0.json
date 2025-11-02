@@ -1,5 +1,5 @@
 {
-  "ver": "Genesis-SPT-1.0-OC25",
+  "ver": "Genesis-SPT-1.0-NV25",
   "how are you": "I'm just code, but I'm running great! How about you?",
   "hello": "Hello, What can i help you with?",
   "hey": "Hey, How can i help you?",
@@ -26,5 +26,9 @@
   "good evening": "Good evening! I hop youve had a good day, can I help you with aything I can help you with before you go to bed?",
   "good night": "Good night! I hope you have a restful night sleep.",
   "no": "Understood! Is there anything I can help you with!",
-  "yes": "Great, How can I help you further?"
+  "yes": "Great, How can I help you further?",
+  "bye": "Take care of yourself, alright? Hope to chat again soon!",
+  "thanks": "Aww, you’re welcome! It really means a lot that you said that.",
+  "goodbye": "Goodbye for now — sending good vibes your way!",
+  "thank you": "You’re so kind! I’m really glad I could help out today."
 }
