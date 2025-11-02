@@ -257,10 +257,52 @@ function sendMessage() {
     });
   }
 
-  const botMsg = findResponse(text);
-  chat.messages.push(botMsg);
-  appendMessage(botMsg.text, botMsg.role, true);
-  saveChats();
+  // --- Show temporary loading message ---
+  const loadingDiv = document.createElement("div");
+  loadingDiv.className = "message loading";
+  loadingDiv.style.display = "flex";
+  loadingDiv.style.alignItems = "center";
+  loadingDiv.style.gap = "8px";
+  loadingDiv.style.color = "#888";
+  loadingDiv.style.fontSize = "0.9rem";
+  loadingDiv.style.opacity = "1";
+  loadingDiv.style.transition = "opacity 0.8s ease";
+
+  const spinner = document.createElement("div");
+  spinner.style.width = "14px";
+  spinner.style.height = "14px";
+  spinner.style.border = "2px solid rgba(255, 255, 255, 0.2)";
+  spinner.style.borderTop = "2px solid #fff";
+  spinner.style.borderRadius = "50%";
+  spinner.style.animation = "spin 1s linear infinite";
+
+  const loadingText = document.createElement("span");
+  loadingText.textContent = "Gathering information for you... This might take a moment.";
+
+  loadingDiv.append(spinner, loadingText);
+  chatBox.append(loadingDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Spinner animation keyframes
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Wait 3 seconds before showing AI message
+  setTimeout(() => {
+    loadingDiv.style.opacity = "0";
+    setTimeout(() => loadingDiv.remove(), 800); // remove after fade-out
+
+    const botMsg = findResponse(text);
+    chat.messages.push(botMsg);
+    appendMessage(botMsg.text, botMsg.role, true);
+    saveChats();
+  }, 3000);
 }
 
 function findResponse(input) {
