@@ -222,8 +222,7 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
-// Send message
-function sendMessage() {
+  function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
@@ -232,6 +231,12 @@ function sendMessage() {
     appendMessage("This message violates AI safety and use policies. Please try again.", "error");
     return;
   }
+
+  // Disable input and send button during AI response
+  userInput.disabled = true;
+  sendBtn.disabled = true;
+  sendBtn.style.opacity = "0.5";
+  sendBtn.style.cursor = "not-allowed";
 
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -302,8 +307,18 @@ function sendMessage() {
     chat.messages.push(botMsg);
     appendMessage(botMsg.text, botMsg.role, true);
     saveChats();
+
+    // Re-enable input and send button after AI is done
+    setTimeout(() => {
+      userInput.disabled = false;
+      sendBtn.disabled = false;
+      sendBtn.style.opacity = "1";
+      sendBtn.style.cursor = "pointer";
+      userInput.focus();
+    }, botMsg.text.length * 30 + 500); // match typing effect duration
   }, 3000);
 }
+
 
 function findResponse(input) {
   input = input.toLowerCase();
