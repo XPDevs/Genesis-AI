@@ -277,7 +277,7 @@ function sendMessage() {
   spinner.style.animation = "spin 1s linear infinite";
 
   const loadingText = document.createElement("span");
-  loadingText.textContent = "Gathering information for you... This might take a moment.";
+  loadingText.textContent = "Gathering information for you... this might take a moment.";
 
   loadingDiv.append(spinner, loadingText);
   chatBox.append(loadingDiv);
