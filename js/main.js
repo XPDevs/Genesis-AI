@@ -73,6 +73,149 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 
+// --- Ban & Violation state persisted in localStorage under key 'genesisBanInfo' ---
+// Structure example:
+// {
+//   consecutiveViolations: 0, // reset when non-banned message sent
+//   banHistoryCount: 0, // increments each time a ban is applied (0 -> first ban, 1 -> second, 2 -> third)
+//   bannedUntil: null // timestamp millis when ban expires, or 'perm' for permanent
+// }
+const BAN_STORAGE_KEY = 'genesisBanInfo';
+const SECRET_UNBAN_CODE = 'Te3nt!?'; // <-- replace this string with your secret
+
+function loadBanInfo() {
+  const raw = localStorage.getItem(BAN_STORAGE_KEY);
+  if (!raw) return { consecutiveViolations: 0, banHistoryCount: 0, bannedUntil: null };
+  try { return JSON.parse(raw); } catch (e) { return { consecutiveViolations: 0, banHistoryCount: 0, bannedUntil: null }; }
+}
+
+function saveBanInfo(info) { localStorage.setItem(BAN_STORAGE_KEY, JSON.stringify(info)); }
+
+function isCurrentlyBanned() {
+  const info = loadBanInfo();
+  if (!info.bannedUntil) return false;
+  if (info.bannedUntil === 'perm') return true;
+  return Date.now() < info.bannedUntil;
+}
+
+// Create ban modal dynamically (if not present in DOM)
+function ensureBanModal() {
+  let existing = document.getElementById('banModal');
+  if (existing) return existing;
+
+  const modal = document.createElement('div');
+  modal.id = 'banModal';
+  Object.assign(modal.style, {
+    position: 'fixed',
+    inset: '0',
+    display: 'none',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    zIndex: '1000000',
+    padding: '20px'
+  });
+
+  modal.innerHTML = `
+    <div id="banModalCard" style="max-width:520px;width:100%;background:#fff;padding:18px;border-radius:10px;text-align:center;font-family:Arial, sans-serif;color:#222;">
+      <h2 id="banModalTitle">You have been banned</h2>
+      <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
+      <p id="banModalCountdown" style="font-size:1.1rem;margin:14px 0 8px;">Time left: calculating...</p>
+      <p style="margin:8px 0 18px;">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button id="banModalOk" style="padding:8px 14px;border-radius:6px;border:0;background:#1f7aef;color:#fff;cursor:pointer;">OK</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById('banModalOk').onclick = () => {
+    const m = document.getElementById('banModal');
+    if (m) m.style.display = 'none';
+  };
+
+  return modal;
+}
+
+let banCountdownInterval = null;
+
+function applyBan() {
+  const info = loadBanInfo();
+  const nextBanIndex = info.banHistoryCount || 0;
+  let durationMs;
+  let perm = false;
+
+  if (nextBanIndex === 0) { durationMs = 5 * 60 * 1000; } // 5 minutes
+  else if (nextBanIndex === 1) { durationMs = 10 * 60 * 1000; } // 10 minutes
+  else { perm = true; }
+
+  info.banHistoryCount = nextBanIndex + 1;
+  info.consecutiveViolations = 0;
+  info.bannedUntil = perm ? 'perm' : Date.now() + durationMs;
+  saveBanInfo(info);
+
+  showBanModal();
+}
+
+function liftBan() {
+  const info = loadBanInfo();
+  info.bannedUntil = null;
+  info.consecutiveViolations = 0;
+  saveBanInfo(info);
+  const m = document.getElementById('banModal');
+  if (m) m.style.display = 'none';
+  if (banCountdownInterval) { clearInterval(banCountdownInterval); banCountdownInterval = null; }
+}
+
+// Expose console unban function (only unbans if correct secret provided)
+window.unbanGenesis = function(code) {
+  if (code === SECRET_UNBAN_CODE) {
+    console.log('[Genesis] Secret unban accepted. Lifting ban.');
+    liftBan();
+    return true;
+  }
+  console.warn('[Genesis] Secret unban failed.');
+  return false;
+};
+
+// Show ban modal and start countdown
+function showBanModal() {
+  const modal = ensureBanModal();
+  const title = modal.querySelector('#banModalTitle');
+  const msg = modal.querySelector('#banModalMessage');
+  const countdownEl = modal.querySelector('#banModalCountdown');
+
+  const info = loadBanInfo();
+  if (info.bannedUntil === 'perm') {
+    title.textContent = 'You have been permanently banned';
+    msg.textContent = 'This account is permanently banned due to repeated violations of our terms.';
+    countdownEl.textContent = 'Permanent ban — no countdown.';
+    modal.style.display = 'flex';
+    return;
+  }
+
+  const end = info.bannedUntil;
+  if (!end) return;
+
+  function updateCountdown() {
+    const remaining = end - Date.now();
+    if (remaining <= 0) {
+      countdownEl.textContent = 'Ban expired — you may continue.';
+      liftBan();
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    countdownEl.textContent = `Time left: ${mins}m ${secs}s`;
+  }
+
+  updateCountdown();
+  if (banCountdownInterval) clearInterval(banCountdownInterval);
+  banCountdownInterval = setInterval(updateCountdown, 1000);
+  modal.style.display = 'flex';
+}
+
 // Load JSON AI responses
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
 const jsonName = jsonURL.split("/").pop();
@@ -222,15 +365,38 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
-  function sendMessage() {
+function sendMessage() {
+  // If currently banned, show ban modal and prevent sending
+  const banInfo = loadBanInfo();
+  if (isCurrentlyBanned()) {
+    showBanModal();
+    return;
+  }
+
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
 
+  // Check for banned words
   if (violatesRules(text)) {
-    appendMessage("This message violates AI safety and use policies. Please try again.", "error");
-    return;
+    // increment consecutive counter
+    const info = loadBanInfo();
+    info.consecutiveViolations = (info.consecutiveViolations || 0) + 1;
+    saveBanInfo(info);
+
+    if (info.consecutiveViolations >= 5) {
+      // apply ban
+      applyBan();
+      return appendMessage('Your message triggered safety protections and you have been temporarily banned.', 'error');
+    }
+
+    return appendMessage('This message violates AI safety and use policies. Please try again.', 'error');
   }
+
+  // Non-violating message — reset consecutive violation counter
+  const info = loadBanInfo();
+  info.consecutiveViolations = 0;
+  saveBanInfo(info);
 
   // Disable input and send button during AI response
   userInput.disabled = true;
@@ -319,7 +485,6 @@ function typeChatTitle(newTitle, callback) {
   }, 3000);
 }
 
-
 function findResponse(input) {
   input = input.toLowerCase();
   const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
@@ -399,9 +564,9 @@ const deleteAllModal = document.getElementById("deleteAllModal");
 const deleteAllConfirm = document.getElementById("deleteAllConfirm");
 const deleteAllCancel = document.getElementById("deleteAllCancel");
 
-deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
-deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
-deleteAllConfirm.onclick = () => {
+if (deleteAllChatsBtn) deleteAllChatsBtn.onclick = () => deleteAllModal.style.display = "flex";
+if (deleteAllCancel) deleteAllCancel.onclick = () => deleteAllModal.style.display = "none";
+if (deleteAllConfirm) deleteAllConfirm.onclick = () => {
   chats = [];
   localStorage.removeItem("chats");
   localStorage.removeItem("activeChatId");
@@ -414,3 +579,6 @@ deleteAllConfirm.onclick = () => {
 // Initial render
 renderChatList();
 renderMessages();
+
+// On page load, if user is banned show modal immediately
+if (isCurrentlyBanned()) showBanModal();
