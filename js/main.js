@@ -123,7 +123,6 @@ function ensureBanModal() {
       <p id="banModalCountdown" style="font-size:1.1rem;margin:14px 0 8px;">Time left: calculating...</p>
       <p style="margin:8px 0 18px;">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
       <div style="display:flex;gap:8px;justify-content:center;">
-        <button id="banModalOk" style="padding:8px 14px;border-radius:6px;border:0;background:#1f7aef;color:#fff;cursor:pointer;">OK</button>
       </div>
     </div>
   `;
