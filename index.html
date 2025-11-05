@@ -80,28 +80,39 @@
   </div>
 
   <!-- Delete All Chats Modal -->
-  <div id="deleteAllModal" class="modal">
-    <div class="modal-content">
-      <h2>Confirm deletion of all chats?</h2>
-      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Yes, Delete All
-        </button>
-        <button class="cancel" id="deleteAllCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
+<div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm deletion of all chats?</h2>
+      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Yes, Delete All
+        </button>
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-  <script>
-const script = document.createElement('script');
-  script.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-  script.defer = true;
-  document.head.appendChild(script);
-</script>
+  <script>
+    // Loads a script from a given source URL
+    function loadScript(src) {
+      const script = document.createElement('script');
+      script.src = src;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+    // Load main.js with cache-busting
+    loadScript(`https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`);
+    // Load link.js (corrected path from Gensis-AI to Genesis-AI)
+    loadScript(`https://xpdevs.github.io/Genesis-AI/share/link.js`);
+  </script>
 
 </body>
 </html>
+
+</body>
+</html>
+
 
 
 
