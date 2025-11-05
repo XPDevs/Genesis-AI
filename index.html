@@ -93,6 +93,22 @@
     </div>
   </div>
 
+  <div id="shareModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Share Chat Link</h2>
+      <p>Copy the link below to share this conversation. The link is read-only.</p>
+      <div style="display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <button id="copyShareLinkBtn" style="background:#007bff;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">
+          Copy
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" id="shareCancel">Close</button>
+      </div>
+    </div>
+  </div>
+  
   <script>
 // Load the main chat logic, adding a cache-busting timestamp
 const mainScript = document.createElement('script');
@@ -102,3 +118,4 @@ document.head.appendChild(mainScript);
 </script>
 </body>
 </html>
+
