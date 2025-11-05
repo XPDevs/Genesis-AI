@@ -61,7 +61,7 @@ This design approach reflects XPDevs’ principle of simplicity — removing unn
 There is no setup required.  
 To access Genesis-AI, simply open the official website:
 
-**[https://xpdevs.github.io/](https://xpdevs.github.io/Genesis-AI)**
+**[https://xpdevs.github.io/Genesis-AI](https://xpdevs.github.io/Genesis-AI)**
 
 Once the page loads:
 1. You’ll see the main Genesis-AI interface.  
