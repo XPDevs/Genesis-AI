@@ -6,81 +6,81 @@
 <title>Genesis AI Chat</title>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <button id="newChatBtn">+ New Chat</button>
-      <button id="settingsBtn">⚙️</button>
-    </div>
-    <ul id="chatList" class="chat-list"></ul>
-  </div>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn">+ New Chat</button>
+      <button id="settingsBtn">⚙️</button>
+    </div>
+    <ul id="chatList" class="chat-list"></ul>
+  </div>
 
-  <div class="chat-script">
-    <div class="chat-header">
-      <h3 id="chatTitle">New Chat</h3>
-    </div>
-    <div id="chatBox" class="chat-box"></div>
-    
-    <!-- Content Warning -->
-    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
-      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
-      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
-      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
-    </div>
+  <div class="chat-script">
+    <div class="chat-header">
+      <h3 id="chatTitle">New Chat</h3>
+    </div>
+    <div id="chatBox" class="chat-box"></div>
+    
+    <!-- Content Warning -->
+    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
+      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
+      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
+      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
+    </div>
 
-    <div class="input-area">
-      <input type="text" id="userInput" placeholder="Type a message...">
-      <button id="sendBtn">Send</button>
-    </div>
-  </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
 
-  <!-- Settings Modal -->
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <h2>Settings</h2>
-      <div class="setting-item">
-        <label class="toggle">
-          <input type="checkbox" id="themeToggle">
-          <span class="slider"></span>
-        </label>
-        <span>Dark Mode</span>
-      </div>
-      <br>
-      <div class="setting-item">
-        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Delete All Chats
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+        <span>Dark Mode</span>
+      </div>
+      <br>
+      <div class="setting-item">
+        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete All Chats
+        </button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Rename Modal -->
-  <div id="renameModal" class="modal">
-    <div class="modal-content">
-      <h2>Rename Chat</h2>
-      <input type="text" id="renameInput">
-      <div class="modal-actions">
-        <button class="confirm" id="renameConfirm">Rename</button>
-        <button class="cancel" id="renameCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
+  <!-- Rename Modal -->
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput">
+      <div class="modal-actions">
+        <button class="confirm" id="renameConfirm">Rename</button>
+        <button class="cancel" id="renameCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Delete Modal -->
-  <div id="deleteModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete Chat?</h2>
-      <p>This action cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Delete
-        </button>
-        <button class="cancel" id="deleteCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
+  <!-- Delete Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete
+        </button>
+        <button class="cancel" id="deleteCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Delete All Chats Modal -->
-<div id="deleteAllModal" class="modal">
+  <!-- Delete All Chats Modal -->
+  <div id="deleteAllModal" class="modal">
     <div class="modal-content">
       <h2>Confirm deletion of all chats?</h2>
       <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
@@ -94,30 +94,18 @@
   </div>
 
   <script>
-    // Loads a script from a given source URL
-    function loadScript(src) {
-      const script = document.createElement('script');
-      script.src = src;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-    // Load main.js with cache-busting
-    loadScript(`https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`);
-    // Load link.js (corrected path from Gensis-AI to Genesis-AI)
-    loadScript(`https://xpdevs.github.io/Genesis-AI/share/link.js`);
-  </script>
+// Load the main chat logic, adding a cache-busting timestamp
+const mainScript = document.createElement('script');
+mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
+mainScript.defer = true;
+document.head.appendChild(mainScript);
+
+// Load the new shared link logic as requested
+const linkScript = document.createElement('script');
+linkScript.src = 'https://xpdevs.github.io/Gensis-AI/share/link.js';
+linkScript.defer = true;
+document.head.appendChild(linkScript);
+</script>
 
 </body>
 </html>
-
-</body>
-</html>
-
-
-
-
-
-
-
-
-
