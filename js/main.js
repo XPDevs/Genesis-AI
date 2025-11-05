@@ -39,7 +39,7 @@
   }
 
   // --- DESKTOP STYLING ---
-  const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui-desktop.css";
+  const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = cssFile;
