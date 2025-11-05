@@ -14,7 +14,7 @@
     <ul id="chatList" class="chat-list"></ul>
   </div>
 
-  <div class="chat-main">
+  <div class="chat-script">
     <div class="chat-header">
       <h3 id="chatTitle">New Chat</h3>
     </div>
@@ -94,14 +94,15 @@
   </div>
 
   <script>
-  const main = document.createElement('main');
-  main.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-  main.defer = true;
-  document.head.appendChild(main);
+  const script = document.createElement('script');
+  script.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
+  script.defer = true;
+  document.head.appendChild(script);
 </script>
 
 </body>
 </html>
+
 
 
 
