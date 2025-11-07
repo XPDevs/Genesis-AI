@@ -69,9 +69,8 @@ const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
 // --- SHARE ELEMENTS ---
-// These elements now exist in the HTML (see fix above)
-const shareModal = document.getElementById("shareModal"); 
-const shareLinkInput = document.getElementById("shareLinkInput"); 
+const shareModal = document.getElementById("shareModal"); 
+const shareLinkInput = document.getElementById("shareLinkInput"); 
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
 const inputArea = document.getElementById("inputArea"); // Assumed wrapping div for userInput/sendBtn
@@ -91,130 +90,147 @@ const ROLE_SEPARATOR = '555'; // Separates role from content (e.g., 155572000105
 const MSG_SEPARATOR = '9999'; // Separates messages (e.g., 1...99992...)
 
 /**
- * Encodes a conversation into a numerical string for URL sharing.
- * Role map: 1 = user, 2 = ai, 3 = error.
- * @param {Array<{role: string, text: string}>} messages
- * @returns {string} The encoded conversation string.
- */
+ * Encodes a conversation into a numerical string for URL sharing.
+ * Role map: 1 = user, 2 = ai, 3 = error.
+ * @param {Array<{role: string, text: string}>} messages
+ * @returns {string} The encoded conversation string.
+ */
 function encodeChat(messages) {
-    if (!messages || messages.length === 0) return '';
+    if (!messages || messages.length === 0) return '';
 
-    const roleMap = { 'user': 1, 'ai': 2, 'error': 3 };
+    const roleMap = { 'user': 1, 'ai': 2, 'error': 3 };
 
-    return messages.map(msg => {
-        const roleCode = roleMap[msg.role] || 3; 
-        
-        // Convert text to UTF-16 code points
-        let textCodes = '';
-        for (let i = 0; i < msg.text.length; i++) {
-            // Pad the character code to ensure consistent parsing
-            const charCode = msg.text.charCodeAt(i);
-            const paddedCode = charCode.toString().padStart(5, '0'); 
-            
-            if (i > 0) textCodes += CHAR_SEPARATOR;
-            textCodes += paddedCode;
-        }
+    return messages.map(msg => {
+        const roleCode = roleMap[msg.role] || 3; 
+        
+        // Convert text to UTF-16 code points
+        let textCodes = '';
+        for (let i = 0; i < msg.text.length; i++) {
+            // Pad the character code to ensure consistent parsing
+            const charCode = msg.text.charCodeAt(i);
+            const paddedCode = charCode.toString().padStart(5, '0'); 
+            
+            if (i > 0) textCodes += CHAR_SEPARATOR;
+            textCodes += paddedCode;
+        }
 
-        return `${roleCode}${ROLE_SEPARATOR}${textCodes}`;
-    }).join(MSG_SEPARATOR);
+        return `${roleCode}${ROLE_SEPARATOR}${textCodes}`;
+    }).join(MSG_SEPARATOR);
 }
 
 /**
- * Decodes a numerical string back into an array of message objects.
- * @param {string} encodedString
- * @returns {Array<{role: string, text: string}>} The decoded message array.
- */
+ * Decodes a numerical string back into an array of message objects.
+ * @param {string} encodedString
+ * @returns {Array<{role: string, text: string}>} The decoded message array.
+ */
 function decodeChat(encodedString) {
-    if (!encodedString) return [];
+    if (!encodedString) return [];
 
-    const roleMap = { 1: 'user', 2: 'ai', 3: 'error' };
-    const messages = [];
+    const roleMap = { 1: 'user', 2: 'ai', 3: 'error' };
+    const messages = [];
 
-    const encodedMessages = encodedString.split(MSG_SEPARATOR);
+    const encodedMessages = encodedString.split(MSG_SEPARATOR);
 
-    encodedMessages.forEach(encodedMsg => {
-        const parts = encodedMsg.split(ROLE_SEPARATOR);
-        if (parts.length !== 2) return;
+    encodedMessages.forEach(encodedMsg => {
+        const parts = encodedMsg.split(ROLE_SEPARATOR);
+        if (parts.length !== 2) return;
 
-        const roleCode = parseInt(parts[0], 10);
-        const textCodesString = parts[1];
-        const role = roleMap[roleCode] || 'error';
+        const roleCode = parseInt(parts[0], 10);
+        const textCodesString = parts[1];
+        const role = roleMap[roleCode] || 'error';
 
-        if (!textCodesString) {
-            messages.push({ role, text: '' });
-            return;
-        }
+        if (!textCodesString) {
+            messages.push({ role, text: '' });
+            return;
+        }
 
-        // Split the numerical string by the character separator
-        const rawCodes = textCodesString.split(CHAR_SEPARATOR).map(c => parseInt(c, 10));
+        // Split the numerical string by the character separator
+        const rawCodes = textCodesString.split(CHAR_SEPARATOR).map(c => parseInt(c, 10));
 
-        // Convert codes back to a string
-        const text = String.fromCharCode(...rawCodes.filter(c => !isNaN(c)));
+        // Convert codes back to a string
+        const text = String.fromCharCode(...rawCodes.filter(c => !isNaN(c)));
 
-        messages.push({ role, text });
-    });
+        messages.push({ role, text });
+    });
 
-    return messages;
+    return messages;
 }
 
+// --- NEW/MODIFIED FUNCTION: loadAndSaveSharedChat ---
 /**
- * Renders the decoded messages in read-only mode.
+ * Loads the decoded messages into the application as a new, editable chat.
  * @param {Array<{role: string, text: string}>} messages
- * @param {string} title
+ * @param {string} originalTitle
  */
-function renderSharedMessages(messages, title) {
-    isReadOnlyMode = true;
-    if (readOnlyBanner) readOnlyBanner.style.display = 'block';
+function loadAndSaveSharedChat(messages, originalTitle) {
+    // 1. Reset read-only mode flags and elements
+    isReadOnlyMode = false;
+    if (readOnlyBanner) readOnlyBanner.style.display = 'none';
     
-    // Hide input area and sidebar controls
-    if (inputArea) inputArea.style.display = 'none';
-    userInput.disabled = true;
-    sendBtn.disabled = true;
-    
-    chatTitle.textContent = title;
-    chatBox.innerHTML = "";
-    
-    // Hide sidebar controls related to editing/creating
-    const sidebar = document.querySelector(".sidebar");
+    // Re-enable input area and sidebar controls
+    if (inputArea) inputArea.style.display = 'flex'; // Assuming 'flex' is the desktop layout
+    userInput.disabled = false;
+    sendBtn.disabled = false;
+
+    // Re-show sidebar controls related to editing/creating
     const sidebarHeader = document.querySelector(".sidebar-header");
     if (sidebarHeader) {
-        sidebarHeader.style.display = 'none'; // Hide the New Chat and Settings buttons
+        sidebarHeader.style.display = 'flex'; // Assuming 'flex' is the desktop layout
     }
-    chatList.innerHTML = ""; // Clear the chat list
+
+    // 2. Create new chat object and set it as active
+    const newChatTitle = `${originalTitle} (shared)`;
+    const newChat = {
+        id: Date.now().toString(),
+        title: newChatTitle,
+        messages: messages
+    };
+
+    chats.unshift(newChat);
+    activeChatId = newChat.id;
+    localStorage.setItem("activeChatId", activeChatId);
+    saveChats();
+
+    // 3. Render the newly loaded chat
+    renderChatList();
+    renderMessages();
     
-    messages.forEach(msg => appendMessage(msg.text, msg.role, false));
-    chatBox.scrollTop = chatBox.scrollHeight;
+    // Ensure New Chat and Settings buttons are re-enabled if they were disabled
+    if (newChatBtn) newChatBtn.disabled = false;
+    if (settingsBtn) settingsBtn.disabled = false;
+    
+    // Update URL to the new local chat title (optional: helps with browser history)
+    updateURL(newChatTitle);
 }
 
+// --- MODIFIED FUNCTION: loadSharedChat ---
 /**
- * Checks for a shared conversation parameter in the URL and loads it.
- */
+ * Checks for a shared conversation parameter in the URL and loads it.
+ */
 function loadSharedChat() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const encodedChat = urlParams.get("q");
-    
-    if (encodedChat) {
-        const decodedMessages = decodeChat(encodedChat);
-        
-        // Find a title based on the first user message, or use a default
-        let title = "Shared Conversation";
-        const firstUserMsg = decodedMessages.find(msg => msg.role === 'user');
-        if (firstUserMsg) {
-            title = summariseTitle(firstUserMsg.text);
-        }
+    const urlParams = new URLSearchParams(window.location.search);
+    const encodedChat = urlParams.get("q");
+    
+    if (encodedChat) {
+        const decodedMessages = decodeChat(encodedChat);
+        
+        // Find a title based on the first user message, or use a default
+        let title = "Shared Conversation";
+        const firstUserMsg = decodedMessages.find(msg => msg.role === 'user');
+        if (firstUserMsg) {
+            title = summariseTitle(firstUserMsg.text);
+        }
 
-        renderSharedMessages(decodedMessages, title);
-        
-        // Block other app functions if in read-only mode
-        if (newChatBtn) newChatBtn.disabled = true;
-        if (settingsBtn) settingsBtn.disabled = true;
-    }
+        loadAndSaveSharedChat(decodedMessages, title);
+        return true; // Indicate a shared chat was processed
+    }
+    return false;
 }
 
 
 // --- Ban & Violation state persisted in localStorage under key 'genesisBanInfo' ---
 const BAN_STORAGE_KEY = 'genesisBanInfo';
-const SECRET_UNBAN_CODE = 'Te3nt!?'; 
+const SECRET_UNBAN_CODE = 'Te3nt!?'; 
 
 function loadBanInfo() {
   const raw = localStorage.getItem(BAN_STORAGE_KEY);
@@ -374,7 +390,7 @@ function updateURL(chatTitle) {
 
 // Render chat list
 function renderChatList() {
-    if (isReadOnlyMode) return; // Do not render editable list in read-only mode
+    if (isReadOnlyMode) return; // Do not render editable list in read-only mode
 
   chatList.innerHTML = "";
   chats.forEach(chat => {
@@ -390,10 +406,10 @@ function renderChatList() {
     dots.textContent = "⋮";
     const dropdown = document.createElement("div");
     dropdown.className = "dropdown";
-    
+    
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Rename";
-    
+    
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
 
@@ -415,7 +431,7 @@ function renderChatList() {
       deleteModal.style.display = "flex";
       dropdown.style.display = "none";
     };
-    
+    
     shareBtn.onclick = e => {
       e.stopPropagation();
       showShareModal(chat.id);
@@ -444,7 +460,7 @@ function renderChatList() {
 
 // Render messages
 function renderMessages() {
-    if (isReadOnlyMode) return; // Do not render local messages if in read-only mode
+    if (isReadOnlyMode) return; // Do not render local messages if in read-only mode
 
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
@@ -517,8 +533,8 @@ function typeChatTitle(newTitle, callback) {
 }
 
 function sendMessage() {
-    if (isReadOnlyMode) return;
-    
+    if (isReadOnlyMode) return;
+    
   // If currently banned, show ban modal and prevent sending
   const banInfo = loadBanInfo();
   if (isCurrentlyBanned()) {
@@ -647,50 +663,50 @@ function findResponse(input) {
 
 // --- SHARE MODAL FUNCTIONALITY ---
 function showShareModal(chatId) {
-    // Safety check for shareLinkInput - This now finds the element because it was added to HTML
-    if (!shareLinkInput) {
-        console.error("shareLinkInput element is null. Cannot show share modal.");
-        return; 
-    }
-    
-    const chat = chats.find(c => c.id === chatId);
-    if (!chat || chat.messages.length === 0) {
-        shareLinkInput.value = "Cannot share empty chat.";
-        shareLinkInput.disabled = true;
-        copyShareLinkBtn.disabled = true;
-        shareModal.style.display = "flex";
-        return;
-    }
+    // Safety check for shareLinkInput - This now finds the element because it was added to HTML
+    if (!shareLinkInput) {
+        console.error("shareLinkInput element is null. Cannot show share modal.");
+        return; 
+    }
+    
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat || chat.messages.length === 0) {
+        shareLinkInput.value = "Cannot share empty chat.";
+        shareLinkInput.disabled = true;
+        copyShareLinkBtn.disabled = true;
+        shareModal.style.display = "flex";
+        return;
+    }
 
-    const encoded = encodeChat(chat.messages);
-    
-    // Construct the share link using the index.html path and the encoded query
-    // Note: The base URL may need adjustment depending on your hosting environment.
-    const shareBaseUrl = window.location.origin + window.location.pathname.replace('index.html', ''); // Use the base path
-    const shareLink = `${shareBaseUrl}?q=${encoded}`;
+    const encoded = encodeChat(chat.messages);
+    
+    // Construct the share link using the index.html path and the encoded query
+    // Note: The base URL may need adjustment depending on your hosting environment.
+    const shareBaseUrl = window.location.origin + window.location.pathname.replace('index.html', ''); // Use the base path
+    const shareLink = `${shareBaseUrl}?q=${encoded}`;
 
-    shareLinkInput.value = shareLink; 
-    shareLinkInput.disabled = false;
-    copyShareLinkBtn.disabled = false;
-    shareModal.style.display = "flex";
+    shareLinkInput.value = shareLink; 
+    shareLinkInput.disabled = false;
+    copyShareLinkBtn.disabled = false;
+    shareModal.style.display = "flex";
 }
 
 if (shareCancel) shareCancel.onclick = () => shareModal.style.display = "none";
 
 if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
-    shareLinkInput.select();
-    try {
-        // Use document.execCommand('copy') for better compatibility in iframe environments
-        document.execCommand('copy');
-        copyShareLinkBtn.textContent = "Copied!";
-        setTimeout(() => {
-            copyShareLinkBtn.textContent = "Copy";
-            shareModal.style.display = "none";
-        }, 1500);
-    } catch (err) {
-        console.error('Failed to copy text: ', err);
-        copyShareLinkBtn.textContent = "Error";
-    }
+    shareLinkInput.select();
+    try {
+        // Use document.execCommand('copy') for better compatibility in iframe environments
+        document.execCommand('copy');
+        copyShareLinkBtn.textContent = "Copied!";
+        setTimeout(() => {
+            copyShareLinkBtn.textContent = "Copy";
+            shareModal.style.display = "none";
+        }, 1500);
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+        copyShareLinkBtn.textContent = "Error";
+    }
 };
 
 // --- END SHARE MODAL FUNCTIONALITY ---
@@ -726,7 +742,7 @@ deleteConfirm.onclick = () => {
 
 // New chat
 newChatBtn.onclick = () => {
-    if (isReadOnlyMode) return;
+    if (isReadOnlyMode) return;
   const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
   chats.unshift(newChat);
   activeChatId = newChat.id;
@@ -771,27 +787,27 @@ if (deleteAllConfirm) deleteAllConfirm.onclick = () => {
   deleteAllModal.style.display = "none";
 };
 
-// Initialisation sequence
+// --- MODIFIED INITIALISATION SEQUENCE ---
 window.addEventListener('load', () => {
-    // 1. Check for shared conversation link (takes priority)
-    loadSharedChat(); 
+    // 1. Check for shared conversation link (takes priority and loads/saves chat)
+    const sharedChatLoaded = loadSharedChat(); 
 
-    if (!isReadOnlyMode) {
-        // 2. If not in read-only mode, check for a chat title in the URL (for deep linking local chats)
-        const urlParams = new URLSearchParams(window.location.search);
-        const chatParam = urlParams.get("chat");
-        if (chatParam) {
-            const found = chats.find(c => c.title === chatParam);
-            if (found) {
-                activeChatId = found.id;
-                localStorage.setItem("activeChatId", activeChatId);
-            }
-        }
-        // 3. Render the local chat list and messages
-        renderChatList();
-        renderMessages();
-    }
-    
-    // 4. Check ban status
-    if (isCurrentlyBanned()) showBanModal();
+    if (!sharedChatLoaded) {
+        // 2. If no shared chat, check for a chat title in the URL (for deep linking local chats)
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatParam = urlParams.get("chat");
+        if (chatParam) {
+            const found = chats.find(c => c.title === chatParam);
+            if (found) {
+                activeChatId = found.id;
+                localStorage.setItem("activeChatId", activeChatId);
+            }
+        }
+        // 3. Render the local chat list and messages
+        renderChatList();
+        renderMessages();
+    }
+    
+    // 4. Check ban status
+    if (isCurrentlyBanned()) showBanModal();
 });
