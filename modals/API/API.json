@@ -1,0 +1,10 @@
+{
+  "api_version": "1.0.3",
+  "data_id": "test_record_42",
+  "status": "OK",
+  "payload": {
+  },
+  "metadata": {
+    "creation_date": "2025-11-11T21:07:03Z",
+  }
+}
