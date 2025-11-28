@@ -368,7 +368,7 @@ function showBanModal() {
 }
 
 // Load JSON AI responses
-const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
+const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json";
 const jsonName = jsonURL.split("/").pop();
 
 fetch(jsonURL + "?v=" + Date.now())
