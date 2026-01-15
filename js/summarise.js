@@ -22,7 +22,6 @@ window.summariseConversation = function(data) {
         }
     });
 
-    // Sort to find the "Top 5" core themes of the text
     const themes = Object.entries(wordStats)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
@@ -33,35 +32,29 @@ window.summariseConversation = function(data) {
         let score = 0;
         const cleanText = text.toLowerCase();
         
-        // Theme Alignment: Does this sentence contain our top 5 keywords?
         themes.forEach(theme => {
             if (cleanText.includes(theme)) score += 5;
         });
 
-        // Intelligence Markers: Prioritise logic/action words
         const markers = ["decided", "founded", "created", "built", "launch", "important", "focus", "result"];
         markers.forEach(m => {
             if (cleanText.includes(m)) score += 3;
         });
 
-        // Specificity: Numbers and Proper Nouns (dates, versions, names)
-        if (/\d+/.test(text)) score += 2; // Contains data/stats
-        if (/[A-Z]{2,}/.test(text)) score += 2; // Contains acronyms (e.g., XPDevs)
+        if (/\d+/.test(text)) score += 2; 
+        if (/[A-Z]{2,}/.test(text)) score += 2; 
 
-        // Positional Authority
-        if (i === 0) score += 10; // Opening Statement
-        if (i === sentences.length - 1) score += 7; // Closing Logic
+        if (i === 0) score += 10; 
+        if (i === sentences.length - 1) score += 7; 
 
         return { text: text.trim(), score, index: i };
     });
 
-    // 4. Intelligence Filtering (Mean-based threshold)
-    // Only keep sentences that score above the average sentence quality
+    // 4. Intelligence Filtering
     const avgScore = scoredSentences.reduce((a, b) => a + b.score, 0) / scoredSentences.length;
     let candidates = scoredSentences.filter(s => s.score >= avgScore);
 
     // 5. Narrative Reconstruction
-    // Ensure we don't exceed a readable length (max 4-5 sentences for a dashboard view)
     const finalSummary = candidates
         .sort((a, b) => b.score - a.score)
         .slice(0, 5)
@@ -69,8 +62,8 @@ window.summariseConversation = function(data) {
         .map(s => s.text)
         .join(" ");
 
-    return {
-        summary: `: ${finalSummary}`
-    };
+    // Modified to return a direct string instead of an object
+    return `Sure, here is your summary: ${finalSummary}`;
 };
+
 console.log("Summary Module Loaded");
