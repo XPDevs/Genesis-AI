@@ -6,8 +6,10 @@
 <link rel="icon" type="image/x-icon" href="icon.ico">
 <title>Genesis AI Chat</title>
 
-<script src="https://xpdevs.github.io/js/loading.js"></script>
-
+<style>
+  /* Prevents the white flash before the loading script executes */
+  body { visibility: hidden; background-color: #000; }
+</style>
 </head>
 <body>
   <div class="sidebar">
@@ -109,13 +111,27 @@
   </div>
   
   <script>
-    // Load the main logic
+    /**
+     * DYNAMIC SCRIPT LOADER
+     * Logic for loading the loading overlay, main system, and summariser
+     */
+
+    // 1. Load the Loading Overlay First
+    const loadingScript = document.createElement('script');
+    loadingScript.src = `https://xpdevs.github.io/js/loading.js?v=${Date.now()}`;
+    loadingScript.onload = () => {
+      // Once loading.js is ready, it will handle making the body visible
+      document.body.style.visibility = 'visible';
+    };
+    document.head.appendChild(loadingScript);
+
+    // 2. Load the Main Logic
     const mainScript = document.createElement('script');
     mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
     mainScript.defer = true;
     document.head.appendChild(mainScript);
 
-    // Load the summarization logic
+    // 3. Load the Summarization Logic
     const summaryScript = document.createElement('script');
     summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
     summaryScript.defer = true;
