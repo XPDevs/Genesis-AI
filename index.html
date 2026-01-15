@@ -7,11 +7,58 @@
 <title>Genesis AI Chat</title>
 
 <style>
-  /* Prevents the white flash before the loading script executes */
-  body { visibility: hidden; background-color: #000; }
+  /* Base Styles & Modern UI */
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --sidebar-bg: #f8f9fa;
+    --accent-color: #007bff;
+    --border-radius: 12px;
+  }
+
+  body.dark-mode {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --sidebar-bg: #1e1e1e;
+  }
+
+  body { 
+    margin: 0; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    height: 100vh;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    visibility: hidden; /* Prevent flash */
+  }
+
+  /* Sidebar */
+  .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #444; display: flex; flex-direction: column; }
+  .sidebar-header { padding: 15px; display: flex; gap: 10px; }
+  #newChatBtn { flex-grow: 1; padding: 10px; border-radius: var(--border-radius); border: none; background: var(--accent-color); color: white; cursor: pointer; }
+
+  /* Main Chat Area */
+  .chat-main { flex-grow: 1; display: flex; flex-direction: column; }
+  .chat-header { padding: 15px; border-bottom: 1px solid #444; text-align: center; }
+  .chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; }
+  
+  .input-area { padding: 20px; display: flex; gap: 10px; }
+  #userInput { flex-grow: 1; padding: 12px; border-radius: var(--border-radius); border: 1px solid #444; background: transparent; color: inherit; }
+  #sendBtn { padding: 10px 20px; border-radius: var(--border-radius); border: none; background: var(--accent-color); color: white; cursor: pointer; }
+
+  /* Modals */
+  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+  .modal-content { background: var(--bg-color); padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; }
+  .modal-actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+  
+  /* Buttons */
+  .confirm { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+  .cancel { background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+  .danger-btn { background: #dc3545; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
 </style>
 </head>
 <body>
+
   <div class="sidebar">
     <div class="sidebar-header">
       <button id="newChatBtn">+ New Chat</button>
@@ -27,9 +74,8 @@
     <div id="chatBox" class="chat-box"></div>
     
     <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
-      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
-      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
-      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
+      Content Warning: Content may be inaccurate or biased. 
+      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404;">Privacy Policy</a>.
     </div>
 
     <div class="input-area">
@@ -41,104 +87,89 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h2>Settings</h2>
-      <div class="setting-item">
-        <label class="toggle">
-          <input type="checkbox" id="themeToggle">
-          <span class="slider"></span>
-        </label>
-        <span>Dark Mode</span>
+      <div style="margin-bottom: 20px;">
+        <label>Dark Mode: <input type="checkbox" id="themeToggle"></label>
+      </div>
+      
+      <button id="deleteAllChatsBtn" style="background:#ff4d4d; color:white; border:none; padding:8px; border-radius:8px; cursor:pointer; width:100%; margin-bottom:10px;">
+        Delete All Chats
+      </button>
+
+      <div style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+        <button id="resetAllDataBtn" class="danger-btn">
+          FACTORY RESET
+        </button>
+        <p style="font-size: 0.75em; color: #888; margin-top: 8px;">Deletes chats, settings, and legal agreements.</p>
       </div>
       <br>
-      <div class="setting-item">
-        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Delete All Chats
-        </button>
+      <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+    </div>
+  </div>
+
+  <div id="resetAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Complete Wipe?</h2>
+      <p>This will delete all chats and force you to re-agree to the Terms of Service.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="resetAllConfirm" style="background:#dc3545;">Yes, Wipe Everything</button>
+        <button class="cancel" id="resetAllCancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div id="renameModal" class="modal">
-    <div class="modal-content">
-      <h2>Rename Chat</h2>
-      <input type="text" id="renameInput">
-      <div class="modal-actions">
-        <button class="confirm" id="renameConfirm">Rename</button>
-        <button class="cancel" id="renameCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete Chat?</h2>
-      <p>This action cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Delete
-        </button>
-        <button class="cancel" id="deleteCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteAllModal" class="modal">
-    <div class="modal-content">
-      <h2>Confirm deletion of all chats?</h2>
-      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Yes, Delete All
-        </button>
-        <button class="cancel" id="deleteAllCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="shareModal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <h2>Share Chat Link</h2>
-      <p>Copy the link below to share this conversation. The link is read-only.</p>
-      <div style="display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;">
-        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-        <button id="copyShareLinkBtn" style="background:#007bff;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">
-          Copy
-        </button>
-      </div>
-      <div class="modal-actions">
-        <button class="cancel" id="shareCancel">Close</button>
-      </div>
-    </div>
-  </div>
-  
 <script>
-  // 1. Load the Loading Overlay First
-  const loadingScript = document.createElement('script');
-  // Adjusted path to include /Genesis-AI/
-  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
-  
-  loadingScript.onload = () => {
+  // Logic Implementation
+  document.addEventListener('DOMContentLoaded', () => {
     document.body.style.visibility = 'visible';
-  };
 
-  // Error handling if the script fails to load
-  loadingScript.onerror = () => {
-    console.error("Loading script failed to load. Revealing UI.");
-    document.body.style.visibility = 'visible';
-  };
+    // Elements
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const resetAllDataBtn = document.getElementById('resetAllDataBtn');
+    const resetAllModal = document.getElementById('resetAllModal');
+    const resetAllConfirm = document.getElementById('resetAllConfirm');
+    const resetAllCancel = document.getElementById('resetAllCancel');
+    const themeToggle = document.getElementById('themeToggle');
 
-  document.head.appendChild(loadingScript);
+    // Load Theme
+    if(localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+      themeToggle.checked = true;
+    }
 
-  // 2. Load the Main Logic
-  const mainScript = document.createElement('script');
-  mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-  mainScript.defer = true;
-  document.head.appendChild(mainScript);
+    // Toggle Theme
+    themeToggle.onchange = () => {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    };
 
-  // 3. Load the Summarization Logic
-  const summaryScript = document.createElement('script');
-  summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
-  summaryScript.defer = true;
-  document.head.appendChild(summaryScript);
+    // Modal Control
+    settingsBtn.onclick = () => settingsModal.style.display = 'flex';
+    
+    resetAllDataBtn.onclick = () => {
+      settingsModal.style.display = 'none';
+      resetAllModal.style.display = 'flex';
+    };
+
+    resetAllCancel.onclick = () => resetAllModal.style.display = 'none';
+
+    // --- FACTORY RESET LOGIC ---
+    resetAllConfirm.onclick = () => {
+      // Wipes all localStorage including XPDevs metadata and JSON chats
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Reload to initial state
+      window.location.reload();
+    };
+
+    // Close modals on outside click
+    window.onclick = (event) => {
+      if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+      }
+    };
+  });
 </script>
 </body>
 </html>
