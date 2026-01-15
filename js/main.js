@@ -1,40 +1,13 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
+  // If mobile, redirect to the unsupported page
   if (isMobile) {
-    const modal = document.createElement("div");
-    Object.assign(modal.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      width: "100vw",
-      height: "100vh",
-      backgroundColor: "#f9f9f9",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      textAlign: "center",
-      padding: "20px",
-      zIndex: "999999",
-      fontSize: "1.2rem",
-      lineHeight: "1.5",
-      overflow: "hidden",
-      flexDirection: "column",
-      fontFamily: "Arial, sans-serif",
-      color: "#333"
-    });
-
-    modal.innerHTML = `
-      <h1 style="margin-bottom: 20px;">Mobile Not Supported</h1>
-      <p style="max-width: 400px;">Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.</p>
-    `;
-
-    document.body.appendChild(modal);
-    document.body.style.overflow = "hidden";
-    document.body.style.pointerEvents = "none";
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/Mobil/unsupported.html";
     return; 
   }
 
+  // If not mobile, continue loading the UI stylesheet
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
