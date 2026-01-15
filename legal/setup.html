@@ -104,6 +104,22 @@
 </div>
 
 <script>
+      const loadingScript = document.createElement('script');
+  // Adjusted path to include /Genesis-AI/
+  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
+  
+  loadingScript.onload = () => {
+    document.body.style.visibility = 'visible';
+  };
+
+  // Error handling if the script fails to load
+  loadingScript.onerror = () => {
+    console.error("Loading script failed to load. Revealing UI.");
+    document.body.style.visibility = 'visible';
+  };
+
+  document.head.appendChild(loadingScript);
+    
     const tosCheck = document.getElementById('tos');
     const ppCheck = document.getElementById('pp');
     const btn = document.getElementById('proceed');
