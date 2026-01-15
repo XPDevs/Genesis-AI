@@ -1,41 +1,48 @@
 /**
  * Sidebar Module for Genesis AI
- * Handles responsive animation and collapsed states
+ * XPDevs Custom UI
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+(function() {
     const sidebar = document.getElementById('sidebarContainer');
     
     if (sidebar) {
-        // Injecting the structure with a Toggle button and a span for the text
         sidebar.innerHTML = `
-            <div class="sidebar-header">
-                <button id="toggleSidebarBtn">≡</button>
-                <button id="newChatBtn">
-                    <b>+</b> <span>New Chat</span>
+            <div class="sidebar-header" style="display: flex; flex-direction: column; gap: 10px; padding: 15px;">
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <button id="toggleSidebarBtn" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">≡</button>
+                    <button id="newChatBtn" style="flex-grow:1; background:#333; color:white; border:none; border-radius:10px; padding:10px; cursor:pointer; overflow:hidden;">
+                        <b>+</b> <span class="nav-text">New Chat</span>
+                    </button>
+                </div>
+                <button id="settingsBtn" style="background:#333; color:white; border:none; border-radius:10px; padding:10px; cursor:pointer; width: 100%;">
+                    ⚙️ <span class="nav-text">Settings</span>
                 </button>
-                <button id="settingsBtn">⚙️</button>
             </div>
-            <ul id="chatList" class="chat-list"></ul>
+            <ul id="chatList" class="chat-list" style="list-style:none; padding:10px; margin:0; flex-grow:1; overflow-y:auto;"></ul>
         `;
 
         const toggleBtn = document.getElementById('toggleSidebarBtn');
-        
-        // Toggle Logic
+        const navTexts = document.querySelectorAll('.nav-text');
+
+        const applyState = (isCollapsed) => {
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                navTexts.forEach(t => t.style.display = 'none');
+            } else {
+                sidebar.classList.remove('collapsed');
+                navTexts.forEach(t => t.style.display = 'inline');
+            }
+        };
+
         toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-            
-            // Optional: Save preference to localStorage
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('genesis_sidebar_collapsed', isCollapsed);
+            const willCollapse = !sidebar.classList.contains('collapsed');
+            applyState(willCollapse);
+            localStorage.setItem('genesis_sidebar_collapsed', willCollapse);
         });
 
-        // Restore state from localStorage
-        if (localStorage.getItem('genesis_sidebar_collapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-        }
-
-    } else {
-        console.error("Sidebar container not found.");
+        // Initialize state
+        const savedState = localStorage.getItem('genesis_sidebar_collapsed') === 'true';
+        applyState(savedState);
     }
-});
+})();
