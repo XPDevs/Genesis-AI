@@ -22,7 +22,7 @@
 
     // 3. Create the icon image
     const icon = document.createElement('img');
-    icon.src = 'https://xpdevs.github.io/Gensis-AI/icon.png';
+    icon.src = 'https://xpdevs.github.io/Genesis-AI/icon.png';
     Object.assign(icon.style, {
         width: '80px',
         height: '80px',
