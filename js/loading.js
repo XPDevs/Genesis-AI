@@ -1,9 +1,21 @@
 (function() {
-    // 1. Create the overlay container
+    // 1. Hide the body content immediately
+    const style = document.createElement('style');
+    style.innerHTML = `
+        body { 
+            visibility: hidden !important; 
+            overflow: hidden !important; 
+        }
+        #xpdevs-loading-overlay { 
+            visibility: visible !important; 
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 2. Create the overlay container
     const overlay = document.createElement('div');
     overlay.id = 'xpdevs-loading-overlay';
     
-    // 2. Style the overlay (Black screen)
     Object.assign(overlay.style, {
         position: 'fixed',
         top: '0',
@@ -11,42 +23,40 @@
         width: '100%',
         height: '100%',
         backgroundColor: '#000000',
-        zIndex: '99999',
+        zIndex: '2147483647', // Maximum possible z-index
         display: 'flex',
-        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        transition: 'opacity 0.8s ease-in-out',
-        opacity: '0' // Start at 0 for the fade-in effect
+        visibility: 'visible'
     });
 
-    // 3. Create the icon image
+    // 3. Create the icon
     const icon = document.createElement('img');
     icon.src = 'https://xpdevs.github.io/Genesis-AI/icon.png';
     Object.assign(icon.style, {
         width: '80px',
         height: '80px',
-        marginBottom: '20px',
-        borderRadius: '12px' // Matches your preference for rounded UI
+        borderRadius: '12px',
+        transition: 'opacity 0.8s ease-in-out',
+        opacity: '1'
     });
 
-    // 4. Assemble the overlay
     overlay.appendChild(icon);
     document.documentElement.appendChild(overlay);
 
-    // 5. Trigger Fade In immediately
-    requestAnimationFrame(() => {
-        overlay.style.opacity = '1';
-    });
-
-    // 6. Fade Out logic once everything (images, scripts, etc.) is finished
+    // 4. Final reveal logic
     window.addEventListener('load', function() {
-        // Small delay to ensure the user actually sees the icon if the load is instant
+        // Wait 2 seconds after load
         setTimeout(() => {
-            overlay.style.opacity = '0';
+            // Fade out the icon
+            icon.style.opacity = '0';
+            
+            // Wait for icon fade to finish, then reveal site
             setTimeout(() => {
                 overlay.remove();
-            }, 800); // Wait for the opacity transition to finish before removing
-        }, 500); 
+                style.remove(); // Removes the hidden/overflow rules
+                document.body.style.visibility = 'visible';
+            }, 800); 
+        }, 2000); 
     });
 })();
