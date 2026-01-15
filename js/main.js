@@ -469,7 +469,7 @@ function sendMessage() {
   }
 
   const chat = chats.find(c => c.id === activeChatId);
-  chat.messages.push({ role: "user", text });
+  chat.messages.push({ role: "user", text: text });
   renderMessages();
   saveChats();
 
@@ -483,7 +483,7 @@ function sendMessage() {
     });
   }
 
-  // --- START OF AI RESPONSE LOGIC ---
+  // --- AI RESPONSE LOGIC ---
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading";
   loadingDiv.innerHTML = `<span>Gathering information...</span>`;
@@ -497,7 +497,7 @@ function sendMessage() {
     const trigger = "please summarise";
     const lowerText = text.toLowerCase();
 
-    // 1. Check for manual command "please summarise <data>"
+    // 1. Manual trigger
     if (lowerText.startsWith(trigger)) {
       const dataToSummarise = text.substring(trigger.length).trim();
       if (typeof window.summariseConversation === "function") {
@@ -510,8 +510,8 @@ function sendMessage() {
       // 2. Standard JSON Lookup
       const responseObj = findResponse(text);
 
-      // 3. Check if JSON returned the special summary trigger
-      if (responseObj.text === "%SUMMARY_SENT%") {
+      // 3. JSON trigger
+      if (responseObj && responseObj.text === "%SUMMARY_SENT%") {
         if (typeof window.summariseConversation === "function") {
           const result = window.summariseConversation(text);
           botMsg = { role: "ai", text: result };
@@ -523,11 +523,9 @@ function sendMessage() {
       }
     }
 
-    // Push the object to memory and save
+    // Finalise the message
     chat.messages.push(botMsg);
     saveChats();
-
-    // Pass the text string specifically to avoid [object Object]
     appendMessage(botMsg.text, botMsg.role, true);
 
     setTimeout(() => {
@@ -535,79 +533,10 @@ function sendMessage() {
       sendBtn.disabled = false;
       sendBtn.style.opacity = "1";
       userInput.focus();
-    }, botMsg.text.length * 30 + 500);
-  }, 1500);
-}
+    }, (botMsg.text.length * 30) + 500);
 
-  const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message loading";
-  loadingDiv.style.display = "flex";
-  loadingDiv.style.alignItems = "center";
-  loadingDiv.style.gap = "8px";
-  loadingDiv.style.color = "#888";
-  loadingDiv.style.fontSize = "0.9rem";
-  loadingDiv.style.opacity = "1";
-  loadingDiv.style.transition = "opacity 0.8s ease";
-
-  const spinner = document.createElement("div");
-  Object.assign(spinner.style, { width: "14px", height: "14px", border: "2px solid rgba(255, 255, 255, 0.2)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 1s linear infinite" });
-  const loadingText = document.createElement("span");
-  loadingText.textContent = "Gathering information for you... this might take a moment.";
-  loadingDiv.append(spinner, loadingText);
-  chatBox.append(loadingDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  const style = document.createElement("style");
-  style.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-  document.head.appendChild(style);
-
-  setTimeout(() => {
-    loadingDiv.style.opacity = "0";
-    setTimeout(() => loadingDiv.remove(), 800);
-
-    let botMsg;
-    const trigger = "please summarise";
-    const lowerText = text.toLowerCase();
-
-    // EXPLICIT SUMMARY DETECTION
-    if (lowerText.startsWith(trigger)) {
-      const dataToSummarise = text.substring(trigger.length).trim();
-      if (typeof window.summariseConversation === "function") {
-        const summaryResult = window.summariseConversation(dataToSummarise);
-        botMsg = { role: "ai", text: summaryResult };
-      } else {
-        botMsg = { role: "ai", text: "Summary module (summarise.js) not found." };
-      }
-    } else {
-      // STANDARD JSON LOOKUP
-      const responseObj = findResponse(text);
-      
-      // JSON TRIGGER FOR SUMMARY
-      if (responseObj.text === "%SUMMARY_SENT%") {
-        if (typeof window.summariseConversation === "function") {
-          const summaryResult = window.summariseConversation(text);
-          botMsg = { role: "ai", text: summaryResult };
-        } else {
-          botMsg = { role: "ai", text: "Summary module triggered but not found." };
-        }
-      } else {
-        botMsg = responseObj;
-      }
-    }
-
-    chat.messages.push(botMsg);
-    appendMessage(botMsg.text, botMsg.role, true);
-    saveChats();
-
-    setTimeout(() => {
-      userInput.disabled = false;
-      sendBtn.disabled = false;
-      sendBtn.style.opacity = "1";
-      sendBtn.style.cursor = "pointer";
-      userInput.focus();
-    }, botMsg.text.length * 30 + 500);
-  }, 3000);
-}
+  }, 1500); // End of main setTimeout
+} // End of sendMessage function
 
 function findResponse(input) {
   input = input.toLowerCase();
