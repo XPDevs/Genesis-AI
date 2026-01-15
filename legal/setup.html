@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis-AI | Initialization</title>
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --card: #161616;
+            --accent: #3b82f6;
+            --text: #e5e7eb;
+            --border: #2d2d2d;
+            --radius: 12px;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .setup-container {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        h1 { margin-top: 0; font-weight: 600; font-size: 1.5rem; }
+        p { color: #9ca3af; font-size: 0.9rem; line-height: 1.5; }
+
+        .section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 18px;
+            height: 18px;
+        }
+
+        select, input[type="text"] {
+            background: #222;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .legal-links a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .legal-links a:hover { text-decoration: underline; }
+
+        .btn-finish {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: var(--radius);
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-finish:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="setup-container">
+    <h1>Initialization</h1>
+    <p>Configure your environment to begin using the ecosystem.</p>
+
+    <div class="section">
+        <h3>Legal Compliance</h3>
+        <div class="option-group">
+            <label class="checkbox-row">
+                <input type="checkbox" id="tos_check">
+                <span>I accept the <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms of Service</a></span>
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" id="priv_check">
+                <span>I accept the <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Preferences</h3>
+        <div class="option-group">
+            <label>Interface Theme</label>
+            <select id="pref_theme">
+                <option value="dark">Dark Mode (Default)</option>
+                <option value="light">Light Mode</option>
+                <option value="high-vis">High Visibility</option>
+            </select>
+
+            <label>Response Verbosity</label>
+            <select id="pref_verbosity">
+                <option value="concise">Concise</option>
+                <option value="detailed">Detailed / Technical</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Environment</h3>
+        <div class="option-group">
+            <label class="checkbox-row">
+                <input type="checkbox" id="local_cache" checked>
+                <span>Enable Local Caching (Recommended)</span>
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" id="telemetry">
+                <span>Allow Anonymous Performance Logs</span>
+            </label>
+        </div>
+    </div>
+
+    <button id="finish_btn" class="btn-finish" disabled>Complete Setup</button>
+</div>
+
+<script>
+    const loadingScript = document.createElement('script');
+  // Adjusted path to include /Genesis-AI/
+  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
+  
+  loadingScript.onload = () => {
+    document.body.style.visibility = 'visible';
+  };
+
+  // Error handling if the script fails to load
+  loadingScript.onerror = () => {
+    console.error("Loading script failed to load. Revealing UI.");
+    document.body.style.visibility = 'visible';
+  };
+
+  document.head.appendChild(loadingScript);
+    const tos = document.getElementById('tos_check');
+    const priv = document.getElementById('priv_check');
+    const btn = document.getElementById('finish_btn');
+
+    // Validation: Only enable button if both legal boxes are checked
+    function validate() {
+        btn.disabled = !(tos.checked && priv.checked);
+    }
+
+    tos.addEventListener('change', validate);
+    priv.addEventListener('change', validate);
+
+    btn.addEventListener('click', () => {
+        // Collect choices
+        const config = {
+            theme: document.getElementById('pref_theme').value,
+            verbosity: document.getElementById('pref_verbosity').value,
+            cache: document.getElementById('local_cache').checked,
+            telemetry: document.getElementById('telemetry').checked,
+            timestamp: new Date().toISOString()
+        };
+
+        // Save preferences
+        localStorage.setItem("GENESIS_CONFIG", JSON.stringify(config));
+        
+        // Set the critical flag you requested
+        localStorage.setItem("SETUP", "FLAG_TRUE");
+
+        // Refresh/Redirect to main platform
+        window.location.href = "https://xpdevs.github.io/Genesis-AI";
+    });
+</script>
+
+</body>
+</html>
