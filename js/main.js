@@ -2,7 +2,6 @@
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // --- MOBILE FULL-SCREEN BLOCKING MODAL ---
     const modal = document.createElement("div");
     Object.assign(modal.style, {
       position: "fixed",
@@ -31,23 +30,18 @@
     `;
 
     document.body.appendChild(modal);
-
-    // Prevent all interaction and scrolling
     document.body.style.overflow = "hidden";
     document.body.style.pointerEvents = "none";
-    return; // Stop execution on mobile
+    return; 
   }
 
-  // --- DESKTOP STYLING ---
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = cssFile;
   document.head.appendChild(link);
-  console.log(`Loaded desktop stylesheet: ${cssFile}`);
 })();
 
-// --- CHAT APP FUNCTIONALITY ---
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
@@ -68,7 +62,6 @@ const deleteModal = document.getElementById("deleteModal");
 const deleteConfirm = document.getElementById("deleteConfirm");
 const deleteCancel = document.getElementById("deleteCancel");
 
-// --- SHARE ELEMENTS ---
 const shareModal = document.getElementById("shareModal"); 
 const shareLinkInput = document.getElementById("shareLinkInput"); 
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
@@ -82,14 +75,10 @@ let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false; 
 
-// --- ENCODING/DECODING LOGIC ---
 const CHAR_SEPARATOR = '000'; 
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
 
-/**
- * Encodes a conversation into a numerical string for URL sharing.
- */
 function encodeChat(messages) {
     if (!messages || messages.length === 0) return '';
     const roleMap = { 'user': 1, 'ai': 2, 'error': 3 };
@@ -107,9 +96,6 @@ function encodeChat(messages) {
     }).join(MSG_SEPARATOR);
 }
 
-/**
- * Decodes a numerical string back into an array of message objects.
- */
 function decodeChat(encodedString) {
     if (!encodedString) return [];
     const roleMap = { 1: 'user', 2: 'ai', 3: 'error' };
@@ -133,7 +119,6 @@ function decodeChat(encodedString) {
     return messages;
 }
 
-// --- SHARED CHAT LOGIC ---
 function loadAndSaveSharedChat(messages, originalTitle) {
     isReadOnlyMode = false;
     if (readOnlyBanner) readOnlyBanner.style.display = 'none';
@@ -180,7 +165,6 @@ function loadSharedChat() {
     return false;
 }
 
-// --- BAN & VIOLATION SYSTEM ---
 const BAN_STORAGE_KEY = 'genesisBanInfo';
 const SECRET_UNBAN_CODE = 'Te3nt!?'; 
 
@@ -263,7 +247,6 @@ function liftBan() {
 
 window.unbanGenesis = function(code) {
   if (code === SECRET_UNBAN_CODE) {
-    console.log('[Genesis] Secret unban accepted. Lifting ban.');
     liftBan();
     return true;
   }
@@ -311,7 +294,6 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- DATA LOADING ---
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json";
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.json() : Promise.reject("File not found"))
@@ -328,7 +310,6 @@ function updateURL(chatTitle) {
   history.pushState({}, "", url);
 }
 
-// --- RENDERING ---
 function renderChatList() {
   if (isReadOnlyMode) return;
   chatList.innerHTML = "";
@@ -385,16 +366,11 @@ function renderMessages() {
   if (chat) updateURL(chat.title);
 }
 
-/**
- * UPDATED: Appends message and replaces %DATE% and %TIME% placeholders.
- */
 function appendMessage(text, role, isNew = false) {
-  // Replacement Logic
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
-  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // HH:MM
+  const dateStr = now.toLocaleDateString('en-GB'); 
+  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
 
-  // Replace all instances of the placeholders
   let processedText = text.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
 
   const div = document.createElement("div");
@@ -413,11 +389,8 @@ function appendMessage(text, role, isNew = false) {
   } else {
     div.textContent = processedText;
   }
-
-  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// --- SAFETY & BANNED WORDS ---
 let bannedWords = [];
 async function loadBannedWords() {
   try {
@@ -448,7 +421,6 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
-// --- MESSAGE SENDING ---
 function sendMessage() {
   if (isReadOnlyMode) return;
   if (isCurrentlyBanned()) { showBanModal(); return; }
@@ -472,7 +444,6 @@ function sendMessage() {
   userInput.disabled = true;
   sendBtn.disabled = true;
   sendBtn.style.opacity = "0.5";
-  sendBtn.style.cursor = "not-allowed";
 
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -498,7 +469,6 @@ function sendMessage() {
     });
   }
 
-  // Loading animation
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading";
   loadingDiv.style.display = "flex";
@@ -511,10 +481,8 @@ function sendMessage() {
 
   const spinner = document.createElement("div");
   Object.assign(spinner.style, { width: "14px", height: "14px", border: "2px solid rgba(255, 255, 255, 0.2)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 1s linear infinite" });
-
   const loadingText = document.createElement("span");
   loadingText.textContent = "Gathering information for you... this might take a moment.";
-
   loadingDiv.append(spinner, loadingText);
   chatBox.append(loadingDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -527,7 +495,36 @@ function sendMessage() {
     loadingDiv.style.opacity = "0";
     setTimeout(() => loadingDiv.remove(), 800);
 
-    const botMsg = findResponse(text);
+    let botMsg;
+    const trigger = "please summarise";
+    const lowerText = text.toLowerCase();
+
+    // EXPLICIT SUMMARY DETECTION
+    if (lowerText.startsWith(trigger)) {
+      const dataToSummarise = text.substring(trigger.length).trim();
+      if (typeof window.summariseConversation === "function") {
+        const summaryResult = window.summariseConversation(dataToSummarise);
+        botMsg = { role: "ai", text: summaryResult };
+      } else {
+        botMsg = { role: "ai", text: "Summary module (summarise.js) not found." };
+      }
+    } else {
+      // STANDARD JSON LOOKUP
+      const responseObj = findResponse(text);
+      
+      // JSON TRIGGER FOR SUMMARY
+      if (responseObj.text === "%SUMMARY_SENT%") {
+        if (typeof window.summariseConversation === "function") {
+          const summaryResult = window.summariseConversation(text);
+          botMsg = { role: "ai", text: summaryResult };
+        } else {
+          botMsg = { role: "ai", text: "Summary module triggered but not found." };
+        }
+      } else {
+        botMsg = responseObj;
+      }
+    }
+
     chat.messages.push(botMsg);
     appendMessage(botMsg.text, botMsg.role, true);
     saveChats();
@@ -549,7 +546,6 @@ function findResponse(input) {
   return { role: "ai", text: responses[key] };
 }
 
-// --- SHARING MODAL ---
 function showShareModal(chatId) {
     if (!shareLinkInput) return;
     const chat = chats.find(c => c.id === chatId);
@@ -576,7 +572,6 @@ if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
     setTimeout(() => { copyShareLinkBtn.textContent = "Copy"; shareModal.style.display = "none"; }, 1500);
 };
 
-// --- SETTINGS & MODALS ---
 renameCancel.onclick = () => renameModal.style.display = "none";
 deleteCancel.onclick = () => deleteModal.style.display = "none";
 
@@ -628,7 +623,6 @@ if (deleteAllConfirm) deleteAllConfirm.onclick = () => {
   activeChatId = null; renderChatList(); chatBox.innerHTML = ""; deleteAllModal.style.display = "none";
 };
 
-// --- INITIALISATION ---
 window.addEventListener('load', () => {
   const sharedChatLoaded = loadSharedChat(); 
   if (!sharedChatLoaded) {
