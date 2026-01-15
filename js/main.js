@@ -367,41 +367,40 @@ function renderMessages() {
 }
 
 function appendMessage(text, role, isNew = false) {
-  // --- TYPE GUARD: Ensure text is a string to prevent .replace errors ---
-  if (typeof text !== 'string') {
-    console.warn("Genesis-AI Warning: appendMessage received an object. Extracting text string.");
-    // If it's the standard message object {role: "ai", text: "..."}, get the text.
-    // Otherwise, try to convert whatever it is into a string.
-    text = (text && text.text) ? text.text : String(text || "");
+  // --- DEEP EXTRACTION: Find the actual string inside the object ---
+  let finalString = "";
+
+  if (typeof text === 'string') {
+    finalString = text;
+  } else if (text && typeof text === 'object') {
+    // Look for .text (standard) or try to find any string property inside
+    finalString = text.text || text.message || JSON.stringify(text);
+    console.warn("Genesis-AI: Extracted string from object successfully.");
+  } else {
+    finalString = String(text || "");
   }
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
 
-  // Now .replace will always work because 'text' is guaranteed to be a string
-  let processedText = text.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
+  // Apply placeholders to the extracted string
+  let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
 
   const div = document.createElement("div");
   div.className = "message " + role;
-  
-  // XPDevs UI: Ensure the message is visible before starting animations
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
     let i = 0;
-    // Typing effect logic
     const interval = setInterval(() => {
       div.textContent += processedText[i];
       i++;
       chatBox.scrollTop = chatBox.scrollHeight;
-      if (i === processedText.length) {
-        clearInterval(interval);
-      }
+      if (i === processedText.length) clearInterval(interval);
     }, 30);
   } else {
-    // Immediate render for history or user messages
     div.textContent = processedText;
   }
 }
@@ -483,6 +482,62 @@ function sendMessage() {
       updateURL(newTitle);
     });
   }
+
+  // --- START OF AI RESPONSE LOGIC ---
+  const loadingDiv = document.createElement("div");
+  loadingDiv.className = "message loading";
+  loadingDiv.innerHTML = `<span>Gathering information...</span>`;
+  chatBox.append(loadingDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  setTimeout(() => {
+    loadingDiv.remove();
+
+    let botMsg;
+    const trigger = "please summarise";
+    const lowerText = text.toLowerCase();
+
+    // 1. Check for manual command "please summarise <data>"
+    if (lowerText.startsWith(trigger)) {
+      const dataToSummarise = text.substring(trigger.length).trim();
+      if (typeof window.summariseConversation === "function") {
+        const result = window.summariseConversation(dataToSummarise);
+        botMsg = { role: "ai", text: result };
+      } else {
+        botMsg = { role: "ai", text: "Summary module not found." };
+      }
+    } else {
+      // 2. Standard JSON Lookup
+      const responseObj = findResponse(text);
+
+      // 3. Check if JSON returned the special summary trigger
+      if (responseObj.text === "%SUMMARY_SENT%") {
+        if (typeof window.summariseConversation === "function") {
+          const result = window.summariseConversation(text);
+          botMsg = { role: "ai", text: result };
+        } else {
+          botMsg = { role: "ai", text: "Summary module triggered but not found." };
+        }
+      } else {
+        botMsg = responseObj;
+      }
+    }
+
+    // Push the object to memory and save
+    chat.messages.push(botMsg);
+    saveChats();
+
+    // Pass the text string specifically to avoid [object Object]
+    appendMessage(botMsg.text, botMsg.role, true);
+
+    setTimeout(() => {
+      userInput.disabled = false;
+      sendBtn.disabled = false;
+      sendBtn.style.opacity = "1";
+      userInput.focus();
+    }, botMsg.text.length * 30 + 500);
+  }, 1500);
+}
 
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading";
