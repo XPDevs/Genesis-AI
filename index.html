@@ -111,13 +111,20 @@
   </div>
   
   <script>
-// Load the main chat logic, adding a cache-busting timestamp
+// Load the main chat logic
 const mainScript = document.createElement('script');
 mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
 mainScript.defer = true;
 document.head.appendChild(mainScript);
+
+// Load the summarization logic
+const summaryScript = document.createElement('script');
+summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
+summaryScript.defer = true;
+document.head.appendChild(summaryScript);
 </script>
 </body>
 </html>
+
 
 
