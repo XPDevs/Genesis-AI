@@ -3,7 +3,7 @@
 
   // If mobile, redirect to the unsupported page
   if (isMobile) {
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/Mobil/unsupported.html";
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/mobile/unsupported.html";
     return; 
   }
 
