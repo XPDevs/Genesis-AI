@@ -1,13 +1,20 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
-  // If mobile, redirect to the unsupported page
+  // 1. Mobile Check
   if (isMobile) {
     window.location.href = "https://xpdevs.github.io/Genesis-AI/mobile/unsupported.html";
     return; 
   }
 
-  // If not mobile, continue loading the UI stylesheet
+  // 2. Setup Flag Check (Desktop only)
+  // Checks if the specific key is missing or not set to "FLAG_TRUE"
+  if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
+    return;
+  }
+
+  // 3. Continue loading the UI stylesheet if both checks pass
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
