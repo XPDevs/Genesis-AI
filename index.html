@@ -110,32 +110,36 @@
     </div>
   </div>
   
-  <script>
-    /**
-     * DYNAMIC SCRIPT LOADER
-     * Logic for loading the loading overlay, main system, and summariser
-     */
+<script>
+  // 1. Load the Loading Overlay First
+  const loadingScript = document.createElement('script');
+  // Adjusted path to include /Genesis-AI/
+  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
+  
+  loadingScript.onload = () => {
+    document.body.style.visibility = 'visible';
+  };
 
-    // 1. Load the Loading Overlay First
-    const loadingScript = document.createElement('script');
-    loadingScript.src = `https://xpdevs.github.io/js/loading.js?v=${Date.now()}`;
-    loadingScript.onload = () => {
-      // Once loading.js is ready, it will handle making the body visible
-      document.body.style.visibility = 'visible';
-    };
-    document.head.appendChild(loadingScript);
+  // Error handling if the script fails to load
+  loadingScript.onerror = () => {
+    console.error("Loading script failed to load. Revealing UI.");
+    document.body.style.visibility = 'visible';
+  };
 
-    // 2. Load the Main Logic
-    const mainScript = document.createElement('script');
-    mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-    mainScript.defer = true;
-    document.head.appendChild(mainScript);
+  document.head.appendChild(loadingScript);
 
-    // 3. Load the Summarization Logic
-    const summaryScript = document.createElement('script');
-    summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
-    summaryScript.defer = true;
-    document.head.appendChild(summaryScript);
-  </script>
+  // 2. Load the Main Logic
+  const mainScript = document.createElement('script');
+  mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
+  mainScript.defer = true;
+  document.head.appendChild(mainScript);
+
+  // 3. Load the Summarization Logic
+  const summaryScript = document.createElement('script');
+  summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
+  summaryScript.defer = true;
+  document.head.appendChild(summaryScript);
+</script>
 </body>
 </html>
+
