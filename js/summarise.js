@@ -73,3 +73,4 @@ window.summariseConversation = function(data) {
         summary: `: ${finalSummary}`
     };
 };
+console.log("Summary Module Loaded");
