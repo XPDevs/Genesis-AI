@@ -367,26 +367,41 @@ function renderMessages() {
 }
 
 function appendMessage(text, role, isNew = false) {
+  // --- TYPE GUARD: Ensure text is a string to prevent .replace errors ---
+  if (typeof text !== 'string') {
+    console.warn("Genesis-AI Warning: appendMessage received an object. Extracting text string.");
+    // If it's the standard message object {role: "ai", text: "..."}, get the text.
+    // Otherwise, try to convert whatever it is into a string.
+    text = (text && text.text) ? text.text : String(text || "");
+  }
+
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
 
+  // Now .replace will always work because 'text' is guaranteed to be a string
   let processedText = text.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
 
   const div = document.createElement("div");
   div.className = "message " + role;
+  
+  // XPDevs UI: Ensure the message is visible before starting animations
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
     let i = 0;
+    // Typing effect logic
     const interval = setInterval(() => {
       div.textContent += processedText[i];
       i++;
       chatBox.scrollTop = chatBox.scrollHeight;
-      if (i === processedText.length) clearInterval(interval);
+      if (i === processedText.length) {
+        clearInterval(interval);
+      }
     }, 30);
   } else {
+    // Immediate render for history or user messages
     div.textContent = processedText;
   }
 }
