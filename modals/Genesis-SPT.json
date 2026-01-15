@@ -1,5 +1,5 @@
 {
-  "ver": "3.2-N26",
+  "ver": "Gensis-AI-SPT-3.2-N26",
   "what is the date": "The date is: %DATE%",
   "what is the time": "The time is: %TIME%",
   "time": "The time is: %TIME%",
@@ -11,10 +11,6 @@
   "what is your name?": "I’m Genesis, your friendly AI chat assistant.",
   "bye": "Goodbye! Talk to you later — Genesis signing off.",
   "thanks": "You’re welcome! Glad I could help.",
-  "ver": "Genesis-SPT-1.0",
-  "what is your version?": "I am Genesis-SPT-1.0.",
-  "whats your version?": "I am Genesis-SPT-1.0.",
-  "what version are you?": "I am Genesis-SPT-1.0.",
   "good morning": "Good morning! Ready to tackle the day?",
   "good afternoon": "Good afternoon! How’s it going?",
   "good evening": "Good evening! How was your day?",
