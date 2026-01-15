@@ -1,61 +1,77 @@
 /**
  * summarise.js
  * Developed by James Turner (XPDevs)
- * A logic-based summarisation engine for Genesis-AI.
+ * Elite Intelligence Engine for Genesis-AI.
  */
 
 window.summariseConversation = function(data) {
-    if (!data || data.length < 10) {
-        return "The data provided is too short to generate a meaningful summary. Please provide more context.";
-    }
+    if (!data || data.trim().length < 50) return "Insufficient data density for intelligence extraction.";
 
-    // 1. Clean and split into sentences
+    // 1. Structural Analysis
     const sentences = data.match(/[^.!?]+[.!?]+/g) || [data];
-    if (sentences.length <= 2) return `Summary: ${data}`;
+    if (sentences.length <= 2) return `(Genesis-AI): ${data}`;
 
-    // 2. Build a frequency map of "Smart Words" (ignoring common stop words)
-    const stopWords = new Set(["the", "and", "a", "of", "to", "is", "in", "it", "that", "was", "for", "on", "are", "with", "as", "be", "at", "this", "by"]);
-    const wordFreq = {};
-    const words = data.toLowerCase().match(/\w+/g);
+    // 2. Advanced Keyword Extraction (TF-Lite Logic)
+    const stopWords = new Set(["the", "and", "this", "that", "with", "from", "they", "would", "could", "should", "there"]);
+    const wordStats = {};
+    const words = data.toLowerCase().match(/\w+/g) || [];
 
     words.forEach(word => {
-        if (!stopWords.has(word) && word.length > 3) {
-            wordFreq[word] = (wordFreq[word] || 0) + 1;
+        if (word.length > 3 && !stopWords.has(word)) {
+            wordStats[word] = (wordStats[word] || 0) + 1;
         }
     });
 
-    // 3. Score sentences based on word importance
-    const sentenceScores = sentences.map(sentence => {
+    // Sort to find the "Top 5" core themes of the text
+    const themes = Object.entries(wordStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(entry => entry[0]);
+
+    // 3. Multi-Dimensional Scoring Engine
+    const scoredSentences = sentences.map((text, i) => {
         let score = 0;
-        const sentenceWords = sentence.toLowerCase().match(/\w+/g) || [];
+        const cleanText = text.toLowerCase();
         
-        sentenceWords.forEach(word => {
-            if (wordFreq[word]) {
-                score += wordFreq[word];
-            }
+        // Theme Alignment: Does this sentence contain our top 5 keywords?
+        themes.forEach(theme => {
+            if (cleanText.includes(theme)) score += 5;
         });
 
-        // Boost the first sentence (usually contains the main topic)
-        return { text: sentence.trim(), score: score };
+        // Intelligence Markers: Prioritise logic/action words
+        const markers = ["decided", "founded", "created", "built", "launch", "important", "focus", "result"];
+        markers.forEach(m => {
+            if (cleanText.includes(m)) score += 3;
+        });
+
+        // Specificity: Numbers and Proper Nouns (dates, versions, names)
+        if (/\d+/.test(text)) score += 2; // Contains data/stats
+        if (/[A-Z]{2,}/.test(text)) score += 2; // Contains acronyms (e.g., XPDevs)
+
+        // Positional Authority
+        if (i === 0) score += 10; // Opening Statement
+        if (i === sentences.length - 1) score += 7; // Closing Logic
+
+        return { text: text.trim(), score, index: i };
     });
 
-    // Boost the first sentence slightly as it often contains the thesis
-    sentenceScores[0].score *= 1.5;
+    // 4. Intelligence Filtering (Mean-based threshold)
+    // Only keep sentences that score above the average sentence quality
+    const avgScore = scoredSentences.reduce((a, b) => a + b.score, 0) / scoredSentences.length;
+    let candidates = scoredSentences.filter(s => s.score >= avgScore);
 
-    // 4. Sort and pick the top performers
-    // We aim for approximately 30% of the original length
-    const summaryCount = Math.max(1, Math.ceil(sentences.length * 0.3));
-    const topSentences = [...sentenceScores]
+    // 5. Narrative Reconstruction
+    // Ensure we don't exceed a readable length (max 4-5 sentences for a dashboard view)
+    const finalSummary = candidates
         .sort((a, b) => b.score - a.score)
-        .slice(0, summaryCount);
-
-    // 5. Re-order the top sentences to maintain chronological flow
-    const finalSummary = sentenceScores
-        .filter(s => topSentences.includes(s))
+        .slice(0, 5)
+        .sort((a, b) => a.index - b.index)
         .map(s => s.text)
         .join(" ");
 
-    return `(Genesis-AI Intelligence Summary): ${finalSummary}`;
+    return {
+        summary: `(Genesis-AI Summary): ${finalSummary}`,
+        themes: themes, // Return the top themes for UI tags
+        density: `${Math.round((finalSummary.length / data.length) * 100)}%`
+    };
 };
-
-console.log("Genesis-AI: Smart Summary Module Loaded.");
