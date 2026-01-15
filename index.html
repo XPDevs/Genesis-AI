@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,179 +7,138 @@
 <title>Genesis AI Chat</title>
 
 <style>
-  /* Base Styles & Theme */
-  :root {
-    --sidebar-width: 260px;
-    --sidebar-collapsed-width: 70px;
-    --bg-dark: #000;
-    --sidebar-bg: #111;
-    --accent: #007bff;
-    --text-main: #fff;
-    --transition-speed: 0.3s;
-  }
-
-  body { 
-    visibility: hidden; 
-    background-color: var(--bg-dark); 
-    margin: 0; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-    color: var(--text-main);
-  }
-
-  /* --- Sidebar Layout --- */
-  .sidebar {
-    width: var(--sidebar-width);
-    background-color: var(--sidebar-bg);
-    display: flex;
-    flex-direction: column;
-    transition: width var(--transition-speed) ease;
-    border-right: 1px solid #333;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Collapsed State Class */
-  .sidebar.collapsed {
-    width: var(--sidebar-collapsed-width);
-  }
-
-  .sidebar-header {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* Toggle Button */
-  #toggleSidebarBtn {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-    align-self: flex-start;
-    padding: 5px 10px;
-    border-radius: 8px;
-  }
-  
-  #toggleSidebarBtn:hover { background: #222; }
-
-  #newChatBtn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-align: center;
-  }
-
-  #settingsBtn {
-    background: #222;
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 12px;
-    cursor: pointer;
-  }
-
-  /* Hide text and list when collapsed */
-  .sidebar.collapsed .chat-list,
-  .sidebar.collapsed #newChatBtn span,
-  .sidebar.collapsed #chatTitleText {
-    display: none;
-  }
-
-  /* Center icons when collapsed */
-  .sidebar.collapsed .sidebar-header {
-    align-items: center;
-  }
-
-  .chat-list {
-    flex-grow: 1;
-    list-style: none;
-    padding: 0 10px;
-    margin: 0;
-    overflow-y: auto;
-  }
-
-  /* --- Main Chat Area --- */
-  .chat-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background: #000;
-  }
-
-  .chat-header {
-    padding: 16px;
-    border-bottom: 1px solid #222;
-  }
-
-  .chat-box {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
-
-  .input-area {
-    padding: 20px;
-    display: flex;
-    gap: 10px;
-  }
-
-  input[type="text"] {
-    flex-grow: 1;
-    background: #111;
-    border: 1px solid #333;
-    color: white;
-    padding: 12px;
-    border-radius: 12px;
-  }
-
-  #sendBtn {
-    background: var(--accent);
-    border: none;
-    color: white;
-    padding: 0 20px;
-    border-radius: 12px;
-    cursor: pointer;
-  }
-
-  /* Modals */
-  .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-  .modal-content { background: #111; margin: 10% auto; padding: 20px; border-radius: 16px; width: 80%; max-width: 400px; text-align: center; }
+  /* Prevents the white flash before the loading script executes */
+  body { visibility: hidden; background-color: #000; }
 </style>
 </head>
 <body>
-
-  <aside class="sidebar" id="sidebar">
+  <div class="sidebar">
     <div class="sidebar-header">
-      <button id="toggleSidebarBtn">☰</button>
-      <button id="newChatBtn">
-        <span class="icon">+</span> <span id="newChatText">New Chat</span>
-      </button>
-      <button id="settingsBtn">⚙️ Settings</button>
+      <button id="newChatBtn">+ New Chat</button>
+      <button id="settingsBtn">⚙️</button>
     </div>
-    
-    <ul id="chatList" class="chat-list">
-      </ul>
-  </aside>
+    <ul id="chatList" class="chat-list"></ul>
+  </div>
 
-  <main class="chat-main">
+  <div class="chat-main">
     <div class="chat-header">
-      <h3 id="chatTitle">Genesis AI</h3>
+      <h3 id="chatTitle">New Chat</h3>
     </div>
-    
     <div id="chatBox" class="chat-box"></div>
     
-    <div id="contentWarning" style="padding:8px; background:#222; color:#bbb; border:1px solid #333; border-radius:12px; margin:0 16px 8px 16px; font-size:0.85em;">
-      Content Warning: Content may be inaccurate. 
-      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:var(--accent);">Privacy Policy</a>.
+    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
+      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
+      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
+      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
     </div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+        <span>Dark Mode</span>
+      </div>
+      <br>
+      <div class="setting-item">
+        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete All Chats
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput">
+      <div class="modal-actions">
+        <button class="confirm" id="renameConfirm">Rename</button>
+        <button class="cancel" id="renameCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete
+        </button>
+        <button class="cancel" id="deleteCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm deletion of all chats?</h2>
+      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Yes, Delete All
+        </button>
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Share Chat Link</h2>
+      <p>Copy the link below to share this conversation. The link is read-only.</p>
+      <div style="display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <button id="copyShareLinkBtn" style="background:#007bff;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">
+          Copy
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" id="shareCancel">Close</button>
+      </div>
+    </div>
+  </div>
+  
+<script>
+  // 1. Load the Loading Overlay First
+  const loadingScript = document.createElement('script');
+  // Adjusted path to include /Genesis-AI/
+  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
+  
+  loadingScript.onload = () => {
+    document.body.style.visibility = 'visible';
+  };
+
+  // Error handling if the script fails to load
+  loadingScript.onerror = () => {
+    console.error("Loading script failed to load. Revealing UI.");
+    document.body.style.visibility = 'visible';
+  };
+
+  document.head.appendChild(loadingScript);
+
+  // 2. Load the Main Logic
+  const mainScript = document.createElement('script');
+  mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
+  mainScript.defer = true;
+  document.head.appendChild(mainScript);
+
+  // 3. Load the Summarization Logic
+  const summaryScript = document.createElement('script');
+  summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
+  summaryScript.defer = true;
+  document.head.appendChild(summaryScript);
+</script>
+</body>
+</html>
