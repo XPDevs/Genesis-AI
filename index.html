@@ -5,116 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icon.ico">
 <title>Genesis AI Chat</title>
-
 <style>
-  /* Prevents the white flash */
-  body { visibility: hidden; background-color: #000; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-
-  /* Sidebar Base Styles & Animation */
-  .sidebar {
-    width: 260px;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #1a1a1a;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #333;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Collapsed State */
-  .sidebar.collapsed {
-    width: 60px;
-  }
-
-  .sidebar-header {
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-
-  /* Rounded Buttons */
-  #newChatBtn, #settingsBtn, #toggleSidebarBtn {
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  #newChatBtn {
-    flex-grow: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    padding: 10px;
-    background: #333;
-    color: white;
-  }
-
-  /* Hide text when collapsed */
-  .sidebar.collapsed #newChatBtn span {
-    display: none;
-  }
-
-  /* Toggle Button Position */
-  #toggleSidebarBtn {
-    background: transparent;
-    color: #888;
-    padding: 5px;
-    font-size: 1.2em;
-  }
-
-  .chat-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background: #000;
-  }
+  body { visibility: hidden; background-color: #000; margin: 0; display: flex; height: 100vh; overflow: hidden; font-family: sans-serif; }
+  .sidebar { width: 260px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #111; display: flex; flex-direction: column; border-right: 1px solid #333; position: relative; }
+  .sidebar.collapsed { width: 70px; }
+  .chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #000; color: white; }
+  .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+  .modal-content { background: #222; margin: 15% auto; padding: 20px; border-radius: 15px; width: 80%; max-width: 400px; color: white; }
+  /* Ensure the sidebar header looks right when collapsed */
+  .sidebar-header { padding: 10px; display: flex; align-items: center; gap: 8px; overflow: hidden; }
+  #newChatBtn { flex-shrink: 0; white-space: nowrap; }
 </style>
 </head>
 <body>
+
   <div id="sidebarContainer" class="sidebar"></div>
 
   <div class="chat-main">
-    <div class="chat-header">
-      <h3 id="chatTitle">New Chat</h3>
-    </div>
-    <div id="chatBox" class="chat-box"></div>
+    <div class="chat-header"><h3 id="chatTitle">New Chat</h3></div>
+    <div id="chatBox" class="chat-box" style="flex-grow:1; overflow-y:auto;"></div>
     
-    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
-      Content Warning: Content may be inaccurate or biased. 
-      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a>.
-    </div>
-
-    <div class="input-area">
-      <input type="text" id="userInput" placeholder="Type a message...">
-      <button id="sendBtn">Send</button>
+    <div class="input-area" style="padding: 20px; display: flex; gap: 10px;">
+      <input type="text" id="userInput" style="flex-grow:1; border-radius:10px; padding:10px;">
+      <button id="sendBtn" style="border-radius:10px; padding:10px 20px;">Send</button>
     </div>
   </div>
 
-  <div id="settingsModal" class="modal">...</div>
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <button id="deleteAllChatsBtn">Delete All Chats</button>
+      <button onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+    </div>
+  </div>
+
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput">
+      <button id="renameConfirm">Rename</button>
+      <button id="renameCancel">Cancel</button>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <button id="deleteConfirm">Delete</button>
+      <button id="deleteCancel">Cancel</button>
+    </div>
+  </div>
 
 <script>
-  // Loading Script
-  const loadingScript = document.createElement('script');
-  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
-  loadingScript.onload = () => { document.body.style.visibility = 'visible'; };
-  document.head.appendChild(loadingScript);
+  async function loadScripts() {
+    const v = Date.now();
+    
+    // 1. Load Loading Overlay
+    await new Promise(r => {
+      const s = document.createElement('script');
+      s.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${v}`;
+      s.onload = () => { document.body.style.visibility = 'visible'; r(); };
+      document.head.appendChild(s);
+    });
 
-  // Sidebar Script
-  const sidebarScript = document.createElement('script');
-  sidebarScript.src = `https://xpdevs.github.io/Genesis-AI/js/sidebar.js?v=${Date.now()}`;
-  sidebarScript.defer = true;
-  document.head.appendChild(sidebarScript);
+    // 2. Load Sidebar (Must be before main.js)
+    await new Promise(r => {
+      const s = document.createElement('script');
+      s.src = `https://xpdevs.github.io/Genesis-AI/js/sidebar.js?v=${v}`;
+      s.onload = r;
+      document.head.appendChild(s);
+    });
 
-  // Main & Summary Scripts
-  const scripts = ['main.js', 'summarise.js'];
-  scripts.forEach(s => {
-    const sc = document.createElement('script');
-    sc.src = `https://xpdevs.github.io/Genesis-AI/js/${s}?v=${Date.now()}`;
-    sc.defer = true;
-    document.head.appendChild(sc);
-  });
+    // 3. Load Main Logic
+    const main = document.createElement('script');
+    main.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${v}`;
+    document.head.appendChild(main);
+
+    // 4. Load Summary
+    const sum = document.createElement('script');
+    sum.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${v}`;
+    document.head.appendChild(sum);
+  }
+
+  loadScripts();
 </script>
 </body>
 </html>
