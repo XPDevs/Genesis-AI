@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/x-icon" href="icon.ico">
+<link rel="icon" type="image/x-icon" href="icon.ico">
 <title>Genesis AI Chat</title>
+
+<script src="https://xpdevs.github.io/js/loading.js"></script>
+
 </head>
 <body>
   <div class="sidebar">
@@ -21,7 +24,6 @@
     </div>
     <div id="chatBox" class="chat-box"></div>
     
-    <!-- Content Warning -->
     <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
       Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
       See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
@@ -34,7 +36,6 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h2>Settings</h2>
@@ -54,7 +55,6 @@
     </div>
   </div>
 
-  <!-- Rename Modal -->
   <div id="renameModal" class="modal">
     <div class="modal-content">
       <h2>Rename Chat</h2>
@@ -66,7 +66,6 @@
     </div>
   </div>
 
-  <!-- Delete Modal -->
   <div id="deleteModal" class="modal">
     <div class="modal-content">
       <h2>Delete Chat?</h2>
@@ -80,7 +79,6 @@
     </div>
   </div>
 
-  <!-- Delete All Chats Modal -->
   <div id="deleteAllModal" class="modal">
     <div class="modal-content">
       <h2>Confirm deletion of all chats?</h2>
@@ -110,21 +108,18 @@
     </div>
   </div>
   
-  <script>
-// Load the main chat logic
-const mainScript = document.createElement('script');
-mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-mainScript.defer = true;
-document.head.appendChild(mainScript);
+  <script>
+    // Load the main logic
+    const mainScript = document.createElement('script');
+    mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
+    mainScript.defer = true;
+    document.head.appendChild(mainScript);
 
-// Load the summarization logic
-const summaryScript = document.createElement('script');
-summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
-summaryScript.defer = true;
-document.head.appendChild(summaryScript);
-</script>
+    // Load the summarization logic
+    const summaryScript = document.createElement('script');
+    summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
+    summaryScript.defer = true;
+    document.head.appendChild(summaryScript);
+  </script>
 </body>
 </html>
-
-
-
