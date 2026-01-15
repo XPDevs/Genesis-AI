@@ -70,8 +70,6 @@ window.summariseConversation = function(data) {
         .join(" ");
 
     return {
-        summary: `(Genesis-AI Summary): ${finalSummary}`,
-        themes: themes, // Return the top themes for UI tags
-        density: `${Math.round((finalSummary.length / data.length) * 100)}%`
+        summary: `: ${finalSummary}`
     };
 };
