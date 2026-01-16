@@ -1,176 +1,133 @@
 :root {
-  /* Refined Palette */
   --bg: #ffffff;
-  --text: #0d0d0d;
-  --sidebar: #f9f9f9;
+  --text: #1f1f1f;
+  --sidebar: #f0f4f9; /* Gemini's light blue-tinted sidebar */
   --chat-bg: #ffffff;
-  --input-bg: #ffffff;
-  --border: #e5e5e5;
-  --primary: #10a37f;
-  --user-msg-bg: #f4f4f4;
-  --active-chat: #ececec;
-  --sidebar-text: #202123;
+  --input-bg: #f0f4f9;
+  --border: #deede0;
+  --primary: #1a73e8; /* Google Blue */
+  --user-msg-bg: #e9eef6;
+  --active-chat: #e2e7ef;
+  --radius: 24px; /* More rounded for modern UI */
 }
 
 body.dark {
-  --bg: #212121;
-  --text: #ececec;
-  --sidebar: #171717;
-  --chat-bg: #212121;
-  --input-bg: #2f2f2f;
-  --border: #383838;
-  --user-msg-bg: #2f2f2f;
-  --active-chat: #262626;
-  --sidebar-text: #ffffff;
+  --bg: #131314;
+  --text: #e3e3e3;
+  --sidebar: #1e1f20;
+  --chat-bg: #131314;
+  --input-bg: #1e1f20;
+  --border: #444746;
+  --user-msg-bg: #2b2b2b;
+  --active-chat: #333537;
 }
 
 body {
   margin: 0;
-  font-family: "Sone", "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Google Sans", "Inter", sans-serif;
   background: var(--bg);
   color: var(--text);
   display: flex;
   height: 100vh;
-  overflow: hidden;
 }
 
-/* --- Sidebar (Modern Minimal) --- */
+/* Sidebar Refinement */
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: var(--sidebar);
   display: flex;
   flex-direction: column;
-  padding: 10px;
-  transition: all 0.3s ease;
+  padding: 16px;
+  border: none;
 }
 
-.sidebar-header {
-  padding-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sidebar-header button {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.sidebar-header button:hover {
-  background: var(--active-chat);
-}
-
-.chat-list {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 20px;
-}
-
-.chat-item {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--sidebar-text);
-}
-
-.chat-item:hover {
-  background: var(--active-chat);
-}
-
-.chat-item.active {
-  background: var(--active-chat);
-  font-weight: 500;
-}
-
-/* --- Main Chat Area --- */
+/* --- Centered Message Layout --- */
 .chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center; /* Centers everything horizontally */
   position: relative;
 }
 
-.chat-header {
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  font-weight: 600;
-}
-
-/* Center the chat content like Gemini/ChatGPT */
 .chat-box {
-  flex: 1;
-  padding: 20px 0;
-  overflow-y: auto;
-  background: var(--chat-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Centers the message column */
-}
-
-/* --- Message Layout --- */
-.message {
   width: 100%;
-  max-width: 768px; /* Standard readable width */
-  margin: 0 auto 24px auto;
-  padding: 10px 20px;
-  line-height: 1.6;
-  font-size: 1rem;
+  max-width: 820px; /* Optimal reading width for Gemini style */
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 20px;
   display: flex;
   flex-direction: column;
+  scroll-behavior: smooth;
 }
 
+/* Hide scrollbar for a cleaner look */
+.chat-box::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-box::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+/* Message Styles */
+.message {
+  margin-bottom: 32px;
+  font-size: 16px;
+  line-height: 1.6;
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* User Bubble: Right-aligned, pill-shaped */
 .message.user {
-  align-items: flex-end; /* Align user text to the right */
+  display: flex;
+  justify-content: flex-end;
 }
 
 .message.user span {
   background: var(--user-msg-bg);
-  padding: 10px 18px;
-  border-radius: 20px;
-  max-width: 85%;
-  display: inline-block;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  max-width: 80%;
 }
 
+/* AI Content: Left-aligned, no background (clean text) */
 .message.ai {
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
 }
 
-/* AI response looks like plain text on the background */
 .message.ai span {
   width: 100%;
+  padding-left: 8px;
 }
 
-/* --- Improved Input Area --- */
-.input-wrapper {
+/* --- Floating Input Bar --- */
+.input-container {
   width: 100%;
-  max-width: 768px;
-  margin: 0 auto;
-  padding: 10px 20px 24px 20px;
+  max-width: 820px;
+  padding: 0 20px 24px 20px;
 }
 
 .input-area {
   display: flex;
   align-items: center;
   background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 8px 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  padding: 8px 16px;
+  border-radius: 32px; /* Full pill shape */
+  transition: box-shadow 0.2s;
+}
+
+.input-area:focus-within {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.2);
+  background: var(--sidebar);
 }
 
 .input-area input {
@@ -178,42 +135,31 @@ body {
   border: none;
   background: transparent;
   color: var(--text);
-  padding: 10px;
+  font-size: 16px;
+  padding: 12px;
   outline: none;
-  font-size: 1rem;
 }
 
 .input-area button {
   background: var(--primary);
+  color: white;
   border: none;
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: bold;
 }
 
-/* --- Modals & Toggles --- */
-.modal-content {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-  border-radius: 14px;
-}
-
-.toggle {
-  width: 44px;
-  height: 24px;
-}
-
-.slider:before {
-  height: 18px;
-  width: 18px;
-}
-
-input:checked + .slider:before {
-  transform: translateX(20px);
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none; /* Hide sidebar on small screens for the pure chat look */
+  }
+  .chat-box {
+    padding: 20px 15px;
+  }
 }
