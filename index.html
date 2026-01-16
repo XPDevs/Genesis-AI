@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="icon.ico">
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
 <link rel="stylesheet" href="https://xpdevs.github.io/Genesis-AI/styles/ui.css">
 <title>Genesis AI Chat</title>
 
@@ -25,21 +25,17 @@
     <div class="chat-header">
       <h3 id="chatTitle">New Chat</h3>
     </div>
-    
     <div id="chatBox" class="chat-box"></div>
     
-    <div class="input-container">
-      <div class="input-area">
-        <input type="text" id="userInput" placeholder="Type a message...">
-        <button id="sendBtn">Send</button>
-      </div>
+    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
+      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
+      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
+      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
+    </div>
 
-      <div id="contentWarning" style="padding:12px; color:#888; text-align:center; font-size:0.75em; line-height:1.4;">
-        Genesis may display inaccurate info, including about people, so double-check its responses. 
-        <br>
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:inherit; text-decoration:underline;">Privacy Policy</a> and 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:inherit; text-decoration:underline;">Terms Of Service</a>.
-      </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
     </div>
   </div>
 
@@ -59,21 +55,73 @@
           Delete All Chats
         </button>
       </div>
+    </div>
+  </div>
+
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput">
       <div class="modal-actions">
-        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+        <button class="confirm" id="renameConfirm">Rename</button>
+        <button class="cancel" id="renameCancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <script>
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Delete
+        </button>
+        <button class="cancel" id="deleteCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Confirm deletion of all chats?</h2>
+      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+          Yes, Delete All
+        </button>
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Share Chat Link</h2>
+      <p>Copy the link below to share this conversation. The link is read-only.</p>
+      <div style="display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <button id="copyShareLinkBtn" style="background:#007bff;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">
+          Copy
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" id="shareCancel">Close</button>
+      </div>
+    </div>
+  </div>
+  
+<script>
   // 1. Load the Loading Overlay First
   const loadingScript = document.createElement('script');
+  // Adjusted path to include /Genesis-AI/
   loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
   
   loadingScript.onload = () => {
     document.body.style.visibility = 'visible';
   };
 
+  // Error handling if the script fails to load
   loadingScript.onerror = () => {
     console.error("Loading script failed to load. Revealing UI.");
     document.body.style.visibility = 'visible';
