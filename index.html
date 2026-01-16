@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
 <link rel="stylesheet" href="https://xpdevs.github.io/Genesis-AI/styles/ui.css">
-<title>Genesis AI Chat</title>
+<title>Genesis AI</title>
 
 <style>
   /* Prevents the white flash before the loading script executes */
@@ -23,37 +23,48 @@
 
   <div class="chat-main">
     <div class="chat-header">
-      <h3 id="chatTitle">New Chat</h3>
-    </div>
-    <div id="chatBox" class="chat-box"></div>
-    
-    <div id="contentWarning" style="padding:8px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin:0 16px 8px 16px; font-size:0.9em;">
-      Content Warning: Content may be inaccurate or biased. Do not treat it as professional advice.  
-      See <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:#856404; text-decoration:underline;">Privacy Policy</a> and 
-      <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:#856404; text-decoration:underline;">Terms Of Service</a>.
+      <h3 id="chatTitle">Genesis AI</h3>
     </div>
 
-    <div class="input-area">
-      <input type="text" id="userInput" placeholder="Type a message...">
-      <button id="sendBtn">Send</button>
+    <div id="chatBox" class="chat-box">
+      </div>
+    
+    <div class="input-container">
+      <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask Genesis...">
+        <button id="sendBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="contentWarning">
+        Genesis may display inaccurate info, including about people, so double-check its responses.  
+        <br>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a>
+      </div>
     </div>
   </div>
 
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h2>Settings</h2>
-      <div class="setting-item">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
+        <span>Dark Mode</span>
         <label class="toggle">
           <input type="checkbox" id="themeToggle">
           <span class="slider"></span>
         </label>
-        <span>Dark Mode</span>
       </div>
-      <br>
       <div class="setting-item">
-        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
+        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:10px 20px;border-radius:20px;cursor:pointer;width:100%;">
           Delete All Chats
         </button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
       </div>
     </div>
   </div>
@@ -74,9 +85,7 @@
       <h2>Delete Chat?</h2>
       <p>This action cannot be undone.</p>
       <div class="modal-actions">
-        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Delete
-        </button>
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
         <button class="cancel" id="deleteCancel">Cancel</button>
       </div>
     </div>
@@ -84,26 +93,22 @@
 
   <div id="deleteAllModal" class="modal">
     <div class="modal-content">
-      <h2>Confirm deletion of all chats?</h2>
-      <p>Are you sure you want to delete <strong>all chats</strong>? This cannot be undone.</p>
+      <h2>Delete everything?</h2>
+      <p>This will permanently remove all chat history.</p>
       <div class="modal-actions">
-        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;">
-          Yes, Delete All
-        </button>
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;">Yes, Delete All</button>
         <button class="cancel" id="deleteAllCancel">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div id="shareModal" class="modal" style="display: none;">
+  <div id="shareModal" class="modal">
     <div class="modal-content">
-      <h2>Share Chat Link</h2>
-      <p>Copy the link below to share this conversation. The link is read-only.</p>
-      <div style="display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px;">
-        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-        <button id="copyShareLinkBtn" style="background:#007bff;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">
-          Copy
-        </button>
+      <h2>Share Chat</h2>
+      <p>Copy the link below to share this conversation.</p>
+      <div style="display: flex; gap: 8px; margin: 15px 0;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <button id="copyShareLinkBtn" style="background:var(--primary);color:#fff;border:none;padding:0 15px;border-radius:8px;cursor:pointer;">Copy</button>
       </div>
       <div class="modal-actions">
         <button class="cancel" id="shareCancel">Close</button>
@@ -112,35 +117,25 @@
   </div>
   
 <script>
-  // 1. Load the Loading Overlay First
+  // 1. Load the Loading Overlay
   const loadingScript = document.createElement('script');
-  // Adjusted path to include /Genesis-AI/
   loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
-  
-  loadingScript.onload = () => {
-    document.body.style.visibility = 'visible';
-  };
-
-  // Error handling if the script fails to load
-  loadingScript.onerror = () => {
-    console.error("Loading script failed to load. Revealing UI.");
-    document.body.style.visibility = 'visible';
-  };
-
+  loadingScript.onload = () => { document.body.style.visibility = 'visible'; };
+  loadingScript.onerror = () => { document.body.style.visibility = 'visible'; };
   document.head.appendChild(loadingScript);
 
-  // 2. Load the Main Logic
-  const mainScript = document.createElement('script');
-  mainScript.src = `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`;
-  mainScript.defer = true;
-  document.head.appendChild(mainScript);
+  // 2. Load the Core Logic
+  const scripts = [
+    `https://xpdevs.github.io/Genesis-AI/js/main.js?v=${Date.now()}`,
+    `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`
+  ];
 
-  // 3. Load the Summarization Logic
-  const summaryScript = document.createElement('script');
-  summaryScript.src = `https://xpdevs.github.io/Genesis-AI/js/summarise.js?v=${Date.now()}`;
-  summaryScript.defer = true;
-  document.head.appendChild(summaryScript);
+  scripts.forEach(src => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    document.head.appendChild(s);
+  });
 </script>
 </body>
 </html>
-
