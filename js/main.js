@@ -268,16 +268,24 @@ function updateURL(chatTitle) {
 function renderChatList() {
   if (isReadOnlyMode) return;
   chatList.innerHTML = "";
+  
   chats.forEach(chat => {
     const li = document.createElement("li");
+    // Added 'active' class logic and standard chat-item class
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
+    
     const span = document.createElement("span");
     span.textContent = chat.title;
+    span.className = "chat-name";
 
     const options = document.createElement("div");
     options.className = "chat-options";
+
+    // This is the specific button you wanted to fix
     const dots = document.createElement("button");
     dots.textContent = "⋮";
+    dots.className = "dots-btn"; // Assigned class for custom CSS styling
+
     const dropdown = document.createElement("div");
     dropdown.className = "dropdown";
     
@@ -288,18 +296,47 @@ function renderChatList() {
     const shareBtn = document.createElement("button");
     shareBtn.textContent = "Share";
 
-    renameBtn.onclick = e => { e.stopPropagation(); currentRenameId = chat.id; renameInput.value = chat.title; renameModal.style.display = "flex"; dropdown.style.display = "none"; };
-    deleteBtn.onclick = e => { e.stopPropagation(); currentDeleteId = chat.id; deleteModal.style.display = "flex"; dropdown.style.display = "none"; };
-    shareBtn.onclick = e => { e.stopPropagation(); showShareModal(chat.id); dropdown.style.display = "none"; };
+    // Button Actions
+    renameBtn.onclick = e => { 
+      e.stopPropagation(); 
+      currentRenameId = chat.id; 
+      renameInput.value = chat.title; 
+      renameModal.style.display = "flex"; 
+      dropdown.style.display = "none"; 
+    };
+    
+    deleteBtn.onclick = e => { 
+      e.stopPropagation(); 
+      currentDeleteId = chat.id; 
+      deleteModal.style.display = "flex"; 
+      dropdown.style.display = "none"; 
+    };
+    
+    shareBtn.onclick = e => { 
+      e.stopPropagation(); 
+      showShareModal(chat.id); 
+      dropdown.style.display = "none"; 
+    };
 
+    // Toggle Dropdown
+    dots.onclick = e => { 
+      e.stopPropagation(); 
+      // Toggle display between none and flex
+      const isVisible = dropdown.style.display === "flex";
+      dropdown.style.display = isVisible ? "none" : "flex"; 
+    };
+
+    // Assemble components
     dropdown.append(renameBtn, deleteBtn, shareBtn);
     options.append(dots, dropdown);
-    dots.onclick = e => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex"; };
 
+    // Sidebar selection logic
     li.onclick = () => {
       activeChatId = chat.id;
       localStorage.setItem("activeChatId", activeChatId);
-      renderChatList(); renderMessages(); updateURL(chat.title);
+      renderChatList(); 
+      renderMessages(); 
+      updateURL(chat.title);
     };
 
     li.append(span, options);
