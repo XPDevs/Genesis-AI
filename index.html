@@ -6,13 +6,13 @@
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
 <link rel="stylesheet" href="https://xpdevs.github.io/Genesis-AI/styles/ui.css">
 <title>Genesis AI</title>
-
 <style>
-  /* Prevents the white flash before the loading script executes */
+  /* Prevents initial flickering */
   body { visibility: hidden; background-color: #000; }
 </style>
 </head>
 <body>
+
   <div class="sidebar">
     <div class="sidebar-header">
       <button id="newChatBtn">+ New Chat</button>
@@ -24,7 +24,7 @@
       </button>
     </div>
     <ul id="chatList" class="chat-list">
-        </ul>
+      </ul>
   </div>
 
   <div class="chat-main">
@@ -46,10 +46,10 @@
       </div>
 
       <div id="contentWarning">
-        Genesis may display inaccurate info, including about people, so double-check its responses.  
+        Genesis may display inaccurate info. 
         <br>
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms</a>
       </div>
     </div>
   </div>
@@ -64,11 +64,9 @@
           <span class="slider"></span>
         </label>
       </div>
-      <div class="setting-item">
-        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:12px;border-radius:20px;cursor:pointer;width:100%;font-weight:500;">
-          Delete All Chats
-        </button>
-      </div>
+      <button id="deleteAllChatsBtn" style="background:#ff4d4d; color:#fff; border:none; padding:12px; border-radius:20px; width:100%; cursor:pointer; font-weight:500;">
+        Delete All Chats
+      </button>
       <div class="modal-actions">
         <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
       </div>
@@ -78,10 +76,10 @@
   <div id="renameModal" class="modal">
     <div class="modal-content">
       <h2>Rename Chat</h2>
-      <input type="text" id="renameInput" placeholder="Enter new name...">
+      <input type="text" id="renameInput" placeholder="New chat name...">
       <div class="modal-actions">
         <button class="confirm" id="renameConfirm">Rename</button>
-        <button class="cancel" id="renameCancel">Cancel</button>
+        <button class="cancel" onclick="document.getElementById('renameModal').style.display='none'">Cancel</button>
       </div>
     </div>
   </div>
@@ -89,21 +87,10 @@
   <div id="deleteModal" class="modal">
     <div class="modal-content">
       <h2>Delete Chat?</h2>
-      <p>This action cannot be undone.</p>
+      <p>This will be permanently removed.</p>
       <div class="modal-actions">
-        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
-        <button class="cancel" id="deleteCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteAllModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete everything?</h2>
-      <p>This will permanently remove all chat history.</p>
-      <div class="modal-actions">
-        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;">Yes, Delete All</button>
-        <button class="cancel" id="deleteAllCancel">Cancel</button>
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d; color:white;">Delete</button>
+        <button class="cancel" onclick="document.getElementById('deleteModal').style.display='none'">Cancel</button>
       </div>
     </div>
   </div>
@@ -111,42 +98,33 @@
   <div id="shareModal" class="modal">
     <div class="modal-content">
       <h2>Share Chat</h2>
-      <p>Copy this link to share your conversation.</p>
-      <div style="display: flex; gap: 8px; margin: 20px 0;">
-        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
-        <button id="copyShareLinkBtn" style="background:var(--primary);color:#fff;border:none;padding:0 20px;border-radius:12px;cursor:pointer;">Copy</button>
+      <div style="display: flex; gap: 8px; margin: 15px 0;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+        <button id="copyShareLinkBtn" style="background:var(--primary); color:#fff; border:none; padding:0 15px; border-radius:12px; cursor:pointer;">Copy</button>
       </div>
       <div class="modal-actions">
-        <button class="cancel" id="shareCancel">Close</button>
+        <button class="cancel" onclick="document.getElementById('shareModal').style.display='none'">Close</button>
       </div>
     </div>
   </div>
   
 <script>
-  // Initialise Loading System
-  const loadScript = (src, isAsync = true) => {
-    return new Promise((resolve, reject) => {
+  // Sequence for launching the ecosystem
+  (async () => {
+    const loadModule = (url) => new Promise(resolve => {
       const s = document.createElement('script');
-      s.src = `${src}?v=${Date.now()}`;
-      s.async = isAsync;
+      s.src = `${url}?v=${Date.now()}`;
       s.onload = resolve;
-      s.onerror = () => {
-        console.warn(`Script failed: ${src}`);
-        resolve(); // Continue even if one fails
-      };
       document.head.appendChild(s);
     });
-  };
 
-  // Execute sequence
-  (async () => {
-    await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+    // Start with the loader
+    await loadModule('https://xpdevs.github.io/Genesis-AI/js/loading.js');
     document.body.style.visibility = 'visible';
-    
-    await Promise.all([
-      loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
-      loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
-    ]);
+
+    // Load logic
+    loadModule('https://xpdevs.github.io/Genesis-AI/js/main.js');
+    loadModule('https://xpdevs.github.io/Genesis-AI/js/summarise.js');
   })();
 </script>
 </body>
