@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/x-icon" href="icon.ico">
+<link rel="stylesheet" href="https://xpdevs.github.io.Genesis-AI/styles/ui-mobile.css"> <title>Genesis AI Chat</title>
+</head>
+<body class="mobile-ready">
+
+  <div id="sidebarOverlay" class="overlay"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn" class="btn-primary">+ New Chat</button>
+      <button id="settingsBtn" class="btn-icon">⚙️</button>
+    </div>
+    <ul id="chatList" class="chat-list"></ul>
+  </div>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h3 id="chatTitle">New Chat</h3>
+    </div>
+    
+    <div id="chatBox" class="chat-box"></div>
+    
+    <div id="contentWarning" class="warning-banner">
+      Content Warning: Content may be inaccurate. See 
+      <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a>.
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Message Genesis...">
+      <button id="sendBtn" class="btn-send">↑</button>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+        <span>Dark Mode</span>
+      </div>
+      <button id="deleteAllChatsBtn" class="btn-danger">Delete All Chats</button>
+    </div>
+  </div>
+
+  <script>
+  // Mobile Interaction Logic
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  function toggleMenu() {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('visible');
+  }
+
+  menuToggle.addEventListener('click', toggleMenu);
+  overlay.addEventListener('click', toggleMenu);
+
+  // Close menu when a chat is tapped on mobile
+  document.getElementById('chatList').addEventListener('click', () => {
+    if(window.innerWidth <= 768) toggleMenu();
+  });
+
+  // External Logic Loaders
+  const loadScript = (src, isAsync = true) => {
+    const s = document.createElement('script');
+    s.src = `${src}?v=${Date.now()}`;
+    s.async = isAsync;
+    document.head.appendChild(s);
+  };
+
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js');
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js');
+</script>
+</body>
+</html>
