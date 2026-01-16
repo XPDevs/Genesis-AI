@@ -13,11 +13,8 @@
     return;
   }
 
-  const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = cssFile;
-  document.head.appendChild(link);
+  // Desktop CSS injection removed. 
+  // The script will now exit here and let the page load normally.
 })();
 
 const chatList = document.getElementById("chatList");
