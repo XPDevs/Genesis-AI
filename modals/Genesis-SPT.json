@@ -3,7 +3,7 @@
   "what is the date": "The date is: %DATE%",
   "what is the time": "The time is: %TIME%",
   "time": "The time is: %TIME%",
-  "date": "The time is: %DATE%",
+  "date": "The date is: %DATE%",
   "summarise": "%SUMMARY_SENT%",
   "summary": "%SUMMARY_SENT%",
   "can you summarise this": "%SUMMARY_SENT%",
