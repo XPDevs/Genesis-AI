@@ -7,14 +7,12 @@
     return; 
   }
 
-  // 2. Setup Flag Check (Desktop only)
-  // Checks if the specific key is missing or not set to "FLAG_TRUE"
+  // 2. Setup Flag Check
   if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
     window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
     return;
   }
 
-  // 3. Continue loading the UI stylesheet if both checks pass
   const cssFile = "https://xpdevs.github.io/Genesis-AI/styles/ui.css";
   const link = document.createElement("link");
   link.rel = "stylesheet";
@@ -107,9 +105,7 @@ function loadAndSaveSharedChat(messages, originalTitle) {
     sendBtn.disabled = false;
 
     const sidebarHeader = document.querySelector(".sidebar-header");
-    if (sidebarHeader) {
-        sidebarHeader.style.display = 'flex';
-    }
+    if (sidebarHeader) sidebarHeader.style.display = 'flex';
 
     const newChatTitle = `${originalTitle} (shared)`;
     const newChat = {
@@ -136,9 +132,7 @@ function loadSharedChat() {
         const decodedMessages = decodeChat(encodedChat);
         let title = "Shared Conversation";
         const firstUserMsg = decodedMessages.find(msg => msg.role === 'user');
-        if (firstUserMsg) {
-            title = summariseTitle(firstUserMsg.text);
-        }
+        if (firstUserMsg) title = summariseTitle(firstUserMsg.text);
         loadAndSaveSharedChat(decodedMessages, title);
         return true; 
     }
@@ -170,15 +164,8 @@ function ensureBanModal() {
   const modal = document.createElement('div');
   modal.id = 'banModal';
   Object.assign(modal.style, {
-    position: 'fixed',
-    inset: '0',
-    display: 'none',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: '999999999',
-    padding: '20px',
-    pointerEvents: 'all'
+    position: 'fixed', inset: '0', display: 'none', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)', zIndex: '999999999', padding: '20px', pointerEvents: 'all'
   });
 
   modal.innerHTML = `
@@ -218,18 +205,13 @@ function liftBan() {
   info.bannedUntil = null;
   info.consecutiveViolations = 0;
   saveBanInfo(info);
-
   const m = document.getElementById('banModal');
   if (m) m.style.display = 'none';
-
   if (banCountdownInterval) { clearInterval(banCountdownInterval); banCountdownInterval = null; }
 }
 
 window.unbanGenesis = function(code) {
-  if (code === SECRET_UNBAN_CODE) {
-    liftBan();
-    return true;
-  }
+  if (code === SECRET_UNBAN_CODE) { liftBan(); return true; }
   return false;
 };
 
@@ -238,7 +220,6 @@ function showBanModal() {
   const title = modal.querySelector('#banModalTitle');
   const msg = modal.querySelector('#banModalMessage');
   const countdownEl = modal.querySelector('#banModalCountdown');
-
   const info = loadBanInfo();
 
   if (info.bannedUntil === 'perm') {
@@ -269,7 +250,6 @@ function showBanModal() {
   updateCountdown();
   if (banCountdownInterval) clearInterval(banCountdownInterval);
   banCountdownInterval = setInterval(updateCountdown, 1000);
-
   modal.style.display = 'flex';
   document.body.style.pointerEvents = 'none';
 }
@@ -280,9 +260,7 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(data => responses = data)
   .catch(err => appendMessage(`Failed to load data: ${err}`, "error"));
 
-function saveChats() {
-  localStorage.setItem("chats", JSON.stringify(chats));
-}
+function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 
 function updateURL(chatTitle) {
   const url = new URL(window.location.origin + window.location.pathname);
@@ -301,7 +279,6 @@ function renderChatList() {
 
     const options = document.createElement("div");
     options.className = "chat-options";
-
     const dots = document.createElement("button");
     dots.textContent = "⋮";
     const dropdown = document.createElement("div");
@@ -325,9 +302,7 @@ function renderChatList() {
     li.onclick = () => {
       activeChatId = chat.id;
       localStorage.setItem("activeChatId", activeChatId);
-      renderChatList();
-      renderMessages();
-      updateURL(chat.title);
+      renderChatList(); renderMessages(); updateURL(chat.title);
     };
 
     li.append(span, options);
@@ -347,24 +322,12 @@ function renderMessages() {
 }
 
 function appendMessage(text, role, isNew = false) {
-  // --- DEEP EXTRACTION: Find the actual string inside the object ---
-  let finalString = "";
-
-  if (typeof text === 'string') {
-    finalString = text;
-  } else if (text && typeof text === 'object') {
-    // Look for .text (standard) or try to find any string property inside
-    finalString = text.text || text.message || JSON.stringify(text);
-    console.warn("Genesis-AI: Extracted string from object successfully.");
-  } else {
-    finalString = String(text || "");
-  }
+  let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
 
-  // Apply placeholders to the extracted string
   let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
 
   const div = document.createElement("div");
@@ -415,6 +378,38 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
+function findResponses(input) {
+  input = input.toLowerCase();
+  const foundMessages = [];
+  
+  // Iterate through all keys in the response JSON
+  Object.keys(responses).forEach(key => {
+    if (input.includes(key.toLowerCase())) {
+      foundMessages.push(responses[key]);
+    }
+  });
+
+  if (foundMessages.length === 0) {
+    return { role: "ai", text: "I can't find a direct response for that, but I'm learning! Try asking about something I know." };
+  }
+
+  // Handle %SUMMARY_SENT% check within multi-responses
+  const isSummaryTriggered = foundMessages.some(m => m === "%SUMMARY_SENT%");
+  if (isSummaryTriggered && typeof window.summariseConversation === "function") {
+    return { role: "ai", text: window.summariseConversation(input) };
+  }
+
+  // Combine multiple answers with grammar logic
+  if (foundMessages.length === 1) {
+    return { role: "ai", text: foundMessages[0] };
+  } else {
+    // Join with commas and "and" for the last item
+    const last = foundMessages.pop();
+    const joined = foundMessages.join(", ") + " and " + last;
+    return { role: "ai", text: joined };
+  }
+}
+
 function sendMessage() {
   if (isReadOnlyMode) return;
   if (isCurrentlyBanned()) { showBanModal(); return; }
@@ -457,13 +452,10 @@ function sendMessage() {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, () => {
       chat.title = newTitle;
-      saveChats();
-      renderChatList();
-      updateURL(newTitle);
+      saveChats(); renderChatList(); updateURL(newTitle);
     });
   }
 
-  // --- AI RESPONSE LOGIC ---
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading";
   loadingDiv.innerHTML = `<span>Gathering information...</span>`;
@@ -472,38 +464,15 @@ function sendMessage() {
 
   setTimeout(() => {
     loadingDiv.remove();
-
     let botMsg;
-    const trigger = "please summarise";
-    const lowerText = text.toLowerCase();
 
-    // 1. Manual trigger
-    if (lowerText.startsWith(trigger)) {
-      const dataToSummarise = text.substring(trigger.length).trim();
-      if (typeof window.summariseConversation === "function") {
-        const result = window.summariseConversation(dataToSummarise);
-        botMsg = { role: "ai", text: result };
-      } else {
-        botMsg = { role: "ai", text: "Summary module not found." };
-      }
+    if (text.toLowerCase().startsWith("please summarise")) {
+      const dataToSummarise = text.substring(16).trim();
+      botMsg = { role: "ai", text: (typeof window.summariseConversation === "function") ? window.summariseConversation(dataToSummarise) : "Summary module not found." };
     } else {
-      // 2. Standard JSON Lookup
-      const responseObj = findResponse(text);
-
-      // 3. JSON trigger
-      if (responseObj && responseObj.text === "%SUMMARY_SENT%") {
-        if (typeof window.summariseConversation === "function") {
-          const result = window.summariseConversation(text);
-          botMsg = { role: "ai", text: result };
-        } else {
-          botMsg = { role: "ai", text: "Summary module triggered but not found." };
-        }
-      } else {
-        botMsg = responseObj;
-      }
+      botMsg = findResponses(text);
     }
 
-    // Finalise the message
     chat.messages.push(botMsg);
     saveChats();
     appendMessage(botMsg.text, botMsg.role, true);
@@ -514,15 +483,7 @@ function sendMessage() {
       sendBtn.style.opacity = "1";
       userInput.focus();
     }, (botMsg.text.length * 30) + 500);
-
-  }, 1500); // End of main setTimeout
-} // End of sendMessage function
-
-function findResponse(input) {
-  input = input.toLowerCase();
-  const key = Object.keys(responses).find(k => input.includes(k.toLowerCase()));
-  if (!key) return { role: "ai", text: "I can't find a direct response for that, but I'm learning! Try asking about something I know." };
-  return { role: "ai", text: responses[key] };
+  }, 1500);
 }
 
 function showShareModal(chatId) {
@@ -538,9 +499,7 @@ function showShareModal(chatId) {
     const encoded = encodeChat(chat.messages);
     const shareBaseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
     shareLinkInput.value = `${shareBaseUrl}?q=${encoded}`;
-    shareLinkInput.disabled = false;
-    copyShareLinkBtn.disabled = false;
-    shareModal.style.display = "flex";
+    shareLinkInput.disabled = false; copyShareLinkBtn.disabled = false; shareModal.style.display = "flex";
 }
 
 if (shareCancel) shareCancel.onclick = () => shareModal.style.display = "none";
@@ -611,8 +570,7 @@ window.addEventListener('load', () => {
       const found = chats.find(c => c.title === chatParam);
       if (found) { activeChatId = found.id; localStorage.setItem("activeChatId", activeChatId); }
     }
-    renderChatList();
-    renderMessages();
+    renderChatList(); renderMessages();
   }
   if (isCurrentlyBanned()) showBanModal();
 });
