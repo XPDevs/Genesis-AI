@@ -125,7 +125,7 @@ body.dark .chat-item:hover {
 }
 
 /* Fix for the Three-Dot Button */
-.chat-options-btn {
+.dots-btn {
   background: transparent !important;
   border: none !important;
   outline: none;
