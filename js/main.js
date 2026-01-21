@@ -31,6 +31,8 @@ const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const newChatBtn = document.getElementById("newChatBtn");
+const sidebarToggleBtn = document.getElementById("sidebarToggleBtn");
+const mobileMenuBtn = document.getElementById("mobileMenuBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const themeToggle = document.getElementById("themeToggle");
@@ -611,6 +613,24 @@ newChatBtn.onclick = () => {
   localStorage.setItem("activeChatId", activeChatId);
   saveChats(); renderChatList(); renderMessages(); updateURL(newChat.title);
 };
+
+if (sidebarToggleBtn) {
+  sidebarToggleBtn.onclick = () => {
+    document.querySelector('.sidebar').classList.toggle('collapsed');
+  };
+}
+
+if (mobileMenuBtn) {
+  mobileMenuBtn.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelector('.sidebar').classList.toggle('open');
+  };
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && !e.target.closest('.sidebar') && !e.target.closest('#mobileMenuBtn')) {
+      document.querySelector('.sidebar').classList.remove('open');
+    }
+  });
+}
 
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
