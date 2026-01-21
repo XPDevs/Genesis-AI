@@ -348,18 +348,22 @@ body.dark .chat-item:hover {
   transition: all 0.2s ease;
 }
 
-/* Blue Outlined Cancel Button */
+/* Solid Blue Cancel Button Style */
 .modal-actions button.cancel {
+  background: var(--primary); /* Solid blue background */
   border: 1px solid var(--primary);
-  color: var(--primary);
+  color: #ffffff; /* White text for readability */
 }
 
 .modal-actions button.cancel:hover {
-  background: rgba(26, 115, 232, 0.1);
+  opacity: 0.9; /* Slight fade on hover to show interaction */
+  background: var(--primary);
 }
 
+/* Ensure the confirm button stays consistent */
 .modal-actions button.confirm {
   background: var(--primary);
+  border: 1px solid var(--primary);
   color: #fff;
 }
 
