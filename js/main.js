@@ -1,20 +1,26 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  const handshakeCode = "9980748324";
 
-  // 1. Mobile Check
+  // 1. Mobile & Handshake Check
   if (isMobile) {
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/mobile/unsupported.html";
-    return; 
+    // If the code is missing or incorrect on a mobile device, redirect
+    if (window.GENESIS_CODE !== handshakeCode) {
+      window.location.href = "https://xpdevs.github.io/Genesis-AI/mobile/unsupported.html";
+      return; 
+    }
+    // Mobile authorized
+    console.log("Genesis Mobile: Handshake Verified.");
   }
 
-  // 2. Setup Flag Check
+  // 2. Setup Flag Check (Required for both Desktop and Authorized Mobile)
   if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
     window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
     return;
   }
 
-  // Desktop CSS injection removed. 
-  // The script will now exit here and let the page load normally.
+  // Environment is valid - Continue with system initialization
+  console.log("Genesis Core: Environment Ready.");
 })();
 
 const chatList = document.getElementById("chatList");
