@@ -342,7 +342,7 @@ body.dark .chat-item:hover {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
-  border: none !important; /* Force removal of outlines */
+  border: none !important; /* Ensures no outline or border is visible */
 }
 
 /* Solid Primary Buttons (Blue) */
@@ -350,15 +350,21 @@ body.dark .chat-item:hover {
 .modal-actions button.confirm {
   background-color: var(--primary) !important;
   color: #ffffff !important;
+  /* Adding display properties to ensure they behave as solid blocks */
+  display: inline-block;
+  text-decoration: none;
 }
 
 /* Red Exception for Delete Actions */
-#deleteConfirm, #deleteAllConfirm {
+#deleteConfirm, 
+#deleteAllConfirm {
   background-color: #ff4d4d !important;
+  color: #ffffff !important;
 }
 
 .modal-actions button:hover {
   filter: brightness(0.9);
+  transform: translateY(-1px); /* Optional: slight lift effect for modern UI */
 }
 
 /* --- Custom Components --- */
