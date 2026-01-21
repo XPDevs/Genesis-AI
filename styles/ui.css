@@ -242,21 +242,28 @@ body.dark .chat-item:hover {
   color: var(--text);
 }
 
-/* --- Message Actions (Copy/Speak) --- */
+/* --- Message Actions (Updated for stability) --- */
 .msg-actions {
   position: absolute;
-  bottom: -28px;
+  bottom: -32px; /* Slightly adjusted position */
   display: flex;
-  gap: 6px;
+  gap: 8px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, visibility 0.2s;
   pointer-events: none;
+  z-index: 10;
+  /* This padding acts as a "bridge" so the mouse doesn't 
+     leave the hover zone when moving to the buttons */
+  padding-top: 20px; 
 }
 
+/* Ensure actions stay visible when hovering the actions themselves */
 .message:hover .msg-actions,
+.msg-actions:hover,
 .message.ai.latest .msg-actions {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 
 .message.ai .msg-actions {
@@ -268,21 +275,23 @@ body.dark .chat-item:hover {
 }
 
 .action-btn {
-  background: transparent;
-  border: none;
+  background: var(--input-bg); /* Give it a slight background for better click target visibility */
+  border: 1px solid var(--border);
   cursor: pointer;
   color: var(--text);
-  opacity: 0.5;
-  padding: 4px;
-  border-radius: 4px;
+  opacity: 0.7;
+  padding: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .action-btn:hover {
   opacity: 1;
-  background: rgba(0,0,0,0.05);
+  background: var(--active-chat);
+  transform: scale(1.1); /* Slight pop to show it's active */
 }
 
 body.dark .action-btn:hover {
