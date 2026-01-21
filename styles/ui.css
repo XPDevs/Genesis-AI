@@ -250,10 +250,10 @@ body.dark .chat-item:hover {
   /* Keep opacity at 0 by default */
   opacity: 0;
   /* Add a 0.3s delay when disappearing (hiding) */
-  transition: opacity 0.2s ease 0.5s; 
+  transition: opacity 0.2s ease 0.3s; 
   pointer-events: none;
   /* Acts as a bridge so the hover doesn't break */
-  padding: 20px 20px; 
+  padding: 15px 15px; 
 }
 
 /* Ensure actions stay visible when hovering the actions themselves */
