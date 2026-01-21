@@ -1,6 +1,7 @@
 /* Genesis-AI Master Stylesheet 
    Theme: Modern Gemini (XPDevs Standard)
    Author: James Turner
+   Version: 1.1 (Standardized Buttons)
 */
 
 :root {
@@ -44,7 +45,7 @@ body {
   background: var(--sidebar);
   display: flex;
   flex-direction: column;
-  border-right: 1px solid transparent;
+  border-right: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -91,7 +92,7 @@ body {
   background: var(--active-chat);
 }
 
-/* --- Chat List & Refined Three-Dot Options --- */
+/* --- Chat List & Options --- */
 .chat-list {
   flex: 1;
   overflow-y: auto;
@@ -124,10 +125,10 @@ body.dark .chat-item:hover {
   background: var(--active-chat);
 }
 
-/* Three-Dot Menu Styling Fix */
+/* Standardized Options Button */
 .dots-btn {
-  background: transparent !important; /* Forces removal of default button look */
-  border: none !important;
+  background: transparent;
+  border: none;
   outline: none;
   color: var(--text);
   cursor: pointer;
@@ -143,19 +144,15 @@ body.dark .chat-item:hover {
   padding: 0;
 }
 
-.chat-item:hover .chat-options-btn {
+.chat-item:hover .dots-btn {
   opacity: 1;
 }
 
-.chat-options-btn:hover {
-  background: rgba(0,0,0,0.1) !important;
+.dots-btn:hover {
+  background: var(--active-chat);
 }
 
-body.dark .chat-options-btn:hover {
-  background: rgba(255,255,255,0.1) !important;
-}
-
-/* --- Dropdown Menus (Rename, Delete, Share) --- */
+/* --- Dropdown Menus --- */
 .dropdown {
   position: absolute;
   right: 12px;
@@ -172,8 +169,8 @@ body.dark .chat-options-btn:hover {
 }
 
 .dropdown button {
-  background: transparent !important;
-  border: none !important;
+  background: transparent;
+  border: none;
   text-align: left;
   padding: 12px 16px;
   width: 100%;
@@ -185,14 +182,14 @@ body.dark .chat-options-btn:hover {
 }
 
 .dropdown button:hover {
-  background: var(--active-chat) !important;
+  background: var(--active-chat);
 }
 
 .dropdown button.delete-opt {
   color: #ff4d4d;
 }
 
-/* --- Main Layout & Chat Title Fix --- */
+/* --- Main Layout --- */
 .chat-main {
   flex: 1;
   display: flex;
@@ -207,7 +204,7 @@ body.dark .chat-options-btn:hover {
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Aligns title to the left */
+  justify-content: flex-start;
   padding: 0 24px;
   box-sizing: border-box;
 }
@@ -355,7 +352,7 @@ body.dark .chat-options-btn:hover {
   color: #fff;
 }
 
-/* Toggle Switch */
+/* --- Custom Components --- */
 .toggle {
   position: relative;
   display: inline-block;
