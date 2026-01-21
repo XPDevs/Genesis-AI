@@ -125,7 +125,7 @@ body.dark .chat-item:hover {
 }
 
 /* Three-Dot Menu Styling Fix */
-.dot-btn {
+.dots-btn {
   background: transparent !important; /* Forces removal of default button look */
   border: none !important;
   outline: none;
