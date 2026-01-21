@@ -366,19 +366,51 @@ function appendMessage(text, role, isNew = false) {
 
   const div = document.createElement("div");
   div.className = "message " + role;
+  
+  const textSpan = document.createElement("span");
+  div.appendChild(textSpan);
+
+  const actionsDiv = document.createElement("div");
+  actionsDiv.className = "msg-actions";
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "action-btn copy-btn";
+  copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+  copyBtn.onclick = () => navigator.clipboard.writeText(processedText);
+  actionsDiv.appendChild(copyBtn);
+
+  if (role === "ai") {
+    const speakBtn = document.createElement("button");
+    speakBtn.className = "action-btn speak-btn";
+    speakBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+    speakBtn.onclick = () => {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      } else {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(processedText));
+      }
+    };
+    actionsDiv.appendChild(speakBtn);
+
+    const existingLatest = chatBox.querySelectorAll('.message.ai.latest');
+    existingLatest.forEach(el => el.classList.remove('latest'));
+    div.classList.add('latest');
+  }
+
+  div.appendChild(actionsDiv);
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
     let i = 0;
     const interval = setInterval(() => {
-      div.textContent += processedText[i];
+      textSpan.textContent += processedText[i];
       i++;
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === processedText.length) clearInterval(interval);
     }, 30);
   } else {
-    div.textContent = processedText;
+    textSpan.textContent = processedText;
   }
 }
 
