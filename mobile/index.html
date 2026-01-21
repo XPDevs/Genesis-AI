@@ -5,18 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
 <link rel="stylesheet" href="https://xpdevs.github.io/Genesis-AI/mobile/ui.css">
-<title>Genesis AI</title>
+<title>Genesis AI | Mobile</title>
 
 <style>
-  /* Prevents the white flash before the loading script executes */
   body { 
     visibility: hidden; 
     background-color: #000; 
     margin: 0; 
     padding: 0; 
-    overflow: hidden; 
-    position: fixed; 
-    width: 100%; 
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
     height: 100%;
   }
 </style>
@@ -38,7 +37,7 @@
     <div class="sidebar-header">
       <button id="newChatBtn">+ New Chat</button>
       <button id="settingsBtn" title="Settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
@@ -49,74 +48,49 @@
 
   <div class="chat-main">
     <div id="chatBox" class="chat-box"></div>
-    
     <div class="input-container">
       <div class="input-area">
         <input type="text" id="userInput" placeholder="Ask Genesis..." autocomplete="off">
         <button id="sendBtn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
           </svg>
         </button>
-      </div>
-
-      <div id="contentWarning">
-        Genesis may display inaccurate info.
-        <br>
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms</a>
-      </div>
-    </div>
-  </div>
-
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <h2>Settings</h2>
-      <div class="setting-row">
-        <span>Dark Mode</span>
-        <label class="toggle">
-          <input type="checkbox" id="themeToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <button id="deleteAllChatsBtn" class="danger-btn">Delete All Chats</button>
-      <div class="modal-actions">
-        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
       </div>
     </div>
   </div>
 
   <script>
-  const loadScript = (src, isAsync = true) => {
-    return new Promise((resolve) => {
-      const s = document.createElement('script');
-      s.src = `${src}?v=${Date.now()}`;
-      s.async = isAsync;
-      s.onload = resolve;
-      s.onerror = () => {
-        console.warn(`Script failed: ${src}`);
-        resolve(); 
-      };
-      document.head.appendChild(s);
-    });
-  };
+    // Set Handshake Code
+    window.GENESIS_CODE = "9980748324";
 
-  (async () => {
-    await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
-    document.body.style.visibility = 'visible';
-    
-    await Promise.all([
-      loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
-      loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
-    ]);
+    const loadScript = (src) => {
+      return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = `${src}?v=${Date.now()}`;
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => resolve();
+        document.head.appendChild(s);
+      });
+    };
 
-    // Simple Mobile Menu Toggle
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebar = document.getElementById('sidebar');
-    if(menuBtn && sidebar) {
-      menuBtn.onclick = () => sidebar.classList.toggle('active');
-    }
-  })();
-</script>
+    (async () => {
+      await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+      document.body.style.visibility = 'visible';
+      
+      // Recall main.js - it will now verify the code and continue
+      await Promise.all([
+        loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
+        loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
+      ]);
+
+      const menuBtn = document.getElementById('menuBtn');
+      const sidebar = document.getElementById('sidebar');
+      if(menuBtn && sidebar) {
+        menuBtn.addEventListener('click', () => sidebar.classList.toggle('active'));
+      }
+    })();
+  </script>
 </body>
 </html>
