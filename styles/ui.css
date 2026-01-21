@@ -1,7 +1,7 @@
 /* --- Genesis-AI Master Stylesheet ---
    Theme: Modern Gemini (XPDevs Standard)
    Author: James Turner
-   Version: 1.2 (Integrated Blue Cancel Actions)
+   Version: 1.5 (Solid Primary Actions)
 */
 
 :root {
@@ -125,7 +125,6 @@ body.dark .chat-item:hover {
   background: var(--active-chat);
 }
 
-/* Standardised Options Button */
 .dots-btn {
   background: transparent;
   border: none;
@@ -338,33 +337,28 @@ body.dark .chat-item:hover {
 }
 
 .modal-actions button {
-  background: transparent;
-  border: 1px solid transparent;
   padding: 10px 20px;
   border-radius: 20px;
   cursor: pointer;
   font-weight: 500;
-  color: var(--text);
   transition: all 0.2s ease;
+  border: none !important; /* Force removal of outlines */
 }
 
-/* Solid Blue Cancel Button Style */
-.modal-actions button.cancel {
-  background: var(--primary); /* Solid blue background */
-  border: 1px solid var(--primary);
-  color: #ffffff; /* White text for readability */
-}
-
-.modal-actions button.cancel:hover {
-  opacity: 0.9; /* Slight fade on hover to show interaction */
-  background: var(--primary);
-}
-
-/* Ensure the confirm button stays consistent */
+/* Solid Primary Buttons (Blue) */
+.modal-actions button.cancel,
 .modal-actions button.confirm {
-  background: var(--primary);
-  border: 1px solid var(--primary);
-  color: #fff;
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+/* Red Exception for Delete Actions */
+#deleteConfirm, #deleteAllConfirm {
+  background-color: #ff4d4d !important;
+}
+
+.modal-actions button:hover {
+  filter: brightness(0.9);
 }
 
 /* --- Custom Components --- */
