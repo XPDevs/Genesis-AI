@@ -242,19 +242,18 @@ body.dark .chat-item:hover {
   color: var(--text);
 }
 
-/* --- Message Actions (Updated for stability) --- */
 .msg-actions {
   position: absolute;
-  bottom: -32px; /* Slightly adjusted position */
+  bottom: -32px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  /* Keep opacity at 0 by default */
   opacity: 0;
-  transition: opacity 0.2s ease, visibility 0.2s;
+  /* Add a 0.3s delay when disappearing (hiding) */
+  transition: opacity 0.2s ease 0.4s; 
   pointer-events: none;
-  z-index: 10;
-  /* This padding acts as a "bridge" so the mouse doesn't 
-     leave the hover zone when moving to the buttons */
-  padding-top: 20px; 
+  /* Acts as a bridge so the hover doesn't break */
+  padding: 15px 10px; 
 }
 
 /* Ensure actions stay visible when hovering the actions themselves */
