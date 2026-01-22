@@ -272,29 +272,37 @@ body.dark .chat-item:hover {
 .message.user .msg-actions {
   right: 0;
 }
-
 .action-btn {
-  background: var(--input-bg); /* Give it a slight background for better click target visibility */
+  /* Positioning and Spacing */
+  margin-top: 10px; /* This moves the button down */
+  padding: 6px;
+  
+  /* Visual Style */
+  background: var(--input-bg);
   border: 1px solid var(--border);
-  cursor: pointer;
+  border-radius: 8px; /* Rounded modern UI */
   color: var(--text);
   opacity: 0.7;
-  padding: 6px;
-  border-radius: 8px;
+  
+  /* Layout within the button */
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  
+  /* Animation */
   transition: all 0.2s ease;
 }
 
 .action-btn:hover {
   opacity: 1;
   background: var(--active-chat);
-  transform: scale(1.1); /* Slight pop to show it's active */
+  transform: scale(1.1); /* Subtle pop effect */
 }
 
+/* Dark Mode Specifics */
 body.dark .action-btn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* --- Centered Pill Input Area --- */
