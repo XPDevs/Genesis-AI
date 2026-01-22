@@ -273,18 +273,18 @@ body.dark .chat-item:hover {
   right: 0;
 }
 .action-btn {
-  /* Positioning and Spacing */
-  margin-top: 10px; /* This moves the button down */
+  /* Spacing - Pushes button down from the text above */
+  margin-top: 20px; 
   padding: 6px;
   
   /* Visual Style */
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 8px; /* Rounded modern UI */
+  border-radius: 8px;
   color: var(--text);
   opacity: 0.7;
   
-  /* Layout within the button */
+  /* Layout */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,10 +297,10 @@ body.dark .chat-item:hover {
 .action-btn:hover {
   opacity: 1;
   background: var(--active-chat);
-  transform: scale(1.1); /* Subtle pop effect */
+  transform: scale(1.1);
 }
 
-/* Dark Mode Specifics */
+/* Dark Mode Adjustment */
 body.dark .action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
