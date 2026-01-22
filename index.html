@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en-GB" style="background-color: #000;">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,14 +7,16 @@
 <title>Genesis AI</title>
 
 <style>
-  /* Keeps the interface hidden until the cache-busting CSS is ready */
-  body { 
-    visibility: hidden; 
-    background-color: #000; 
-    margin: 0;
-    padding: 0;
+  /* Immediate black-out and hide elements to prevent flash */
+  html, body { 
+    background-color: #000 !important; 
+    margin: 0; 
+    padding: 0; 
+    height: 100%;
     overflow: hidden;
   }
+  body { visibility: hidden; }
+  .sidebar, .chat-main { display: none; } /* Hide layout until CSS loads */
 </style>
 </head>
 <body>
@@ -149,18 +151,19 @@
     });
   };
 
-  // Execution Flow
   (async () => {
-    // 1. Force reload CSS
+    // 1. Force reload CSS first to ensure modern UI styles are ready
     await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
     
     // 2. Load the loading overlay/logic
     await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
     
-    // 3. Make the page content visible
+    // 3. Once CSS and Loading system are ready, reveal elements
     document.body.style.visibility = 'visible';
+    const uiElements = document.querySelectorAll('.sidebar, .chat-main');
+    uiElements.forEach(el => el.style.display = 'flex');
     
-    // 4. Load remaining logic
+    // 4. Load core logic
     await Promise.all([
       loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
       loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
