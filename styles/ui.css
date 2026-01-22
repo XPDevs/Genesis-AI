@@ -1,20 +1,227 @@
-/* --- Updated Message Actions Positioning --- */
-.msg-actions {
-  position: absolute;
-  /* Increased from -32px to -45px to move the whole group down */
-  bottom: -45px; 
-  display: flex;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.2s ease 0.3s; 
-  pointer-events: none;
-  padding: 15px 10px; 
-  z-index: 10;
+:root {
+  --bg: #ffffff;
+  --text: #1f1f1f;
+  --sidebar: #f0f4f9;
+  --chat-bg: #ffffff;
+  --input-bg: #f0f4f9;
+  --border: #dee2e6;
+  --primary: #1a73e8;
+  --user-msg-bg: #f0f4f9;
+  --active-chat: #e2e7ed;
+  --modal-bg: #ffffff;
 }
 
-/* Ensure the message bubble has enough room below it so buttons don't hit the next message */
+body.dark {
+  --bg: #131314;
+  --text: #e3e3e3;
+  --sidebar: #1e1f20;
+  --chat-bg: #131314;
+  --input-bg: #1e1f20;
+  --border: #444746;
+  --user-msg-bg: #282a2c;
+  --active-chat: #333537;
+  --modal-bg: #1e1f20;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: 280px;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+#newChatBtn {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-grow: 1;
+}
+
+#newChatBtn:hover {
+  background: var(--active-chat);
+}
+
+#settingsBtn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+
+#settingsBtn:hover {
+  background: var(--active-chat);
+}
+
+/* --- Chat List & Options --- */
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0 12px;
+}
+
+.chat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 24px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.chat-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+body.dark .chat-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.chat-item.active {
+  background: var(--active-chat);
+}
+
+.dots-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  font-size: 18px;
+  padding: 0;
+}
+
+.chat-item:hover .dots-btn {
+  opacity: 1;
+}
+
+.dots-btn:hover {
+  background: var(--active-chat);
+}
+
+/* --- Dropdown Menus --- */
+.dropdown {
+  position: absolute;
+  right: 12px;
+  top: 45px;
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: none;
+  flex-direction: column;
+  min-width: 150px;
+  z-index: 1000;
+  padding: 6px;
+}
+
+.dropdown button {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 12px 16px;
+  width: 100%;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dropdown button:hover {
+  background: var(--active-chat);
+}
+
+.dropdown button.delete-opt {
+  color: #ff4d4d;
+}
+
+/* --- Main Layout --- */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  position: relative;
+}
+
+.chat-header {
+  width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+#chatTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.chat-box {
+  width: 100%;
+  max-width: 800px;
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Message Bubbles --- */
 .message {
-  margin-bottom: 45px; /* Increased from 32px */
+  margin-bottom: 32px;
   line-height: 1.6;
   font-size: 16px;
   max-width: 85%;
@@ -22,20 +229,69 @@
   word-wrap: break-word;
 }
 
-/* --- Cleaned up Action Buttons --- */
+.message.ai {
+  align-self: flex-start;
+  color: var(--text);
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--user-msg-bg);
+  padding: 14px 20px;
+  border-radius: 22px;
+  color: var(--text);
+}
+
+.msg-actions {
+  position: absolute;
+  bottom: -32px;
+  display: flex;
+  gap: 6px;
+  /* Keep opacity at 0 by default */
+  opacity: 0;
+  /* Add a 0.3s delay when disappearing (hiding) */
+  transition: opacity 0.2s ease 0.3s; 
+  pointer-events: none;
+  /* Acts as a bridge so the hover doesn't break */
+  padding: 15px 10px; 
+}
+
+/* Ensure actions stay visible when hovering the actions themselves */
+.message:hover .msg-actions,
+.msg-actions:hover,
+.message.ai.latest .msg-actions {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.message.ai .msg-actions {
+  left: 0;
+}
+
+.message.user .msg-actions {
+  right: 0;
+}
 .action-btn {
+  /* Spacing - Pushes button down from the text above */
+  margin-top: 20px; 
   padding: 6px;
+  
+  /* Visual Style */
   background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
   opacity: 0.7;
+  
+  /* Layout */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  
+  /* Animation */
   transition: all 0.2s ease;
-  /* Removed margin-top here because the parent .msg-actions handles the gap now */
 }
 
 .action-btn:hover {
@@ -43,3 +299,162 @@
   background: var(--active-chat);
   transform: scale(1.1);
 }
+
+/* Dark Mode Adjustment */
+body.dark .action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Centered Pill Input Area --- */
+.input-container {
+  width: 100%;
+  max-width: 800px;
+  padding: 0 20px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.input-area {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: var(--input-bg);
+  border-radius: 32px;
+  padding: 6px 12px 6px 20px;
+  transition: background 0.2s;
+}
+
+.input-area:focus-within {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.input-area input {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+}
+
+.input-area button {
+  background: var(--primary);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.input-area button:hover {
+  opacity: 0.9;
+}
+
+#contentWarning {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 12px;
+  color: #70757a;
+}
+
+/* --- Modals & Popups --- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--modal-bg);
+  padding: 30px;
+  border-radius: 28px;
+  min-width: 320px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  color: var(--text);
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none !important; /* Ensures no outline or border is visible */
+}
+
+/* Solid Primary Buttons (Blue) */
+.modal-actions button.cancel,
+.modal-actions button.confirm {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+  /* Adding display properties to ensure they behave as solid blocks */
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Red Exception for Delete Actions */
+#deleteConfirm, 
+#deleteAllConfirm {
+  background-color: #ff4d4d !important;
+  color: #ffffff !important;
+}
+
+.modal-actions button:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px); /* Optional: slight lift effect for modern UI */
+}
+
+/* --- Custom Components --- */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider { background-color: var(--primary); }
+input:checked + .slider:before { transform: translateX(24px); }
