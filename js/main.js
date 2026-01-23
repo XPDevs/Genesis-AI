@@ -263,7 +263,7 @@ function showBanModal() {
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json";
 
 function decodeBinary(input) {
-  let output = "";
+  const bytes = [];
   let currentByte = 0;
   let bitCount = 0;
   for (let i = 0; i < input.length; i++) {
@@ -272,13 +272,13 @@ function decodeBinary(input) {
       currentByte = (currentByte << 1) | (char === '1' ? 1 : 0);
       bitCount++;
       if (bitCount === 8) {
-        output += String.fromCharCode(currentByte);
+        bytes.push(currentByte);
         currentByte = 0;
         bitCount = 0;
       }
     }
   }
-  return output;
+  return new TextDecoder().decode(new Uint8Array(bytes));
 }
 
 fetch(jsonURL + "?v=" + Date.now())
