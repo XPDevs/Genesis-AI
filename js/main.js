@@ -261,9 +261,39 @@ function showBanModal() {
 }
 
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json";
+
+function decodeBinary(input) {
+  let output = "";
+  let currentByte = 0;
+  let bitCount = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    if (char === '0' || char === '1') {
+      currentByte = (currentByte << 1) | (char === '1' ? 1 : 0);
+      bitCount++;
+      if (bitCount === 8) {
+        output += String.fromCharCode(currentByte);
+        currentByte = 0;
+        bitCount = 0;
+      }
+    }
+  }
+  return output;
+}
+
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.json() : Promise.reject("File not found"))
-  .then(data => responses = data)
+  .then(r => r.ok ? r.text() : Promise.reject("File not found"))
+  .then(text => {
+    try {
+      responses = JSON.parse(text);
+    } catch (e) {
+      try {
+        responses = JSON.parse(decodeBinary(text));
+      } catch (err) {
+        throw new Error("Invalid Modal Format");
+      }
+    }
+  })
   .catch(err => appendMessage(`Failed to load data: ${err}`, "error"));
 
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
