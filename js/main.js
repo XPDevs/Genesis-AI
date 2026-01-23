@@ -260,7 +260,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json";
+const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
 function decodeBinary(input) {
   const bytes = [];
