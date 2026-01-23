@@ -262,23 +262,13 @@ function showBanModal() {
 
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
-function decodeBinary(input) {
-  const bytes = [];
-  let currentByte = 0;
-  let bitCount = 0;
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i];
-    if (char === '0' || char === '1') {
-      currentByte = (currentByte << 1) | (char === '1' ? 1 : 0);
-      bitCount++;
-      if (bitCount === 8) {
-        bytes.push(currentByte);
-        currentByte = 0;
-        bitCount = 0;
-      }
-    }
+function decodeBinary(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const decoded = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    decoded[i] = bytes[i] ^ 0xAA;
   }
-  return new TextDecoder().decode(new Uint8Array(bytes));
+  return new TextDecoder().decode(decoded);
 }
 
 function showLegacyModal() {
@@ -320,13 +310,14 @@ function showLegacyModal() {
 }
 
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.text() : Promise.reject("File not found"))
-  .then(text => {
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
+  .then(buffer => {
     try {
-      responses = JSON.parse(decodeBinary(text));
+      responses = JSON.parse(decodeBinary(buffer));
       console.log("Using binary modal");
     } catch (e) {
       try {
+        const text = new TextDecoder().decode(buffer);
         responses = JSON.parse(text);
         console.log("Using JSON modal");
       } catch (err) {
