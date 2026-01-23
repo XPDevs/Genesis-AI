@@ -152,18 +152,13 @@
   };
 
   (async () => {
-    // 1. Force reload CSS first to ensure modern UI styles are ready
     await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
-    
-    // 2. Load the loading overlay/logic
     await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
-    
+    await loadScript('https://xpdevs.github.io/Genesis-AI/js/sidebar.js')
     // 3. Once CSS and Loading system are ready, reveal elements
     document.body.style.visibility = 'visible';
     const uiElements = document.querySelectorAll('.sidebar, .chat-main');
     uiElements.forEach(el => el.style.display = 'flex');
-    
-    // 4. Load core logic
     await Promise.all([
       loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
       loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
@@ -172,3 +167,4 @@
 </script>
 </body>
 </html>
+
