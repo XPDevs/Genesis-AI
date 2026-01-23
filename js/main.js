@@ -14,79 +14,68 @@
   }
 })();
 
-// Global Variables
+// Constants & State
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const chatTitle = document.getElementById("chatTitle");
+const chatList = document.getElementById("chatList");
+const newChatBtn = document.getElementById("newChatBtn");
+
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let activeChatId = localStorage.getItem("activeChatId");
 let responses = {};
-let currentRenameId = null;
-let currentDeleteId = null;
-let isReadOnlyMode = false; 
+let isReadOnlyMode = false;
 
-// Encoding & Security
-const CHAR_SEPARATOR = '000'; 
-const ROLE_SEPARATOR = '555'; 
-const MSG_SEPARATOR = '9999'; 
+// Shared Functions
+function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 
-function encodeChat(messages) {
-    if (!messages || messages.length === 0) return '';
-    const roleMap = { 'user': 1, 'ai': 2, 'error': 3 };
-    return messages.map(msg => {
-        const roleCode = roleMap[msg.role] || 3; 
-        let textCodes = '';
-        for (let i = 0; i < msg.text.length; i++) {
-            const charCode = msg.text.charCodeAt(i);
-            const paddedCode = charCode.toString().padStart(5, '0'); 
-            if (i > 0) textCodes += CHAR_SEPARATOR;
-            textCodes += paddedCode;
-        }
-        return `${roleCode}${ROLE_SEPARATOR}${textCodes}`;
-    }).join(MSG_SEPARATOR);
+function updateURL(title) {
+  const url = new URL(window.location.origin + window.location.pathname);
+  url.searchParams.set("chat", title);
+  history.pushState({}, "", url);
 }
 
-// Message Rendering
-function appendMessage(text, role, isNew = false) {
-  let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB'); 
-  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
+function renderMessages() {
+  if (isReadOnlyMode) return;
+  const chat = chats.find(c => c.id === activeChatId);
+  chatTitle.textContent = chat ? chat.title : "New Chat";
+  chatBox.innerHTML = "";
+  if (!chat) return;
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-  let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
+function appendMessage(text, role, isNew = false) {
+  let finalString = String(text || "");
   const div = document.createElement("div");
   div.className = "message " + role;
-  
   const textSpan = document.createElement("span");
   div.appendChild(textSpan);
-
-  const actionsDiv = document.createElement("div");
-  actionsDiv.className = "msg-actions";
-
-  const copyBtn = document.createElement("button");
-  copyBtn.className = "action-btn copy-btn";
-  copyBtn.innerHTML = 'Copy'; 
-  copyBtn.onclick = () => navigator.clipboard.writeText(processedText);
-  actionsDiv.appendChild(copyBtn);
-
-  div.appendChild(actionsDiv);
   chatBox.append(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
+  
   if (role === "ai" && isNew) {
     let i = 0;
     const interval = setInterval(() => {
-      textSpan.textContent += processedText[i];
+      textSpan.textContent += finalString[i];
       i++;
-      chatBox.scrollTop = chatBox.scrollHeight;
-      if (i === processedText.length) clearInterval(interval);
+      if (i === finalString.length) clearInterval(interval);
     }, 30);
   } else {
-    textSpan.textContent = processedText;
+    textSpan.textContent = finalString;
   }
 }
 
-// Logic & Response Handling
-function sendMessage() {
-  if (isReadOnlyMode || isCurrentlyBanned()) return;
+function findResponses(input) {
+  input = input.toLowerCase();
+  const keys = Object.keys(responses);
+  for (let key of keys) {
+    if (input.includes(key.toLowerCase())) return { role: "ai", text: responses[key] };
+  }
+  return { role: "ai", text: "I am still learning. Please try another query." };
+}
 
+function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = "";
@@ -102,18 +91,31 @@ function sendMessage() {
   const chat = chats.find(c => c.id === activeChatId);
   chat.messages.push({ role: "user", text: text });
   renderMessages();
-  saveChats();
 
   setTimeout(() => {
     const botMsg = findResponses(text);
     chat.messages.push(botMsg);
     saveChats();
     appendMessage(botMsg.text, botMsg.role, true);
-  }, 1500);
+  }, 1000);
 }
 
-// Initialization
+// Global Initialization
 window.addEventListener('load', () => {
-  renderChatList(); 
-  renderMessages();
+  fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.json")
+    .then(r => r.json())
+    .then(data => {
+       responses = data;
+       renderChatList();
+       renderMessages();
+    });
 });
+
+sendBtn.onclick = sendMessage;
+newChatBtn.onclick = () => {
+  activeChatId = Date.now().toString();
+  chats.unshift({ id: activeChatId, title: "New Chat", messages: [] });
+  saveChats();
+  renderChatList();
+  renderMessages();
+};
