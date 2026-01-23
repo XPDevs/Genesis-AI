@@ -1,48 +1,66 @@
-/**
- * Sidebar Module for Genesis AI
- * XPDevs Custom UI
- */
-
-(function() {
-    const sidebar = document.getElementById('sidebarContainer');
+// sidebar.js - Handles Chat List and Sidebar UI
+export function renderChatList(chats, activeChatId, callbacks) {
+  const chatList = document.getElementById("chatList");
+  if (!chatList) return;
+  chatList.innerHTML = "";
+  
+  chats.forEach(chat => {
+    const li = document.createElement("li");
+    li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
     
-    if (sidebar) {
-        sidebar.innerHTML = `
-            <div class="sidebar-header" style="display: flex; flex-direction: column; gap: 10px; padding: 15px;">
-                <div style="display: flex; gap: 8px; width: 100%;">
-                    <button id="toggleSidebarBtn" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">≡</button>
-                    <button id="newChatBtn" style="flex-grow:1; background:#333; color:white; border:none; border-radius:10px; padding:10px; cursor:pointer; overflow:hidden;">
-                        <b>+</b> <span class="nav-text">New Chat</span>
-                    </button>
-                </div>
-                <button id="settingsBtn" style="background:#333; color:white; border:none; border-radius:10px; padding:10px; cursor:pointer; width: 100%;">
-                    ⚙️ <span class="nav-text">Settings</span>
-                </button>
-            </div>
-            <ul id="chatList" class="chat-list" style="list-style:none; padding:10px; margin:0; flex-grow:1; overflow-y:auto;"></ul>
-        `;
+    const span = document.createElement("span");
+    span.textContent = chat.title;
+    span.className = "chat-name";
 
-        const toggleBtn = document.getElementById('toggleSidebarBtn');
-        const navTexts = document.querySelectorAll('.nav-text');
+    const options = document.createElement("div");
+    options.className = "chat-options";
 
-        const applyState = (isCollapsed) => {
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-                navTexts.forEach(t => t.style.display = 'none');
-            } else {
-                sidebar.classList.remove('collapsed');
-                navTexts.forEach(t => t.style.display = 'inline');
-            }
-        };
+    const dots = document.createElement("button");
+    dots.textContent = "⋮";
+    dots.className = "dots-btn";
 
-        toggleBtn.addEventListener('click', () => {
-            const willCollapse = !sidebar.classList.contains('collapsed');
-            applyState(willCollapse);
-            localStorage.setItem('genesis_sidebar_collapsed', willCollapse);
-        });
+    const dropdown = document.createElement("div");
+    dropdown.className = "dropdown";
+    
+    const renameBtn = document.createElement("button");
+    renameBtn.textContent = "Rename";
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    const shareBtn = document.createElement("button");
+    shareBtn.textContent = "Share";
 
-        // Initialize state
-        const savedState = localStorage.getItem('genesis_sidebar_collapsed') === 'true';
-        applyState(savedState);
-    }
-})();
+    renameBtn.onclick = e => { 
+      e.stopPropagation(); 
+      callbacks.onRename(chat);
+      dropdown.style.display = "none"; 
+    };
+    
+    deleteBtn.onclick = e => { 
+      e.stopPropagation(); 
+      callbacks.onDelete(chat);
+      dropdown.style.display = "none"; 
+    };
+    
+    shareBtn.onclick = e => { 
+      e.stopPropagation(); 
+      callbacks.onShare(chat.id); 
+      dropdown.style.display = "none"; 
+    };
+
+    dots.onclick = e => { 
+      e.stopPropagation(); 
+      const isVisible = dropdown.style.display === "flex";
+      dropdown.style.display = isVisible ? "none" : "flex"; 
+    };
+
+    dropdown.append(renameBtn, deleteBtn, shareBtn);
+    options.append(dots, dropdown);
+
+    li.onclick = () => {
+      callbacks.onSelect(chat);
+    };
+
+    li.append(span, options);
+    chatList.append(li);
+  });
+}
