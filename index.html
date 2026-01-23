@@ -154,8 +154,6 @@
   (async () => {
     await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
     await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
-    await loadScript('https://xpdevs.github.io/Genesis-AI/js/sidebar.js')
-    // 3. Once CSS and Loading system are ready, reveal elements
     document.body.style.visibility = 'visible';
     const uiElements = document.querySelectorAll('.sidebar, .chat-main');
     uiElements.forEach(el => el.style.display = 'flex');
@@ -167,4 +165,5 @@
 </script>
 </body>
 </html>
+
 
