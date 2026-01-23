@@ -281,20 +281,69 @@ function decodeBinary(input) {
   return new TextDecoder().decode(new Uint8Array(bytes));
 }
 
+function showLegacyModal() {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: "20000"
+  });
+  
+  const content = document.createElement("div");
+  Object.assign(content.style, {
+    backgroundColor: "#fff",
+    padding: "20px",
+    borderRadius: "12px",
+    textAlign: "center",
+    maxWidth: "300px",
+    fontFamily: "sans-serif",
+    color: "#333"
+  });
+  
+  content.innerHTML = `
+    <h3 style="margin-top:0;">Model Error</h3>
+    <p>Failed to load the primary modal. Switched to Legacy Mode.</p>
+    <button id="closeLegacyModal" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">OK</button>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  
+  document.getElementById("closeLegacyModal").onclick = () => modal.remove();
+}
+
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.text() : Promise.reject("File not found"))
   .then(text => {
     try {
-      responses = JSON.parse(text);
+      responses = JSON.parse(decodeBinary(text));
+      console.log("Using binary modal");
     } catch (e) {
       try {
-        responses = JSON.parse(decodeBinary(text));
+        responses = JSON.parse(text);
+        console.log("Using JSON modal");
       } catch (err) {
         throw new Error("Invalid Modal Format");
       }
     }
   })
-  .catch(err => appendMessage(`Failed to load data: ${err}`, "error"));
+  .catch(err => {
+    console.log("Using legacy modal");
+    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
+      .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
+      .then(data => { 
+        responses = data; 
+        showLegacyModal();
+      })
+      .catch(e => appendMessage(`Failed to load data: ${e}`, "error"));
+  });
 
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 
