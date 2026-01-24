@@ -518,6 +518,13 @@ async function loadBannedWords() {
 }
 loadBannedWords();
 
+function loadCalcScript() {
+  const script = document.createElement("script");
+  script.src = "calc.js";
+  document.body.appendChild(script);
+}
+loadCalcScript();
+
 function violatesRules(text) {
   if (!bannedWords.length) return false;
   const lowerText = text.toLowerCase();
@@ -596,6 +603,20 @@ function findResponses(input, history) {
       
       const target = new Date(d.getTime() + (isFuture ? ms : -ms));
       return { role: "ai", text: `The time ${isFuture ? "will be" : "was"}: ${target.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}` };
+  }
+
+  // 4. Math Calculation
+  const mathMatch = lowerInput.match(/^(?:calculate|solve|math|calc|what is)\s+([0-9\.\s\+\-\*\/\(\)\^x]+)$/i);
+  const bareMathMatch = lowerInput.match(/^([0-9\.\s\+\-\*\/\(\)\^x]+)$/);
+
+  if (mathMatch || (bareMathMatch && /[+\-*/^x]/.test(lowerInput))) {
+      const expression = mathMatch ? mathMatch[1] : bareMathMatch[1];
+      if (typeof window.calc === "function") {
+          const result = window.calc(expression);
+          if (result !== "Error" && result !== "Invalid input") {
+              return { role: "ai", text: `The answer is ${result}.` };
+          }
+      }
   }
 
   // --- NEW DYNAMIC LOGIC END ---
