@@ -280,43 +280,40 @@ async function loadAndReconstruct() {
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
-    const XOR_KEY = 0xAA; // Matches XOR_KEY in json2bin.c
+    const XOR_KEY = 0xAA;
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    // Skip the 4-byte signature (SIG_SMALL: 0x53494E47) written by the C compiler
-    let i = 4; 
+    let i = 4; // Skip SIG_SMALL (4 bytes)
 
     while (i < bytes.length) {
         const b = bytes[i];
 
         switch(b) {
-            case 0x01: jsonString += "{"; break; // T_START
-            case 0x02: jsonString += "}"; break; // T_END
-            case 0x03: jsonString += ":"; break; // T_SEP
-            case 0x04: jsonString += ","; break; // T_NEXT
-            case 0x05: jsonString += "["; break; // T_ARR_S
-            case 0x06: jsonString += "]"; break; // T_ARR_E
-            case 0x07: // T_STR String Start Marker
+            case 0x01: jsonString += "{"; break;
+            case 0x02: jsonString += "}"; break;
+            case 0x03: jsonString += ":"; break;
+            case 0x04: jsonString += ","; break;
+            case 0x05: jsonString += "["; break;
+            case 0x06: jsonString += "]"; break;
+            case 0x07: // String Start
                 jsonString += '"';
-                i++; 
+                i++; // Move past 0x07 to the first character
                 
                 let stringBytes = [];
-                // Read until hit the 0x00 null terminator defined in nano_compile
+                // Read until we hit the null terminator 0x00
                 while (i < bytes.length && bytes[i] !== 0x00) {
-                    // Decrypt by XORing with 0xAA
                     stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
                 
-                // Convert XORed byte array to UTF-8
-                if (stringBytes.length > 0) {
-                    jsonString += decoder.decode(new Uint8Array(stringBytes));
-                }
+                jsonString += decoder.decode(new Uint8Array(stringBytes));
                 jsonString += '"';
+                // i is now pointing at 0x00. 
+                // The loop's final i++ will move us to the next token.
                 break;
-            default:
-                // Skip bytes that don't match structural tokens
+            case 0x00:
+                // Ignore stray nulls
                 break;
         }
         i++;
