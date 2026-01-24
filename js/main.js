@@ -295,7 +295,7 @@ function decodeBinary(buffer) {
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    let i = 4; // Skip the "GNIS" signature (SIG_SMALL)
+    let i = 4; // Skip the "GNIS" signature
 
     while (i < bytes.length) {
         const b = bytes[i];
@@ -308,19 +308,21 @@ function decodeBinary(buffer) {
             case 0x06: jsonString += "]"; break;
             case 0x07: // String Start
                 jsonString += '"';
-                i++;
+                i++; // Move past 0x07
                 let stringBytes = [];
-                // Read until we hit the null terminator 0x00 written by nano_compile
+                // Read until we hit 0x00 (The null terminator written by C)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
                 jsonString += decoder.decode(new Uint8Array(stringBytes));
                 jsonString += '"';
-                // Pointer is now at 0x00. The loop's i++ will move us to the next structural token.
+                // IMPORTANT: i is now at 0x00. 
+                // We do NOT manually increment i here because the 
+                // i++ at the end of the switch will skip the 0x00 for us.
                 break;
-            case 0x00:
-                // Explicitly ignore stray null terminators to keep pointer in sync
+            default:
+                // This catches stray 0x00 bytes or unknown padding
                 break;
         }
         i++;
@@ -333,14 +335,14 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
-      // Attempt binary deconstruction
       const decoded = decodeBinary(buffer);
-      if (!decoded || decoded.trim() === "") throw new Error("Deconstruction failed");
+      if (!decoded || decoded.length < 5) throw new Error("Deconstruction failed");
       
       responses = JSON.parse(decoded);
       console.log("XPDevs: Binary modal active.");
     } catch (e) {
-      // Fallback to raw JSON if binary parsing fails
+      // Fallback if binary reconstruction fails
+      console.warn("Binary format invalid, checking raw JSON...");
       try {
         const text = new TextDecoder().decode(buffer);
         responses = JSON.parse(text);
@@ -352,7 +354,6 @@ fetch(jsonURL + "?v=" + Date.now())
   })
   .catch(err => {
     console.error("XPDevs Reconstruct Error:", err);
-    // Final safety fallback to legacy 1.0 JSON
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
       .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
       .then(data => { 
