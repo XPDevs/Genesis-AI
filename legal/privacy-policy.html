@@ -1,50 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Genesis AI Privacy Policy</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis AI | Master Privacy Policy</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1f1f1f;
+            --sidebar: #f0f4f9;
+            --chat-bg: #ffffff;
+            --input-bg: #f0f4f9;
+            --border: #dee2e6;
+            --primary: #1a73e8;
+            --user-msg-bg: #f0f4f9;
+            --active-chat: #e2e7ed;
+            --modal-bg: #ffffff;
+        }
+
+        body.dark {
+            --bg: #131314;
+            --text: #e3e3e3;
+            --sidebar: #1e1f20;
+            --chat-bg: #131314;
+            --input-bg: #1e1f20;
+            --border: #444746;
+            --user-msg-bg: #282a2c;
+            --active-chat: #333537;
+            --modal-bg: #1e1f20;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #131314;
+                --text: #e3e3e3;
+                --sidebar: #1e1f20;
+                --chat-bg: #131314;
+                --input-bg: #1e1f20;
+                --border: #444746;
+                --user-msg-bg: #282a2c;
+                --active-chat: #333537;
+                --modal-bg: #1e1f20;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 80px 32px;
+            font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            display: block;
+            height: auto;
+            overflow-y: auto;
+        }
+
+        .legal-framework {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 24px;
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+        }
+
+        .doc-metadata {
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            display: flex;
+            gap: 20px;
+        }
+
+        h2 {
+            font-size: 1.7rem;
+            margin-top: 60px;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            border-left: 6px solid var(--primary);
+            padding-left: 16px;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-top: 32px;
+            color: var(--text);
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        p, li {
+            font-size: 16px;
+            color: var(--text);
+            opacity: 0.9;
+            margin-bottom: 1.4rem;
+            text-align: justify;
+        }
+
+        .policy-statement {
+            background: var(--sidebar);
+            padding: 32px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin: 40px 0;
+            font-style: italic;
+        }
+
+        .footer-legal {
+            margin-top: 100px;
+            padding: 60px;
+            background: var(--sidebar);
+            border-radius: 40px;
+            border: 1px solid var(--border);
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body>
-<h1>Genesis AI Privacy Policy</h1>
-<p><strong>Effective Date:</strong> October 31, 2025</p>
+<body class="dark">
+    <div class="legal-framework">
+        <header>
+            <h1>Privacy Policy</h1>
+            <div class="doc-metadata">
+                <span>Ref: GNS-PRIV-2026-V1</span>
+                <span>Effective Date: 24 January 2026</span>
+                <span>Jurisdiction: England & Wales</span>
+            </div>
+        </header>
 
-<p>This Privacy Policy describes the policies and procedures of XPDevs (James Turner) ("we," "our," or "us") regarding the handling of your information when you use the Genesis AI application ("the Service").</p>
-<p>Crucially, Genesis AI is a client-side application. We do not collect, store, or transmit your chat conversations to any external servers.</p>
+        <section>
+            <p>This Privacy Policy outlines the practices and procedures observed by <strong>James Turner (XPDevs)</strong> ("Proprietor") regarding the governance of information during your engagement with the Genesis AI application ("Service").</p>
+            
+            <div class="policy-statement">
+                The primary architectural directive of Genesis AI is the preservation of user privacy through absolute client-side execution. No textual dialogue, prompt data, or generated responses are transmitted to, or stored upon, any external infrastructure managed by the Proprietor.
+            </div>
+        </section>
 
-<h2>1. The Core Principle: Local Data Storage</h2>
+        <h2>Section I: Data Sovereignty and Local Storage</h2>
+        <h3>1.1 Absence of Centralised Collection</h3>
+        <p>The Service operates as a self-contained environment within the User's web browser. All logic processing, dialogue generation, and interaction history are handled exclusively on the User's local hardware. The Proprietor does not maintain databases of user conversations, nor is any such data extracted during Service operation.</p>
 
-<h3>1.1. No Server Collection of Chat Data</h3>
-<p>Genesis AI is a client-side application. We strictly confirm that we do not collect, store, or transmit your chat messages, prompts, or the AI's responses to any server operated by XPDevs. All processing related to the AI model and your conversations happens directly in your web browser.</p>
+        <h3>1.2 Local Persistence Mechanisms</h3>
+        <p>To ensure session continuity, the Service utilizes local storage protocols on the User's device. This data remains under the exclusive control of the User. The Proprietor possesses no technical means to remotely access, recover, or audit this information. The security of this data is commensurate with the security of the User's own device and browser configuration.</p>
 
-<h3>1.2. Local Storage</h3>
-<p>Your chat history, application settings, and other session-specific data are stored locally on your device using your browser’s storage mechanisms (such as LocalStorage or IndexedDB). This data is not accessible to us or to any third party through the Service. The persistence and security of this data are dependent on your browser settings and the security of your device.</p>
+        <h3>1.3 Edge-Based Content Moderation</h3>
+        <p>Content safety protocols and internal filters are executed entirely within the local client environment. Textual analysis performed to ensure compliance with the Terms of Service does not result in the transmission of input data to external monitoring systems. Restricted content is intercepted and purged locally before being processed by the system logic.</p>
 
-<h3>1.3. Automated Content Filtering (Local Processing)</h3>
-<p>For safety and to enforce our Terms of Use, all text input is checked against an internal list of prohibited words or phrases (e.g., hate speech, threats, illegal content). This scanning process is done entirely on your device before the message is sent to the AI model. No information about this filtering process or the content of the blocked message is transmitted externally.</p>
+        <h2>Section II: Passive Infrastructure Interaction</h2>
+        <h3>2.1 Hosting and Network Logs</h3>
+        <p>The Service is distributed via third-party hosting infrastructure (GitHub Pages). While the Service itself does not collect data, the hosting provider may automatically record standard network metadata (such as IP addresses and browser headers) for the purposes of delivery and security. This activity is governed by the privacy instruments of the hosting entity.</p>
 
-<h2>2. Information We May Have Visibility To</h2>
-<p>While we do not collect chat data, some non-chat-related information may be processed by necessary third-party services:</p>
+        <h3>2.2 Preference Persistence</h3>
+        <p>Basic operational preferences, such as interface themes and state configurations, are retained via local mechanisms. These are utilized solely to enhance the immediate user experience and are not repurposed for profiling, tracking, or marketing activities.</p>
 
-<h3>2.1. Hosting Provider Data</h3>
-<p>The Service is hosted on GitHub Pages. As a third-party service, GitHub may automatically collect standard web log information (such as your IP address, browser type, access times, and pages viewed) when you access the Service. This collection is governed by <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement">GitHub's privacy policy</a>.</p>
+        <h2>Section III: User Empowerment and Deletion</h2>
+        <h3>3.1 Right to Erasure</h3>
+        <p>The User maintains absolute authority over their local data. The Service provides dedicated functions to purge all stored history and preference data. Manual clearance of browser storage will also result in the permanent and irrecoverable erasure of all local Service records.</p>
 
-<h3>2.2. Cookies and Other Technologies</h3>
-<p>We may use necessary browser storage (e.g., LocalStorage) to save basic application preferences, such as your theme choice or current view. We do not use tracking cookies for targeted advertising or detailed profiling.</p>
+        <h2>Section IV: Amendments and Enforceability</h2>
+        <h3>4.1 Policy Evolution</h3>
+        <p>The Proprietor reserves the right to amend this Privacy Policy as the Service architecture evolves. Continued use of the Service following such amendments constitutes acknowledgement of the updated practices.</p>
 
-<h2>3. Your Data Control and Deletion Rights</h2>
-<h3>3.1. Data Deletion</h3>
-<p>You can permanently delete all locally stored data, including all chat history, at any time by using the dedicated "Delete All Chats" function available within the application settings. Deleting the application's local storage or clearing your browser cache will also permanently delete this data.</p>
+        <h3>4.2 Jurisdictional Compliance</h3>
+        <p>This Policy is designed to adhere to the high standards of data protection expected within the jurisdiction of England and Wales. Any inquiries regarding data practices should be directed to the Proprietor.</p>
 
-<h2>4. Changes to This Privacy Policy</h2>
-<p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the updated Policy on this page and revising the "Effective Date" at the top. You are advised to review this Privacy Policy periodically.</p>
-
-<h2>5. Contact Us</h2>
-<p>If you have any questions about this Privacy Policy, please contact us:</p>
-<p>
-XPDevs (James Turner)<br>
-Email: <a href="mailto:xpdevs.github.io.com@gmail.com">xpdevs.github.io.com@gmail.com</a><br>
-Website: <a href="https://xpdevs.github.io">https://xpdevs.github.io</a>
-</p>
+        <div class="footer-legal">
+            <h2>Contact & Enquiries</h2>
+            <p>For matters concerning the architectural privacy of the Service, please contact the Proprietor:</p>
+            <p>
+                <strong>James Turner (XPDevs)</strong><br>
+                Official Email: <a href="mailto:xpdevs.github.io.com@gmail.com">xpdevs.github.io.com@gmail.com</a><br>
+                Engineering Repository: <a href="https://xpdevs.github.io">https://xpdevs.github.io</a>
+            </p>
+        </div>
+    </div>
 </body>
 </html>
