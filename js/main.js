@@ -857,7 +857,15 @@ newChatBtn.onclick = () => {
 
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-settingsBtn.onclick = () => settingsModal.style.display = "flex";
+settingsBtn.onclick = () => {
+  settingsModal.style.display = "flex";
+  const nameDisplay = document.getElementById("modelNameDisplay");
+  const paramsDisplay = document.getElementById("modelParamsDisplay");
+  if (nameDisplay && paramsDisplay) {
+    nameDisplay.textContent = responses.ver || "Unknown";
+    paramsDisplay.textContent = Object.keys(responses).length;
+  }
+};
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
 themeToggle.checked = localStorage.getItem("theme") === "dark";
