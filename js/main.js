@@ -649,7 +649,8 @@ function sendMessage() {
       const dataToSummarise = text.substring(16).trim();
       botMsg = { role: "ai", text: (typeof window.summariseConversation === "function") ? window.summariseConversation(dataToSummarise) : "Summary module not found." };
     } else {
-      botMsg = findResponses(text);
+      const fullConversation = chat.messages.map(m => m.text).join(" ");
+      botMsg = findResponses(fullConversation);
     }
 
     chat.messages.push(botMsg);
