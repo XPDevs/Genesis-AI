@@ -569,7 +569,7 @@ function findResponses(input) {
   });
 
   if (foundMessages.length === 0) {
-    return { role: "ai", text: "I can't find a direct response for that, but I'm learning! Try asking about something I know." };
+    return { role: "ai", text: "I can't find a direct response for that, Try asking what can i do." };
   }
 
   // Handle %SUMMARY_SENT% check within multi-responses
@@ -635,9 +635,16 @@ function sendMessage() {
     });
   }
 
-  const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message loading";
-  loadingDiv.innerHTML = `<span>Gathering information...</span>`;
+const loadingDiv = document.createElement("div");
+loadingDiv.className = "message loading-container";
+loadingDiv.innerHTML = `
+  <div class="typing-indicator">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+  <span class="loading-text">Thinking...</span>
+`;
   chatBox.append(loadingDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 
