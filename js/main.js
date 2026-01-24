@@ -262,13 +262,47 @@ function showBanModal() {
 
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
+async function loadAndReconstruct() {
+    const response = await fetch(jsonURL);
+    const buffer = await response.arrayBuffer();
+    const result = decodeBinary(buffer);
+    return JSON.parse(result);
+}
+
 function decodeBinary(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const decoded = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    decoded[i] = bytes[i] ^ 0xAA;
-  }
-  return new TextDecoder().decode(decoded);
+    const bytes = new Uint8Array(buffer);
+    const XOR_KEY = 0xAA;
+    
+    // Skip the 4-byte signature (0-3)
+    let jsonString = "";
+    let i = 4; 
+
+    while (i < bytes.length) {
+        const b = bytes[i];
+
+        // Check against our Structural Tokens
+        if (b === 0x01) jsonString += "{";
+        else if (b === 0x02) jsonString += "}";
+        else if (b === 0x03) jsonString += ":";
+        else if (b === 0x04) jsonString += ",";
+        else if (b === 0x05) jsonString += "[";
+        else if (b === 0x06) jsonString += "]";
+        else if (b === 0x00) { 
+            // This was our internal null-separator, do nothing
+        } 
+        else {
+            // It's a string! Start reading until we hit a token or null
+            jsonString += '"';
+            while (i < bytes.length && bytes[i] > 0x06) {
+                jsonString += String.fromCharCode(bytes[i] ^ XOR_KEY);
+                i++;
+            }
+            jsonString += '"';
+            i--; // Step back so the outer loop catches the token
+        }
+        i++;
+    }
+    return jsonString;
 }
 
 function showLegacyModal() {
