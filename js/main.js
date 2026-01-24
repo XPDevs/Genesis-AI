@@ -259,6 +259,7 @@ function showBanModal() {
   modal.style.display = 'flex';
   document.body.style.pointerEvents = 'none';
 }
+
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
 // 1. Define UI Fallback First to prevent ReferenceErrors
@@ -294,7 +295,7 @@ function decodeBinary(buffer) {
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    let i = 4; // Skip the "GNIS" signature
+    let i = 4; // Skip the "GNIS" signature (SIG_SMALL)
 
     while (i < bytes.length) {
         const b = bytes[i];
@@ -309,12 +310,17 @@ function decodeBinary(buffer) {
                 jsonString += '"';
                 i++;
                 let stringBytes = [];
+                // Read until we hit the null terminator 0x00 written by nano_compile
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
                 jsonString += decoder.decode(new Uint8Array(stringBytes));
                 jsonString += '"';
+                // Pointer is now at 0x00. The loop's i++ will move us to the next structural token.
+                break;
+            case 0x00:
+                // Explicitly ignore stray null terminators to keep pointer in sync
                 break;
         }
         i++;
@@ -329,11 +335,12 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       // Attempt binary deconstruction
       const decoded = decodeBinary(buffer);
-      if (!decoded) throw new Error("Deconstruction failed");
+      if (!decoded || decoded.trim() === "") throw new Error("Deconstruction failed");
+      
       responses = JSON.parse(decoded);
       console.log("XPDevs: Binary modal active.");
     } catch (e) {
-      // Fallback to raw JSON if binary is malformed
+      // Fallback to raw JSON if binary parsing fails
       try {
         const text = new TextDecoder().decode(buffer);
         responses = JSON.parse(text);
@@ -350,7 +357,7 @@ fetch(jsonURL + "?v=" + Date.now())
       .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
       .then(data => { 
         responses = data; 
-        showLegacyModal(); // Now properly defined in scope
+        showLegacyModal(); 
       })
       .catch(e => console.error("Critical System Failure:", e));
   });
