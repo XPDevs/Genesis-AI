@@ -219,7 +219,8 @@ function showBanModal() {
 }
 
 // --- BINARY DECODER & LOADER ---
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240124P1105M.bin";
+// Targeted for Genesis-SPT-4.5-240126P1105M.bin
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 function showLegacyModal() {
@@ -250,7 +251,11 @@ function decodeBinary(buffer) {
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     let jsonString = "";
-    let i = 4; // Skip magic bytes "GNIS"
+    let i = 0;
+
+    // Strict Magic Byte Check
+    const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+    if (magic === "GNIS") { i = 4; } else { i = 0; }
 
     while (i < bytes.length) {
         const b = bytes[i];
@@ -265,6 +270,7 @@ function decodeBinary(buffer) {
                 jsonString += '"';
                 i++; 
                 let start = i;
+                // Look for 0x00 terminator
                 while (i < bytes.length && bytes[i] !== 0x00) { i++; }
                 const chunk = bytes.slice(start, i);
                 const decryptedChunk = new Uint8Array(chunk.length);
@@ -277,7 +283,8 @@ function decodeBinary(buffer) {
         }
         i++;
     }
-    return jsonString.trim(); // FIXED: Trim to prevent JSON.parse syntax error
+    // Final check: Remove null characters or hidden bytes that break JSON.parse
+    return jsonString.trim().replace(/\0/g, ''); 
 }
 
 fetch(jsonURL + "?v=" + Date.now())
@@ -285,15 +292,23 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
-      if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
-          throw new Error("Invalid reconstruction result.");
+      // Ensure we aren't passing an empty or non-JSON string
+      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
+          throw new SyntaxError("Decoded content is not a valid JSON structure.");
       }
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: 1000+ Topic Binary active.");
+      console.log("Genesis-AI: 4.5 Binary active.");
     } catch (e) {
-      console.warn("Binary rebuild failed, trying raw JSON fallback...");
-      const text = new TextDecoder().decode(buffer).trim();
-      responses = JSON.parse(text);
+      console.warn("Binary rebuild failed: " + e.message);
+      // Text Fallback
+      try {
+          const text = new TextDecoder().decode(buffer).trim();
+          if (text.startsWith("{")) {
+              responses = JSON.parse(text);
+          } else { throw new Error(); }
+      } catch (inner) {
+          throw new Error("Critical: File is neither valid Binary nor JSON.");
+      }
     }
   })
   .catch(err => {
@@ -440,50 +455,9 @@ function typeChatTitle(newTitle, callback) {
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
   
-  // 1. Past Dates
-  const daysAgoMatch = lowerInput.match(/what date was it (\d+) days ago/);
-  if (daysAgoMatch) {
-    const days = parseInt(daysAgoMatch[1]);
-    const d = new Date(); d.setDate(d.getDate() - days);
-    return { role: "ai", text: `It was ${d.toLocaleDateString('en-GB')}.` };
-  }
-  // 2. Days Until
-  const untilMatch = lowerInput.match(/(?:how many days|what day) until (.+)/);
-  if (untilMatch) {
-    let targetStr = untilMatch[1].replace("?", "").trim();
-    let targetDate;
-    if (targetStr.includes("/")) { const [d, m, y] = targetStr.split("/"); targetDate = new Date(`${y}-${m}-${d}`); }
-    else { targetDate = new Date(targetStr); }
-    if (!isNaN(targetDate.getTime())) {
-        const now = new Date(); now.setHours(0,0,0,0); targetDate.setHours(0,0,0,0);
-        const diff = Math.ceil((targetDate - now) / (1000 * 60 * 60 * 24));
-        if (diff > 0) return { role: "ai", text: `There are ${diff} days until ${targetStr}.` };
-        if (diff === 0) return { role: "ai", text: "That is today!" };
-        return { role: "ai", text: `That date was ${Math.abs(diff)} days ago.` };
-    }
-  }
-  // 3. Time Offset
-  const futureTime = lowerInput.match(/what time .+in (\d+) (hour|minute|second)s?/);
-  const pastTime = lowerInput.match(/what time .+ (\d+) (hour|minute|second)s? ago/);
-  if (futureTime || pastTime) {
-      const match = futureTime || pastTime; const isFuture = !!futureTime;
-      const amount = parseInt(match[1]); const unit = match[2];
-      const d = new Date(); let ms = 0;
-      if (unit.startsWith("hour")) ms = amount * 3600000;
-      else if (unit.startsWith("minute")) ms = amount * 60000;
-      else ms = amount * 1000;
-      const target = new Date(d.getTime() + (isFuture ? ms : -ms));
-      return { role: "ai", text: `The time ${isFuture ? "will be" : "was"}: ${target.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}` };
-  }
-  // 4. Math Calculation
-  const mathMatch = lowerInput.match(/^(?:calculate|solve|math|calc|what is)\s+([0-9\.\s\+\-\*\/\(\)\^x]+)$/i);
-  const bareMathMatch = lowerInput.match(/^([0-9\.\s\+\-\*\/\(\)\^x]+)$/);
-  if (mathMatch || (bareMathMatch && /[+\-*/^x]/.test(lowerInput))) {
-      const expression = mathMatch ? mathMatch[1] : bareMathMatch[1];
-      if (typeof window.calc === "function") {
-          const result = window.calc(expression);
-          if (result !== "Error" && result !== "Invalid input") return { role: "ai", text: `The answer is ${result}.` };
-      }
+  // XPDevs Logic: Priority on Kernels and System info
+  if (lowerInput.includes("kernel")) {
+      return { role: "ai", text: "XPDevs utilizes custom kernels, primarily NexShell, which is a highly optimized x86 kernel based on basekernel." };
   }
 
   const foundMatches = [];
@@ -550,7 +524,7 @@ function sendMessage() {
   }, 1500);
 }
 
-// --- INITIALIZATION & EVENTS ---
+// --- INITIALIZATION ---
 function showShareModal(chatId) {
     if (!shareLinkInput) return;
     const chat = chats.find(c => c.id === chatId);
@@ -570,14 +544,14 @@ if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
     copyShareLinkBtn.textContent = "Copied!"; setTimeout(() => { copyShareLinkBtn.textContent = "Copy"; shareModal.style.display = "none"; }, 1500);
 };
 
-renameCancel.onclick = () => renameModal.style.display = "none";
-deleteCancel.onclick = () => deleteModal.style.display = "none";
-renameConfirm.onclick = () => {
+if (renameCancel) renameCancel.onclick = () => renameModal.style.display = "none";
+if (deleteCancel) deleteCancel.onclick = () => deleteModal.style.display = "none";
+if (renameConfirm) renameConfirm.onclick = () => {
   const chat = chats.find(c => c.id === currentRenameId);
   if (chat && renameInput.value.trim()) { chat.title = renameInput.value.trim(); saveChats(); renderChatList(); renderMessages(); updateURL(chat.title); }
   renameModal.style.display = "none";
 };
-deleteConfirm.onclick = () => {
+if (deleteConfirm) deleteConfirm.onclick = () => {
   chats = chats.filter(c => c.id !== currentDeleteId);
   if (activeChatId === currentDeleteId) { activeChatId = null; localStorage.removeItem("activeChatId"); chatBox.innerHTML = ""; }
   saveChats(); renderChatList(); deleteModal.style.display = "none";
@@ -594,7 +568,7 @@ sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => {
   settingsModal.style.display = "flex";
-  document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT";
+  document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
   document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
@@ -610,7 +584,10 @@ themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
 themeToggle.onchange = () => { document.body.classList.toggle("dark", themeToggle.checked); localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); };
 
-document.getElementById("deleteAllChatsBtn").onclick = () => document.getElementById("deleteAllModal").style.display = "flex";
+const deleteAllBtn = document.getElementById("deleteAllChatsBtn");
+if (deleteAllBtn) {
+    deleteAllBtn.onclick = () => document.getElementById("deleteAllModal").style.display = "flex";
+}
 document.getElementById("deleteAllCancel").onclick = () => document.getElementById("deleteAllModal").style.display = "none";
 document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
 
