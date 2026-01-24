@@ -1,7 +1,7 @@
 (function() {
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
   const handshakeCode = "9980748324";
-  const mobileURL = "https://xpdevs.github.io/Genesis-AI/mobile/unspported";
+  const mobileURL = "https://xpdevs.github.io/Genesis-AI/mobile/index";
 
   // 1. Primary Environment Check
   if (isMobile) {
