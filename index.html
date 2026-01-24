@@ -96,6 +96,11 @@
           <span class="slider"></span>
         </label>
       </div>
+      <div style="margin: 20px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">System Info</div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Current Modal: <span id="modelNameDisplay">Loading...</span></div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="modelParamsDisplay">0</span> lines</div>
+      </div>
       <div class="setting-item">
         <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:12px;border-radius:20px;cursor:pointer;width:100%;font-weight:500;">
           Delete All Chats
@@ -201,7 +206,6 @@
 await Promise.all([
   loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js')
 ]);
 
   // 6. Universal Sidebar Toggle Logic (Works if element exists)
@@ -224,6 +228,3 @@ await Promise.all([
 </script>
 </body>
 </html>
-
-
-
