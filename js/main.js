@@ -254,7 +254,12 @@ function decodeBinary(buffer) {
             case 0x01: jsonString += "{"; break; // T_START
             case 0x02: jsonString += "}"; break; // T_END
             case 0x03: jsonString += ":"; break; // T_SEP
-            case 0x04: jsonString += ","; break; // T_NEXT
+            case 0x04: // T_NEXT
+                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
+                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
+                    jsonString += ",";
+                }
+                break;
             case 0x05: jsonString += "["; break; // T_ARR_S
             case 0x06: jsonString += "]"; break; // T_ARR_E
             case 0x07: // T_STR (String Start)
