@@ -1,5 +1,4 @@
-/* --- Variables & Core Setup --- */
-:root {
+  :root {
   --bg: #ffffff;
   --text: #1f1f1f;
   --sidebar: #f0f4f9;
@@ -30,7 +29,7 @@ body {
   background: var(--bg);
   color: var(--text);
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -42,11 +41,21 @@ body {
   flex-direction: column;
   border-right: 1px solid var(--border);
   flex-shrink: 0;
-  transition: left 0.3s ease; /* Smooth transition for mobile slide-in */
+  position: fixed;
+  left: -280px;
+  top: 0;
+  bottom: 0;
+  z-index: 1001;
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+}
+
+.sidebar.open {
+  left: 0;
 }
 
 .sidebar-header {
-  padding: 16px;
+  padding: calc(31px + env(safe-area-inset-top)) 16px 16px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -192,15 +201,17 @@ body.dark .chat-item:hover {
   align-items: center;
   background: var(--bg);
   position: relative;
+  width: 100%;
 }
 
 .chat-header {
   width: 100%;
-  height: 64px;
+  height: auto;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 0 24px;
+  padding: calc(25px + env(safe-area-inset-top)) 24px 10px 24px;
   box-sizing: border-box;
 }
 
@@ -234,6 +245,9 @@ body.dark .chat-item:hover {
 .message.ai {
   align-self: flex-start;
   color: var(--text);
+  background: var(--input-bg);
+  padding: 14px 20px;
+  border-radius: 22px;
 }
 
 .message.user {
@@ -255,7 +269,6 @@ body.dark .chat-item:hover {
   padding: 15px 10px; 
 }
 
-/* Hover behaviors for Desktop */
 .message:hover .msg-actions,
 .msg-actions:hover,
 .message.ai.latest .msg-actions {
@@ -264,20 +277,26 @@ body.dark .chat-item:hover {
   visibility: visible;
 }
 
-.message.ai .msg-actions { left: 0; }
-.message.user .msg-actions { right: 0; }
+.message.ai .msg-actions {
+  left: 0;
+}
+
+.message.user .msg-actions {
+  right: 0;
+}
 
 .action-btn {
+  margin-top: 20px; 
+  padding: 6px;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  cursor: pointer;
+  border-radius: 8px;
   color: var(--text);
   opacity: 0.7;
-  padding: 6px;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -287,11 +306,15 @@ body.dark .chat-item:hover {
   transform: scale(1.1);
 }
 
+body.dark .action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* --- Centered Pill Input Area --- */
 .input-container {
   width: 100%;
   max-width: 800px;
-  padding: 0 20px 24px 20px;
+  padding: 0 20px calc(30px + env(safe-area-inset-bottom, 0px)) 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -389,6 +412,8 @@ body.dark .chat-item:hover {
 .modal-actions button.confirm {
   background-color: var(--primary) !important;
   color: #ffffff !important;
+  display: inline-block;
+  text-decoration: none;
 }
 
 #deleteConfirm, 
@@ -435,62 +460,3 @@ body.dark .chat-item:hover {
 
 input:checked + .slider { background-color: var(--primary); }
 input:checked + .slider:before { transform: translateX(24px); }
-
-/* --- Mobile Responsiveness --- */
-@media screen and (max-width: 768px) {
-  /* Overlay sidebar for mobile */
-  .sidebar {
-    position: absolute;
-    left: -280px; 
-    top: 0;
-    bottom: 0;
-    z-index: 1001;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.2);
-  }
-
-  /* Active state for mobile sidebar */
-  .sidebar.open {
-    left: 0;
-  }
-
-  .chat-box {
-    padding: 16px;
-  }
-
-  /* Wider messages on small screens */
-  .message {
-    max-width: 92%;
-    font-size: 15px;
-  }
-
-  /* Adjust spacing for input area */
-  .input-container {
-    padding: 0 12px 12px 12px;
-  }
-
-  .input-area {
-    padding: 4px 8px 4px 16px;
-  }
-
-  /* Show message actions by default on touch screens */
-  .msg-actions {
-    opacity: 1;
-    position: relative;
-    bottom: 0;
-    margin-top: 8px;
-    padding: 5px 0;
-    pointer-events: auto;
-    visibility: visible;
-  }
-  
-  .action-btn {
-    padding: 8px; /* Larger tap targets */
-  }
-
-  /* Modal adjustments for narrow screens */
-  .modal-content {
-    width: 85%;
-    min-width: unset;
-    padding: 20px;
-  }
-}
