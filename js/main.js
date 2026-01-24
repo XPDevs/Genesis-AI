@@ -242,7 +242,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.3-240126P0225M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 // 1. UI Fallback
