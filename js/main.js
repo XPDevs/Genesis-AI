@@ -277,23 +277,6 @@ async function loadAndReconstruct() {
     }
 }
 
-const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
-
-async function loadAndReconstruct() {
-    try {
-        const response = await fetch(jsonURL);
-        if (!response.ok) throw new Error("Failed to fetch binary.");
-        
-        const buffer = await response.arrayBuffer();
-        const result = decodeBinary(buffer);
-        
-        // result is now a clean JSON string
-        return JSON.parse(result);
-    } catch (err) {
-        console.error("XPDevs Reconstruct Error:", err);
-    }
-}
-
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const XOR_KEY = 0xAA;
