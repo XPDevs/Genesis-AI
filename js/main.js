@@ -259,21 +259,45 @@ function showBanModal() {
   modal.style.display = 'flex';
   document.body.style.pointerEvents = 'none';
 }
-
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
-// Updated Decoder synchronized with json2bin.c tokens
+// 1. Define UI Fallback First to prevent ReferenceErrors
+function showLegacyModal() {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
+    backgroundColor: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center",
+    alignItems: "center", zIndex: "20000"
+  });
+  
+  const content = document.createElement("div");
+  Object.assign(content.style, {
+    backgroundColor: "#fff", padding: "20px", borderRadius: "12px",
+    textAlign: "center", maxWidth: "300px", fontFamily: "sans-serif", color: "#333"
+  });
+  
+  content.innerHTML = `
+    <h3 style="margin-top:0;">Model Error</h3>
+    <p>Failed to load the primary modal. Switched to Legacy Mode.</p>
+    <button id="closeLegacyModal" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">OK</button>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  document.getElementById("closeLegacyModal").onclick = () => modal.remove();
+}
+
+// 2. Define Decoder strictly for XPDevs Nano-Compiler compatibility
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
-    const XOR_KEY = 0xAA; // Matches XPDevs compiler key
+    const XOR_KEY = 0xAA; // Synchronized with json2bin.c
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    let i = 4; // Skip the 4-byte "GNIS" signature
+    let i = 4; // Skip the "GNIS" signature
 
     while (i < bytes.length) {
         const b = bytes[i];
-
         switch(b) {
             case 0x01: jsonString += "{"; break;
             case 0x02: jsonString += "}"; break;
@@ -281,24 +305,16 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; break;
             case 0x05: jsonString += "["; break;
             case 0x06: jsonString += "]"; break;
-            case 0x07: // String Start Marker
+            case 0x07: // String Start
                 jsonString += '"';
-                i++; // Move to first XORed character
-                
+                i++;
                 let stringBytes = [];
-                // Read until the null terminator 0x00 is reached
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
-                
-                // Reconstruct digital text from XORed bytes
                 jsonString += decoder.decode(new Uint8Array(stringBytes));
                 jsonString += '"';
-                // After finding 0x00, the loop's final i++ moves to the next token
-                break;
-            default:
-                // Skip stray nulls outside of string blocks
                 break;
         }
         i++;
@@ -306,18 +322,18 @@ function decodeBinary(buffer) {
     return jsonString;
 }
 
-// Optimized fetch block with strict format checking
+// 3. Execute Fetch after functions are defined
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
+      // Attempt binary deconstruction
       const decoded = decodeBinary(buffer);
-      if (!decoded || decoded.trim() === "") throw new Error("Empty result");
-      
+      if (!decoded) throw new Error("Deconstruction failed");
       responses = JSON.parse(decoded);
       console.log("XPDevs: Binary modal active.");
     } catch (e) {
-      console.warn("Binary failed, attempting raw JSON fallback...");
+      // Fallback to raw JSON if binary is malformed
       try {
         const text = new TextDecoder().decode(buffer);
         responses = JSON.parse(text);
@@ -329,12 +345,12 @@ fetch(jsonURL + "?v=" + Date.now())
   })
   .catch(err => {
     console.error("XPDevs Reconstruct Error:", err);
-    // Final fallback to legacy backup if all digital reconstructions fail
+    // Final safety fallback to legacy 1.0 JSON
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
       .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
       .then(data => { 
         responses = data; 
-        showLegacyModal();
+        showLegacyModal(); // Now properly defined in scope
       })
       .catch(e => console.error("Critical System Failure:", e));
   });
