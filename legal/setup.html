@@ -23,6 +23,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden; 
         }
 
         .consent-box {
@@ -61,8 +62,53 @@
             margin-top: 2px;
         }
 
-        a { color: var(--accent); text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        /* Dark Modal Wrapper */
+        #legal-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        /* Dark Header to match the UI */
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            background: var(--card);
+        }
+
+        .btn-back {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* White Frame for Black Text content */
+        .modal-content-frame {
+            flex-grow: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+        }
+
+        .legal-link {
+            color: var(--accent);
+            text-decoration: underline;
+            cursor: pointer;
+        }
 
         .btn-continue {
             background: var(--accent);
@@ -91,35 +137,46 @@
     <div class="checkbox-container">
         <label class="row">
             <input type="checkbox" id="tos">
-            <span>I have read and agree to the <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms of Service</a></span>
+            <span>I have read and agree to the <span class="legal-link" onclick="openModal('https://xpdevs.github.io/Genesis-AI/legal/terms-of-service')">Terms of Service</span></span>
         </label>
         
         <label class="row">
             <input type="checkbox" id="pp">
-            <span>I have read and agree to the <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a></span>
+            <span>I have read and agree to the <span class="legal-link" onclick="openModal('https://xpdevs.github.io/Genesis-AI/legal/privacy-policy')">Privacy Policy</span></span>
         </label>
     </div>
 
     <button id="proceed" class="btn-continue" disabled>Accept and Continue</button>
 </div>
 
+<div id="legal-modal">
+    <div class="modal-header">
+        <button class="btn-back" onclick="closeModal()">← Back</button>
+    </div>
+    <iframe id="modal-frame" class="modal-content-frame"></iframe>
+</div>
+
 <script>
-      const loadingScript = document.createElement('script');
-  // Adjusted path to include /Genesis-AI/
-  loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
-  
-  loadingScript.onload = () => {
-    document.body.style.visibility = 'visible';
-  };
-
-  // Error handling if the script fails to load
-  loadingScript.onerror = () => {
-    console.error("Loading script failed to load. Revealing UI.");
-    document.body.style.visibility = 'visible';
-  };
-
-  document.head.appendChild(loadingScript);
+    // Asset loading
+    const loadingScript = document.createElement('script');
+    loadingScript.src = `https://xpdevs.github.io/Genesis-AI/js/loading.js?v=${Date.now()}`;
+    loadingScript.onload = () => { document.body.style.visibility = 'visible'; };
+    loadingScript.onerror = () => { document.body.style.visibility = 'visible'; };
+    document.head.appendChild(loadingScript);
     
+    const modal = document.getElementById('legal-modal');
+    const frame = document.getElementById('modal-frame');
+
+    function openModal(url) {
+        frame.src = url;
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        frame.src = 'about:blank';
+    }
+
     const tosCheck = document.getElementById('tos');
     const ppCheck = document.getElementById('pp');
     const btn = document.getElementById('proceed');
@@ -132,10 +189,7 @@
     ppCheck.addEventListener('change', checkConsent);
 
     btn.addEventListener('click', () => {
-        // Set the flag for the main site logic
         localStorage.setItem("SETUP", "FLAG_TRUE");
-        
-        // Return to the main directory
         window.location.href = "https://xpdevs.github.io/Genesis-AI/";
     });
 </script>
