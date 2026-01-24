@@ -262,29 +262,14 @@ function showBanModal() {
 
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
-async function loadAndReconstruct() {
-    try {
-        const response = await fetch(jsonURL + "?v=" + Date.now()); // Added cache busting
-        if (!response.ok) throw new Error("Failed to fetch binary.");
-        
-        const buffer = await response.arrayBuffer();
-        const result = decodeBinary(buffer);
-        
-        if (!result) throw new Error("Deconstruction returned empty string.");
-        return JSON.parse(result);
-    } catch (err) {
-        console.error("XPDevs Reconstruct Error:", err);
-        return null; 
-    }
-}
-
+// Updated Decoder synchronized with json2bin.c tokens
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
-    const XOR_KEY = 0xAA;
+    const XOR_KEY = 0xAA; // Matches XPDevs compiler key
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    let i = 4; // Skip SIG_SMALL (4 bytes)
+    let i = 4; // Skip the 4-byte "GNIS" signature
 
     while (i < bytes.length) {
         const b = bytes[i];
@@ -296,24 +281,24 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; break;
             case 0x05: jsonString += "["; break;
             case 0x06: jsonString += "]"; break;
-            case 0x07: // String Start
+            case 0x07: // String Start Marker
                 jsonString += '"';
-                i++; // Move past 0x07 to the first character
+                i++; // Move to first XORed character
                 
                 let stringBytes = [];
-                // Read until we hit the null terminator 0x00
+                // Read until the null terminator 0x00 is reached
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
                 
+                // Reconstruct digital text from XORed bytes
                 jsonString += decoder.decode(new Uint8Array(stringBytes));
                 jsonString += '"';
-                // i is now pointing at 0x00. 
-                // The loop's final i++ will move us to the next token.
+                // After finding 0x00, the loop's final i++ moves to the next token
                 break;
-            case 0x00:
-                // Ignore stray nulls
+            default:
+                // Skip stray nulls outside of string blocks
                 break;
         }
         i++;
@@ -321,69 +306,37 @@ function decodeBinary(buffer) {
     return jsonString;
 }
 
-function showLegacyModal() {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: "20000"
-  });
-  
-  const content = document.createElement("div");
-  Object.assign(content.style, {
-    backgroundColor: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    textAlign: "center",
-    maxWidth: "300px",
-    fontFamily: "sans-serif",
-    color: "#333"
-  });
-  
-  content.innerHTML = `
-    <h3 style="margin-top:0;">Model Error</h3>
-    <p>Failed to load the primary modal. Switched to Legacy Mode.</p>
-    <button id="closeLegacyModal" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">OK</button>
-  `;
-  
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  
-  document.getElementById("closeLegacyModal").onclick = () => modal.remove();
-}
-
+// Optimized fetch block with strict format checking
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
-      responses = JSON.parse(decodeBinary(buffer));
-      console.log("Using binary modal");
+      const decoded = decodeBinary(buffer);
+      if (!decoded || decoded.trim() === "") throw new Error("Empty result");
+      
+      responses = JSON.parse(decoded);
+      console.log("XPDevs: Binary modal active.");
     } catch (e) {
+      console.warn("Binary failed, attempting raw JSON fallback...");
       try {
         const text = new TextDecoder().decode(buffer);
         responses = JSON.parse(text);
-        console.log("Using JSON modal");
+        console.log("XPDevs: JSON modal active.");
       } catch (err) {
         throw new Error("Invalid Modal Format");
       }
     }
   })
   .catch(err => {
-    console.log("Using legacy modal");
+    console.error("XPDevs Reconstruct Error:", err);
+    // Final fallback to legacy backup if all digital reconstructions fail
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
       .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
       .then(data => { 
         responses = data; 
         showLegacyModal();
       })
-      .catch(e => appendMessage(`Failed to load data: ${e}`, "error"));
+      .catch(e => console.error("Critical System Failure:", e));
   });
 
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
