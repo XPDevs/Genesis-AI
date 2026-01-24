@@ -218,47 +218,29 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY DECODER & LOADER ---
-// Targeted for Genesis-SPT-4.5-240126P1105M.bin
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.3-240126P0225M.bin";
+// --- BINARY DECODER (V4.5 OPTIMIZED) ---
+// Matches XPDevs Nano-Compiler v2.0 Logic
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
-
-function showLegacyModal() {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "center",
-    alignItems: "center", zIndex: "20000", backdropFilter: "blur(4px)"
-  });
-  const content = document.createElement("div");
-  Object.assign(content.style, {
-    backgroundColor: "#1a1a1a", padding: "24px", borderRadius: "16px",
-    textAlign: "center", maxWidth: "320px", border: "1px solid #333",
-    fontFamily: "sans-serif", color: "#eee"
-  });
-  content.innerHTML = `
-    <h3 style="margin-top:0; color: #ff4444;">System Warning</h3>
-    <p>The high-capacity modal failed to load. Using legacy fallback.</p>
-    <button id="closeLegacyModal" style="padding:10px 20px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer;">Acknowledge</button>
-  `;
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  document.getElementById("closeLegacyModal").onclick = () => modal.remove();
-}
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     let jsonString = "";
-    let i = 0;
+    
+    // 1. Signature Check (Little Endian for 0x53494E47 "GNIS")
+    // In C: fwrite(&sig, 4, 1, dest)
+    const sig = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+    if (sig !== 0x53494E47) {
+        console.warn("Invalid Signature: Not a valid Genesis-AI bin file.");
+    }
 
-    // Strict Magic Byte Check
-    const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
-    if (magic === "GNIS") { i = 4; } else { i = 0; }
+    let i = 4; // Start after the 4-byte signature
 
     while (i < bytes.length) {
         const b = bytes[i];
+        
         switch(b) {
             case 0x01: jsonString += "{"; break;
             case 0x02: jsonString += "}"; break;
@@ -266,56 +248,65 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; break;
             case 0x05: jsonString += "["; break;
             case 0x06: jsonString += "]"; break;
-            case 0x07:
-                jsonString += '"';
+            case 0x07: // T_STR: Start of XOR'd string
                 i++; 
                 let start = i;
-                // Look for 0x00 terminator
-                while (i < bytes.length && bytes[i] !== 0x00) { i++; }
-                const chunk = bytes.slice(start, i);
-                const decryptedChunk = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decryptedChunk[j] = chunk[j] ^ XOR_KEY;
+                
+                // Find the 0x00 null terminator set by your C compiler
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
                 }
-                jsonString += decoder.decode(decryptedChunk);
-                jsonString += '"';
+                
+                const chunk = bytes.slice(start, i);
+                const decrypted = new Uint8Array(chunk.length);
+                for (let j = 0; j < chunk.length; j++) {
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                }
+                
+                jsonString += '"' + decoder.decode(decrypted) + '"';
+                // i now sits at 0x00, the loop increment at the bottom moves it to next token
                 break;
         }
         i++;
     }
-    // Final check: Remove null characters or hidden bytes that break JSON.parse
-    return jsonString.trim().replace(/\0/g, ''); 
+    
+    // Clean up any trailing whitespace/nulls before returning
+    return jsonString.trim();
 }
 
+// 3. Execution
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
-      // Ensure we aren't passing an empty or non-JSON string
-      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-          throw new SyntaxError("Decoded content is not a valid JSON structure.");
+      // Validate that it actually looks like JSON
+      if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
+          throw new Error("Invalid JSON structure after decryption.");
       }
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: 4.5 Binary active.");
+      console.log("Genesis-AI: SPT-4.5 Binary Loaded Successfully.");
     } catch (e) {
       console.warn("Binary rebuild failed: " + e.message);
-      // Text Fallback
+      // Raw JSON Fallback
       try {
-          const text = new TextDecoder().decode(buffer).trim();
-          if (text.startsWith("{")) {
-              responses = JSON.parse(text);
-          } else { throw new Error(); }
-      } catch (inner) {
+          const rawText = new TextDecoder().decode(buffer).trim();
+          responses = JSON.parse(rawText);
+          console.log("Genesis-AI: Falling back to Raw JSON.");
+      } catch (innerErr) {
           throw new Error("Critical: File is neither valid Binary nor JSON.");
       }
     }
   })
   .catch(err => {
     console.error("Critical Reconstruction Error:", err);
+    // Legacy Safety Fallback
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
       .then(r => r.json())
-      .then(data => { responses = data; showLegacyModal(); });
+      .then(data => { 
+        responses = data; 
+        if (typeof showLegacyModal === "function") showLegacyModal(); 
+      });
   });
 
 // --- UI & MESSAGING ---
