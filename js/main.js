@@ -243,25 +243,26 @@ function showBanModal() {
 
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
-// 1. Define UI Fallback First to prevent ReferenceErrors
+// 1. UI Fallback
 function showLegacyModal() {
   const modal = document.createElement("div");
   Object.assign(modal.style, {
     position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center",
-    alignItems: "center", zIndex: "20000"
+    backgroundColor: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "center",
+    alignItems: "center", zIndex: "20000", backdropFilter: "blur(4px)"
   });
   
   const content = document.createElement("div");
   Object.assign(content.style, {
-    backgroundColor: "#fff", padding: "20px", borderRadius: "12px",
-    textAlign: "center", maxWidth: "300px", fontFamily: "sans-serif", color: "#333"
+    backgroundColor: "#1a1a1a", padding: "24px", borderRadius: "16px",
+    textAlign: "center", maxWidth: "320px", border: "1px solid #333",
+    fontFamily: "sans-serif", color: "#eee"
   });
   
   content.innerHTML = `
-    <h3 style="margin-top:0;">Model Error</h3>
-    <p>Failed to load the primary modal. Switched to Legacy Mode.</p>
-    <button id="closeLegacyModal" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">OK</button>
+    <h3 style="margin-top:0; color: #ff4444;">System Warning</h3>
+    <p>The high-capacity modal failed to load. Using legacy fallback.</p>
+    <button id="closeLegacyModal" style="padding:10px 20px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer;">Acknowledge</button>
   `;
   
   modal.appendChild(content);
@@ -269,14 +270,14 @@ function showLegacyModal() {
   document.getElementById("closeLegacyModal").onclick = () => modal.remove();
 }
 
-// 2. Define Decoder strictly for XPDevs Nano-Compiler compatibility
+// 2. High-Capacity Decoder (No-Limit)
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
-    const XOR_KEY = 0xAA; // Synchronized with json2bin.c
+    const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     
     let jsonString = "";
-    let i = 4; // Skip the "GNIS" signature
+    let i = 4; // Skip "GNIS"
 
     while (i < bytes.length) {
         const b = bytes[i];
@@ -287,23 +288,28 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; break;
             case 0x05: jsonString += "["; break;
             case 0x06: jsonString += "]"; break;
-            case 0x07: // String Start
+            case 0x07: // String Start Marker
                 jsonString += '"';
-                i++; // Move past 0x07
-                let stringBytes = [];
-                // Read until we hit 0x00 (The null terminator written by C)
+                i++; 
+                
+                // Find the end of the string (0x00 terminator)
+                let start = i;
                 while (i < bytes.length && bytes[i] !== 0x00) {
-                    stringBytes.push(bytes[i] ^ XOR_KEY);
                     i++;
                 }
-                jsonString += decoder.decode(new Uint8Array(stringBytes));
+                
+                // Extract the chunk and XOR decrypt it
+                const chunk = bytes.slice(start, i);
+                const decryptedChunk = new Uint8Array(chunk.length);
+                for (let j = 0; j < chunk.length; j++) {
+                    decryptedChunk[j] = chunk[j] ^ XOR_KEY;
+                }
+                
+                // Use TextDecoder on the decrypted Uint8Array (No limit)
+                jsonString += decoder.decode(decryptedChunk);
                 jsonString += '"';
-                // IMPORTANT: i is now at 0x00. 
-                // We do NOT manually increment i here because the 
-                // i++ at the end of the switch will skip the 0x00 for us.
                 break;
             default:
-                // This catches stray 0x00 bytes or unknown padding
                 break;
         }
         i++;
@@ -311,37 +317,30 @@ function decodeBinary(buffer) {
     return jsonString;
 }
 
-// 3. Execute Fetch after functions are defined
+// 3. Execution
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
-      if (!decoded || decoded.length < 5) throw new Error("Deconstruction failed");
-      
+      // Final JSON parse
       responses = JSON.parse(decoded);
-      console.log("XPDevs: Binary modal active.");
+      console.log("Genesis-AI: 1000+ Topic Binary active.");
     } catch (e) {
-      // Fallback if binary reconstruction fails
-      console.warn("Binary format invalid, checking raw JSON...");
-      try {
-        const text = new TextDecoder().decode(buffer);
-        responses = JSON.parse(text);
-        console.log("XPDevs: JSON modal active.");
-      } catch (err) {
-        throw new Error("Invalid Modal Format");
-      }
+      console.warn("Binary rebuild failed, trying raw JSON fallback...");
+      const text = new TextDecoder().decode(buffer);
+      responses = JSON.parse(text);
     }
   })
   .catch(err => {
-    console.error("XPDevs Reconstruct Error:", err);
-    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
-      .then(r => r.ok ? r.json() : Promise.reject("Legacy file not found"))
+    console.error("Critical Reconstruction Error:", err);
+    // Legacy JSON Fetch
+    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+      .then(r => r.json())
       .then(data => { 
         responses = data; 
         showLegacyModal(); 
-      })
-      .catch(e => console.error("Critical System Failure:", e));
+      });
   });
 
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
