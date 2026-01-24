@@ -197,13 +197,12 @@
   document.body.style.visibility = 'visible';
   const uiElements = document.querySelectorAll('.sidebar, .chat-main');
   uiElements.forEach(el => el.style.display = 'flex');
-
-  // 5. Load Logic
-  await Promise.all([
-    loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
-    loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js')
-    loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js')
-  ]);
+  
+await Promise.all([
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js')
+]);
 
   // 6. Universal Sidebar Toggle Logic (Works if element exists)
   const toggleBtn = document.getElementById('sidebarToggle');
@@ -225,5 +224,6 @@
 </script>
 </body>
 </html>
+
 
 
