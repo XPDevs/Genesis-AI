@@ -272,7 +272,7 @@ function decodeBinary(buffer) {
                     decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
-                jsonString += '"' + decoder.decode(decrypted) + '"';
+                jsonString += JSON.stringify(decoder.decode(decrypted));
                 break;
             default:
                 // Ignore unexpected bytes (like padding)
