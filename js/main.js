@@ -15,6 +15,7 @@ const newChatBtn = document.getElementById("newChatBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const themeToggle = document.getElementById("themeToggle");
+const modelSelect = document.getElementById("modelSelect");
 const chatTitle = document.getElementById("chatTitle");
 const readOnlyBanner = document.getElementById("readOnlyBanner");
 
@@ -241,7 +242,8 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-experimental.bin";
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.3-240126P0225M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 // 1. UI Fallback
 function showLegacyModal() {
@@ -867,6 +869,14 @@ settingsBtn.onclick = () => {
   }
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
+
+if (modelSelect) {
+  modelSelect.value = jsonURL;
+  modelSelect.onchange = () => {
+    localStorage.setItem("selectedModel", modelSelect.value);
+    window.location.reload();
+  };
+}
 
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
