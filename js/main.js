@@ -1,23 +1,4 @@
 (function() {
-  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-  const handshakeCode = "9980748324";
-  const mobileURL = "https://xpdevs.github.io/Genesis-AI/mobile/index";
-
-  // 1. Primary Environment Check
-  if (isMobile) {
-    // If code is MISSING or WRONG on mobile, redirect to mobile landing
-    if (window.GENESIS_CODE !== handshakeCode) {
-      window.location.href = mobileURL;
-      return; 
-    }
-    // If code matches, continue normal execution on mobile
-    console.log("Genesis Mobile: Handshake Verified.");
-  } else {
-    // Desktop: Continue normally without code check
-    console.log("Genesis Desktop: Verified.");
-  }
-
-  // 2. Setup Flag Check
   if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
     window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
     return;
