@@ -474,8 +474,16 @@ function appendMessage(text, role, isNew = false) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayStr = dayNames[now.getDay()];
+  const yearStr = now.getFullYear().toString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString('en-GB');
 
-  let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr);
+  let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr)
+    .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr)
+    .replace(/%TOMORROW%/g, tomorrowStr);
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -559,6 +567,65 @@ function typeChatTitle(newTitle, callback) {
 
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
+
+  // --- NEW DYNAMIC LOGIC START ---
+  
+  // 1. Past Dates: "What date was it 5 days ago"
+  const daysAgoMatch = lowerInput.match(/what date was it (\d+) days ago/);
+  if (daysAgoMatch) {
+    const days = parseInt(daysAgoMatch[1]);
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return { role: "ai", text: `It was ${d.toLocaleDateString('en-GB')}.` };
+  }
+
+  // 2. Days Until: "How many days until 25/12/2026"
+  const untilMatch = lowerInput.match(/(?:how many days|what day) until (.+)/);
+  if (untilMatch) {
+    let targetStr = untilMatch[1].replace("?", "").trim();
+    let targetDate;
+    // Basic date parsing (DD/MM/YYYY or YYYY-MM-DD)
+    if (targetStr.includes("/")) {
+        const [d, m, y] = targetStr.split("/");
+        targetDate = new Date(`${y}-${m}-${d}`);
+    } else {
+        targetDate = new Date(targetStr);
+    }
+    
+    if (!isNaN(targetDate.getTime())) {
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        targetDate.setHours(0,0,0,0);
+        const diff = Math.ceil((targetDate - now) / (1000 * 60 * 60 * 24));
+        
+        if (diff > 0) return { role: "ai", text: `There are ${diff} days until ${targetStr}.` };
+        if (diff === 0) return { role: "ai", text: "That is today!" };
+        return { role: "ai", text: `That date was ${Math.abs(diff)} days ago.` };
+    }
+  }
+
+  // 3. Time Offset: "What time is it in 5 hours" or "What time was it 5 minutes ago"
+  const futureTime = lowerInput.match(/what time .+in (\d+) (hour|minute|second)s?/);
+  const pastTime = lowerInput.match(/what time .+ (\d+) (hour|minute|second)s? ago/);
+  
+  if (futureTime || pastTime) {
+      const match = futureTime || pastTime;
+      const isFuture = !!futureTime;
+      const amount = parseInt(match[1]);
+      const unit = match[2];
+      
+      const d = new Date();
+      let ms = 0;
+      if (unit.startsWith("hour")) ms = amount * 3600000;
+      else if (unit.startsWith("minute")) ms = amount * 60000;
+      else ms = amount * 1000;
+      
+      const target = new Date(d.getTime() + (isFuture ? ms : -ms));
+      return { role: "ai", text: `The time ${isFuture ? "will be" : "was"}: ${target.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}` };
+  }
+
+  // --- NEW DYNAMIC LOGIC END ---
+
   const foundMatches = [];
 
   // Sort keys by length, longest first, to prioritize specific matches
