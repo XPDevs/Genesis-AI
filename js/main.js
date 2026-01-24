@@ -557,34 +557,51 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
-function findResponses(input) {
-  input = input.toLowerCase();
-  const foundMessages = [];
-  
-  // Iterate through all keys in the response JSON
-  Object.keys(responses).forEach(key => {
-    if (input.includes(key.toLowerCase())) {
-      foundMessages.push(responses[key]);
+function findResponses(input, history) {
+  const lowerInput = input.toLowerCase();
+  const foundMatches = [];
+
+  // Sort keys by length, longest first, to prioritize specific matches
+  const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
+
+  let tempInput = lowerInput;
+
+  sortedKeys.forEach(key => {
+    const lowerKey = key.toLowerCase();
+    let index = tempInput.indexOf(lowerKey);
+    while (index !== -1) {
+      foundMatches.push({
+        text: responses[key],
+        index: index
+      });
+      // Blank out the matched part of the string so it's not matched again by a shorter key
+      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+      // Look for the next occurrence in the modified string
+      index = tempInput.indexOf(lowerKey);
     }
   });
 
-  if (foundMessages.length === 0) {
-    return { role: "ai", text: "I can't find a direct response for that, Try asking what can i do." };
+  if (foundMatches.length === 0) {
+    return { role: "ai", text: "I can't find a direct response for that, but I'm learning! Try asking about something I know." };
   }
 
+  // Sort the found matches by their original position in the input string
+  const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
+
   // Handle %SUMMARY_SENT% check within multi-responses
-  const isSummaryTriggered = foundMessages.some(m => m === "%SUMMARY_SENT%");
+  const isSummaryTriggered = orderedMessages.some(m => m === "%SUMMARY_SENT%");
   if (isSummaryTriggered && typeof window.summariseConversation === "function") {
-    return { role: "ai", text: window.summariseConversation(input) };
+    const context = history ? history.map(m => m.text).join(" ") : input;
+    return { role: "ai", text: window.summariseConversation(context) };
   }
 
   // Combine multiple answers with grammar logic
-  if (foundMessages.length === 1) {
-    return { role: "ai", text: foundMessages[0] };
+  if (orderedMessages.length === 1) {
+    return { role: "ai", text: orderedMessages[0] };
   } else {
     // Join with commas and "and" for the last item
-    const last = foundMessages.pop();
-    const joined = foundMessages.join(", ") + " and " + last;
+    const last = orderedMessages.pop();
+    const joined = orderedMessages.join(", ") + " and " + last;
     return { role: "ai", text: joined };
   }
 }
@@ -635,16 +652,70 @@ function sendMessage() {
     });
   }
 
+// 1. Create and inject the styles
+const style = document.createElement('style');
+style.textContent = `
+  .loading-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 20px;
+    background: #f0f0f0;
+    width: fit-content;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 10px 0;
+  }
+
+  /* Supports dark mode automatically */
+  @media (prefers-color-scheme: dark) {
+    .loading-container {
+      background: #2a2a2a;
+    }
+    .loading-text { color: #bbb !important; }
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: #888;
+    border-radius: 50%;
+    animation: aiPulse 1.4s infinite ease-in-out both;
+  }
+
+  .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes aiPulse {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+    40% { transform: scale(1.0); opacity: 1; }
+  }
+
+  .loading-text {
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+  }
+`;
+document.head.appendChild(style);
+
+// 2. Create the element
 const loadingDiv = document.createElement("div");
 loadingDiv.className = "message loading-container";
 loadingDiv.innerHTML = `
-  <div class="typing-indicator">
+  <div class="typing-dots">
     <span></span>
     <span></span>
     <span></span>
   </div>
   <span class="loading-text">Thinking...</span>
 `;
+
   chatBox.append(loadingDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -656,8 +727,7 @@ loadingDiv.innerHTML = `
       const dataToSummarise = text.substring(16).trim();
       botMsg = { role: "ai", text: (typeof window.summariseConversation === "function") ? window.summariseConversation(dataToSummarise) : "Summary module not found." };
     } else {
-      const fullConversation = chat.messages.map(m => m.text).join(" ");
-      botMsg = findResponses(fullConversation);
+      botMsg = findResponses(text, chat.messages);
     }
 
     chat.messages.push(botMsg);
