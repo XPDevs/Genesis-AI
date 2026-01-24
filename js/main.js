@@ -241,7 +241,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
+const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-experimental.bin";
 
 // 1. UI Fallback
 function showLegacyModal() {
