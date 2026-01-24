@@ -263,15 +263,24 @@ function showBanModal() {
 const jsonURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT.bin";
 
 async function loadAndReconstruct() {
-    const response = await fetch(jsonURL);
-    const buffer = await response.arrayBuffer();
-    const result = decodeBinary(buffer);
-    return JSON.parse(result);
+    try {
+        const response = await fetch(jsonURL);
+        if (!response.ok) throw new Error("Failed to fetch binary.");
+        
+        const buffer = await response.arrayBuffer();
+        const result = decodeBinary(buffer);
+        
+        // result is now a clean JSON string
+        return JSON.parse(result);
+    } catch (err) {
+        console.error("XPDevs Reconstruct Error:", err);
+    }
 }
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const XOR_KEY = 0xAA;
+    const decoder = new TextDecoder('utf-8'); // Ensures dashes and quotes show correctly
     
     // Skip the 4-byte signature (0-3)
     let jsonString = "";
@@ -280,25 +289,32 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
 
-        // Check against our Structural Tokens
-        if (b === 0x01) jsonString += "{";
-        else if (b === 0x02) jsonString += "}";
-        else if (b === 0x03) jsonString += ":";
-        else if (b === 0x04) jsonString += ",";
-        else if (b === 0x05) jsonString += "[";
-        else if (b === 0x06) jsonString += "]";
-        else if (b === 0x00) { 
-            // This was our internal null-separator, do nothing
-        } 
-        else {
-            // It's a string! Start reading until we hit a token or null
-            jsonString += '"';
-            while (i < bytes.length && bytes[i] > 0x06) {
-                jsonString += String.fromCharCode(bytes[i] ^ XOR_KEY);
-                i++;
-            }
-            jsonString += '"';
-            i--; // Step back so the outer loop catches the token
+        // Structural Tokens matching your C compiler
+        switch(b) {
+            case 0x01: jsonString += "{"; break;
+            case 0x02: jsonString += "}"; break;
+            case 0x03: jsonString += ":"; break;
+            case 0x04: jsonString += ","; break;
+            case 0x05: jsonString += "["; break;
+            case 0x06: jsonString += "]"; break;
+            case 0x07: // String Start Marker
+                jsonString += '"';
+                i++; 
+                
+                let stringBytes = [];
+                // Read until we hit the 0x00 null terminator
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    stringBytes.push(bytes[i] ^ XOR_KEY);
+                    i++;
+                }
+                
+                // Convert the XORed byte array into a proper UTF-8 string
+                jsonString += decoder.decode(new Uint8Array(stringBytes));
+                jsonString += '"';
+                break;
+            case 0x00:
+                // Skip stray null terminators outside of string blocks
+                break;
         }
         i++;
     }
