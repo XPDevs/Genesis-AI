@@ -870,11 +870,28 @@ settingsBtn.onclick = () => {
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
+const refreshWarningModal = document.getElementById("refreshWarningModal");
+const refreshConfirm = document.getElementById("refreshConfirm");
+const refreshCancel = document.getElementById("refreshCancel");
+
 if (modelSelect) {
   modelSelect.value = jsonURL;
   modelSelect.onchange = () => {
+    if (refreshWarningModal) refreshWarningModal.style.display = "flex";
+  };
+}
+
+if (refreshConfirm) {
+  refreshConfirm.onclick = () => {
     localStorage.setItem("selectedModel", modelSelect.value);
     window.location.reload();
+  };
+}
+
+if (refreshCancel) {
+  refreshCancel.onclick = () => {
+    if (refreshWarningModal) refreshWarningModal.style.display = "none";
+    modelSelect.value = jsonURL;
   };
 }
 
