@@ -1,120 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Genesis-AI Setup</title>
     <style>
-        /* Immediate black-out and hide elements to prevent flash */
+        /* Global Reset & Device Consistency */
         html, body { 
             background-color: #000 !important; 
             margin: 0; 
             padding: 0; 
+            width: 100%;
             height: 100%;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* Prevent visibility flicker */
         body { visibility: hidden; }
 
         :root {
-            --bg: #ffffff;
-            --text: #1f1f1f;
-            --primary: #1a73e8;
-            --border: #dee2e6;
-            --input-bg: #f0f4f9;
+            --bg: #131314; /* Default to Dark Mode for XPDevs aesthetic */
+            --text: #ffffff; /* Forced White Text */
+            --primary: #8ab4f8;
+            --border: #444746;
+            --input-bg: #1e1f20;
         }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #131314;
-                --text: #e3e3e3;
-                --primary: #8ab4f8;
-                --border: #444746;
-                --input-bg: #1e1f20;
-            }
-        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
         }
+
         .container {
-            max-width: 500px;
-            width: 90%;
-            padding: 40px;
+            max-width: 400px;
+            width: 85%;
+            padding: 20px;
             text-align: center;
+            /* Ensure it stays centered on small mobile screens */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        h1 { margin-bottom: 10px; }
-        p { line-height: 1.6; color: var(--text); opacity: 0.8; margin-bottom: 30px; }
+
+        /* Text Styling */
+        h1 { 
+            margin-bottom: 15px; 
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #ffffff; /* Explicit White */
+        }
+
+        p { 
+            line-height: 1.5; 
+            color: #ffffff; 
+            opacity: 0.9; 
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        /* Buttons with Rounded Modern UI */
         button {
             background-color: var(--primary);
-            color: #fff;
+            color: #000; /* Dark text on light blue button for contrast */
             border: none;
-            padding: 12px 24px;
-            border-radius: 24px;
+            padding: 14px 24px;
+            border-radius: 28px;
             font-size: 1rem;
             cursor: pointer;
-            font-weight: 500;
-            transition: opacity 0.2s;
-            width: 100%; /* Make buttons full width */
+            font-weight: 600;
+            transition: transform 0.1s, opacity 0.2s;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+
         button:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            filter: grayscale(1);
         }
-        button:not(:disabled):hover { opacity: 0.9; }        
+
+        button:not(:disabled):active {
+            transform: scale(0.98);
+        }
+
+        /* Input Styling */
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             background: var(--input-bg);
-            color: var(--text);
+            color: #ffffff;
             font-size: 1rem;
             box-sizing: border-box;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            outline: none;
         }
-        .legal-text {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-top: 25px;
-            margin-bottom: 0;
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
         }
+
+        /* Checkbox Layout */
+        .checkbox-group {
+            text-align: left;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: flex-start; /* Better for wrapped text on mobile */
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 4px;
+            min-width: 20px;
+            min-height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 0.95rem;
+            color: #ffffff;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
         a {
             color: var(--primary);
             text-decoration: none;
-            font-weight: 500;
         }
-        a:hover {
-            text-decoration: underline;
-        }
+
         .hidden {
-            display: none;
+            display: none !important;
         }
-        .checkbox-group {
-            text-align: left;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        .checkbox-group input[type="checkbox"] {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
-        }
-        .checkbox-group label {
-            font-size: 1rem;
-            opacity: 0.9;
+
+        /* Loading script handling */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
-    <!-- Step 1: Legal Agreement -->
+
     <div class="container" id="step1">
         <h1>Legal Agreement</h1>
         <p>Please review and accept our terms to continue.</p>
@@ -135,7 +170,6 @@
         <button id="legalContinueBtn" disabled>Continue</button>
     </div>
 
-    <!-- Step 2: Name Input -->
     <div class="container hidden" id="step2">
         <h1>Profile Setup</h1>
         <p>How should Genesis-AI address you?</p>
@@ -146,31 +180,26 @@
     </div>
     
     <script>
-        // Elements for Step 1
         const step1 = document.getElementById('step1');
         const tosCheckbox = document.getElementById('tosCheckbox');
         const ppCheckbox = document.getElementById('ppCheckbox');
         const legalContinueBtn = document.getElementById('legalContinueBtn');
-
-        // Elements for Step 2
         const step2 = document.getElementById('step2');
         const nameInput = document.getElementById('nameInput');
         const finishBtn = document.getElementById('finishBtn');
 
-        // Logic for Step 1
         function checkAgreements() {
             legalContinueBtn.disabled = !(tosCheckbox.checked && ppCheckbox.checked);
         }
 
-        // Logic for Step 2
         function completeSetup() {
             const name = nameInput.value.trim();
             if (name) {
+                // Storing name in userInfo and setting setup flag
                 localStorage.setItem('userInfo', JSON.stringify({ name: name }));
                 localStorage.setItem('SETUP', 'FLAG_TRUE');
                 window.location.href = '../index.html';
             } else {
-                alert('Please enter a name.');
                 nameInput.focus();
             }
         }
@@ -186,11 +215,8 @@
 
         finishBtn.addEventListener('click', completeSetup);
         nameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                completeSetup();
-            }
+            if (e.key === 'Enter') completeSetup();
         });
-        checkAgreements();
 
         const loadScript = (src) => {
             return new Promise((resolve) => {
@@ -202,6 +228,7 @@
         };
 
         (async () => {
+            // Loading your external loading logic
             await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
             document.body.style.visibility = 'visible';
         })();
