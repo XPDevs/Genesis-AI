@@ -360,7 +360,9 @@ function renderChatList() {
     li.addEventListener('touchstart', () => {
         pressTimer = setTimeout(() => {
             document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+            document.querySelectorAll('.dots-btn').forEach(b => b.style.background = "");
             dropdown.style.display = "flex";
+            dots.style.background = "var(--active-chat)";
         }, 3000);
     }, {passive: true});
     li.addEventListener('touchend', () => clearTimeout(pressTimer));
@@ -397,7 +399,16 @@ function renderChatList() {
     renameBtn.onclick = e => { e.stopPropagation(); currentRenameId = chat.id; renameInput.value = chat.title; renameModal.style.display = "flex"; dropdown.style.display = "none"; };
     deleteBtn.onclick = e => { e.stopPropagation(); currentDeleteId = chat.id; deleteModal.style.display = "flex"; dropdown.style.display = "none"; };
     shareBtn.onclick = e => { e.stopPropagation(); showShareModal(chat.id); dropdown.style.display = "none"; };
-    dots.onclick = e => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex"; };
+    dots.onclick = e => { 
+        e.stopPropagation(); 
+        if (dropdown.style.display === "flex") {
+            dropdown.style.display = "none";
+            dots.style.background = "";
+        } else {
+            dropdown.style.display = "flex";
+            dots.style.background = "var(--active-chat)";
+        }
+    };
 
     dropdown.append(pinBtn, renameBtn, deleteBtn, shareBtn);
     options.append(dots, dropdown);
