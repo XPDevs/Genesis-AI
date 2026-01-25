@@ -49,7 +49,7 @@ let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false;
 let isDevMode = false;
-const DEV_PASSWORD = "xpdevs_power_user";
+const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
