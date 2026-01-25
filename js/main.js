@@ -277,7 +277,13 @@ function decodeBinary(buffer) {
                     decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
-                jsonString += JSON.stringify(decoder.decode(decrypted));
+                // The C compiler preserves the string content as it appears in the JSON file,
+                // including escape characters like \". Using JSON.stringify would re-escape
+                // these, corrupting the data (e.g., \" becomes \\").
+                // The correct approach is to simply wrap the decoded string in quotes,
+                // mirroring the behavior of the nano_decompile function in json2bin.c.
+                const stringContent = decoder.decode(decrypted);
+                jsonString += '"' + stringContent + '"';
                 break;
             default:
                 // Ignore unexpected bytes (like padding)
