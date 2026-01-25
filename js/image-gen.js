@@ -1,8 +1,8 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Updated for new Pollinations.ai API standards.
- * Bypasses ORB/CORS using a sandboxed Data-URI Iframe.
+ * FIX: Uses srcdoc Iframe to bypass ORB/NS_BINDING_ABORTED.
+ * FIX: Direct URL rendering to hide prompt text.
  */
 
 // 1. Process tags and clean input
@@ -32,6 +32,7 @@ async function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
+    // Genesis logic: Sort keys by length for precise matching
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -46,45 +47,34 @@ async function findImageInModel(prompt, imageModel) {
         }
     });
 
+    // If no local model match is found, use the external generator
     if (foundMatches.length === 0) {
-        // Updated for the latest Pollinations.ai URL structure
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 999999);
-        const width = 1024;
-        const height = 1024;
         
-        // New Pollinations URL format with dimension and model parameters
-        const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+        // Use the new Pollinations Flux endpoint
+        const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
         
         /**
-         * REPAIR: Constructing the Iframe content as a standalone HTML document.
-         * This forces the browser to interpret the request as a simple image load
-         * within a sub-frame, bypassing the GitHub Pages cross-origin restrictions.
+         * THE FIX: Using srcdoc avoids the NS_BINDING_ABORTED error.
+         * The browser treats the <img> within the srcdoc as a standard media load.
          */
-        const iframeContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { margin: 0; padding: 0; background: transparent; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-                    img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; font-family: sans-serif; color: #666; font-size: 12px; }
-                </style>
-            </head>
-            <body>
-                <img src="${directImageUrl}" alt="Generating ${prompt}..." />
-            </body>
-            </html>
-        `;
-        
-        // Safe Base64 encoding for modern browsers
-        const base64Content = btoa(unescape(encodeURIComponent(iframeContent)));
-        const iframeHtml = `<iframe src="data:text/html;base64,${base64Content}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; background: #1a1a1a;" scrolling="no"></iframe>`;
+        const iframeHtml = `
+            <iframe 
+                srcdoc="<html><body style='margin:0;padding:0;background:#111;display:flex;justify-content:center;align-items:center;overflow:hidden;'>
+                        <img src='${directImageUrl}' style='width:100%;height:100%;object-fit:cover;border-radius:12px;' 
+                        onload='this.style.opacity=1' style='opacity:0;transition:opacity 0.5s;' />
+                        </body></html>"
+                style="width:100%; aspect-ratio:1/1; border:none; border-radius:16px; background:#111; box-shadow: 0 8px 32px rgba(0,0,0,0.3);" 
+                scrolling="no">
+            </iframe>`;
         
         return { 
             role: "ai", 
             text: iframeHtml 
         };
     } else {
+        // Handle model-specific text responses
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         const responseText = orderedMessages.length === 1 
             ? orderedMessages[0] 
