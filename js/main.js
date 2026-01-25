@@ -350,19 +350,41 @@ function updateURL(chatTitle) {
 function renderChatList() {
   if (isReadOnlyMode) return;
   chatList.innerHTML = "";
+  chats.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   chats.forEach(chat => {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
+    
+    let pressTimer;
+    li.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(() => {
+            document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+            dropdown.style.display = "flex";
+        }, 3000);
+    }, {passive: true});
+    li.addEventListener('touchend', () => clearTimeout(pressTimer));
+    li.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
     const span = document.createElement("span");
     span.textContent = chat.title;
     span.className = "chat-name";
     const options = document.createElement("div");
     options.className = "chat-options";
+    
+    if (chat.pinned) {
+        const pinIcon = document.createElement("span");
+        pinIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>';
+        Object.assign(pinIcon.style, { display: 'flex', alignItems: 'center', marginRight: '4px', opacity: '0.6' });
+        options.appendChild(pinIcon);
+    }
+
     const dots = document.createElement("button");
     dots.textContent = "⋮";
     dots.className = "dots-btn";
     const dropdown = document.createElement("div");
     dropdown.className = "dropdown";
+    const pinBtn = document.createElement("button");
+    pinBtn.textContent = chat.pinned ? "Unpin Chat" : "Pin Chat";
     const renameBtn = document.createElement("button");
     renameBtn.textContent = "Rename";
     const deleteBtn = document.createElement("button");
@@ -370,12 +392,13 @@ function renderChatList() {
     const shareBtn = document.createElement("button");
     shareBtn.textContent = "Share";
 
+    pinBtn.onclick = e => { e.stopPropagation(); chat.pinned = !chat.pinned; saveChats(); renderChatList(); dropdown.style.display = "none"; };
     renameBtn.onclick = e => { e.stopPropagation(); currentRenameId = chat.id; renameInput.value = chat.title; renameModal.style.display = "flex"; dropdown.style.display = "none"; };
     deleteBtn.onclick = e => { e.stopPropagation(); currentDeleteId = chat.id; deleteModal.style.display = "flex"; dropdown.style.display = "none"; };
     shareBtn.onclick = e => { e.stopPropagation(); showShareModal(chat.id); dropdown.style.display = "none"; };
     dots.onclick = e => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex"; };
 
-    dropdown.append(renameBtn, deleteBtn, shareBtn);
+    dropdown.append(pinBtn, renameBtn, deleteBtn, shareBtn);
     options.append(dots, dropdown);
     li.onclick = () => { activeChatId = chat.id; localStorage.setItem("activeChatId", activeChatId); renderChatList(); renderMessages(); updateURL(chat.title); };
     li.append(span, options);
