@@ -52,12 +52,13 @@ async function findImageInModel(prompt, imageModel) {
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 999999);
         
-        // Use the new Pollinations Flux endpoint
+        // Use the new Pollinations Flux endpoint for high-quality generation
         const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
         
         /**
          * THE FIX: Using srcdoc avoids the NS_BINDING_ABORTED error.
          * The browser treats the <img> within the srcdoc as a standard media load.
+         * It also hides your prompt from the dashboard display.
          */
         const iframeHtml = `
             <iframe 
@@ -84,7 +85,7 @@ async function findImageInModel(prompt, imageModel) {
     }
 }
 
-// 3. Main execution function
+// 3. Main execution function called by main.js
 window.generateImageResponse = async function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
     return await findImageInModel(processed.refinedPrompt, imageModelData);
