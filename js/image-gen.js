@@ -1,28 +1,21 @@
 /**
  * Genesis-AI: Image Creator Module
- * Version: 2026.01
- * Architect: James Turner (XPDevs)
- * Status: Fixed for NS_BINDING_ABORTED and OpaqueResponseBlocking
+ * Optimized for James Turner (XPDevs)
+ * FIX: Removed all logo logic to bypass OpaqueResponseBlocking and Binding Aborts.
  */
 
-/**
- * Handles %tag% logic for Genesis-AI.
- * Converts tags like %bg_white% into plain text descriptors for the AI.
- */
 window.processGenesisImageRequest = function(input) {
     const tagRegex = /%([^%]+)%/g;
     let tags = [];
     let match;
 
-    // Extract all tags
+    // Extract tags like %bg_white% and turn them into plain text
     while ((match = tagRegex.exec(input)) !== null) {
         tags.push(match[1].replace(/_/g, ' '));
     }
 
-    // Remove tags from the string to get the base prompt
+    // Clean the prompt and re-attach tags as plain keywords
     let cleanPrompt = input.replace(tagRegex, '').trim();
-    
-    // Re-attach tags as natural language descriptions
     let refined = cleanPrompt;
     if (tags.length > 0) {
         refined += ", " + tags.join(", ");
@@ -35,15 +28,11 @@ window.processGenesisImageRequest = function(input) {
     };
 };
 
-/**
- * Core image generator. 
- * Stripped of all secondary URL parameters to prevent ORB/Binding errors.
- */
 function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Process local matches from James' .bin compiled model
+    // Process local model matches (XPDevs standard .bin logic)
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -59,15 +48,17 @@ function findImageInModel(prompt, imageModel) {
     });
 
     if (foundMatches.length === 0) {
-        // ENCODING: Ensures spaces and symbols don't trigger the abort error
+        // ENCODING: Crucial to prevent special characters from aborting the request
         const encodedPrompt = encodeURIComponent(prompt);
-        const seed = Math.floor(Math.random() * 1000000);
+        const seed = Math.floor(Math.random() * 999999);
         
-        // STABLE URL: Removed the &logo= parameter completely.
-        // nologo=true refers to the pollinations default watermark.
+        /**
+         * PURE URL: No logo parameters, no complex redirects.
+         * The nologo=true refers to the Pollinations site itself.
+         */
         const imageUrl = `https://gen.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024`;
         
-        // Returns the visual render for the Dashboard UI
+        // Return standard Markdown for your dashboard to render
         return { 
             role: "ai", 
             text: `![${prompt}](${imageUrl})` 
@@ -79,9 +70,6 @@ function findImageInModel(prompt, imageModel) {
     }
 }
 
-/**
- * Unified entry point for Genesis-AI
- */
 window.generateImageResponse = function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
     return findImageInModel(processed.refinedPrompt, imageModelData);
