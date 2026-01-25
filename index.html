@@ -69,7 +69,7 @@
     
     <div class="input-container">
       <div class="input-area">
-        <input type="text" id="userInput" placeholder="Ask Genesis 4.5">
+        <input type="text" id="userInput" placeholder="Ask Genesis...">
         <button id="sendBtn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
@@ -89,13 +89,23 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h2>Settings</h2>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0 10px 0;">
         <span>Dark Mode</span>
         <label class="toggle">
           <input type="checkbox" id="themeToggle">
           <span class="slider"></span>
         </label>
       </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 5px 0;">
+        <span>Auto Theme</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoThemeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; margin-top: 0;">
+        Automatically switches to Light Mode between 10:00 AM and 5:00 PM, and Dark Mode otherwise.
+      </p>
       <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
         <span>AI Modal</span>
         <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
@@ -293,4 +303,3 @@ await Promise.all([
 </script>
 </body>
 </html>
-
