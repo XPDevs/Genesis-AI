@@ -363,7 +363,7 @@ function renderChatList() {
             document.querySelectorAll('.dots-btn').forEach(b => b.style.background = "");
             dropdown.style.display = "flex";
             dots.style.background = "var(--active-chat)";
-        }, 3000);
+        }, 1500);
     }, {passive: true});
     li.addEventListener('touchend', () => clearTimeout(pressTimer));
     li.addEventListener('touchmove', () => clearTimeout(pressTimer));
