@@ -1,3 +1,7 @@
+/**
+ * Genesis-AI: Image Creator Module
+ * Handles %tag% parsing and model lookups for image generation.
+ */
 
 const genesisColorPalette = {
     // Standard Colors
