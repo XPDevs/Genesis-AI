@@ -766,8 +766,16 @@ document.getElementById("refreshCancel").onclick = () => {
     modelSelect.value = jsonURL;
 };
 
-themeToggle.checked = localStorage.getItem("theme") === "dark";
-document.body.classList.toggle("dark", themeToggle.checked);
+const savedTheme = localStorage.getItem("theme");
+let isDark;
+if (savedTheme !== null) {
+    isDark = savedTheme === "dark";
+} else {
+    const hour = new Date().getHours();
+    isDark = (hour < 10 || hour >= 17);
+}
+themeToggle.checked = isDark;
+document.body.classList.toggle("dark", isDark);
 themeToggle.onchange = () => { document.body.classList.toggle("dark", themeToggle.checked); localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); };
 
 const deleteAllBtn = document.getElementById("deleteAllChatsBtn");
