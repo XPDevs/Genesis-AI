@@ -460,3 +460,32 @@ body.dark .action-btn:hover {
 
 input:checked + .slider { background-color: var(--primary); }
 input:checked + .slider:before { transform: translateX(24px); }
+
+/* --- New Chat Centered View --- */
+#greeting {
+  display: none;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.7;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+body.is-new-chat .chat-main {
+  justify-content: center;
+  align-items: center;
+}
+
+body.is-new-chat .chat-header,
+body.is-new-chat .chat-box {
+  display: none;
+}
+
+body.is-new-chat #greeting {
+  display: block;
+}
+
+body.is-new-chat .input-container {
+  padding-bottom: 24px;
+}
