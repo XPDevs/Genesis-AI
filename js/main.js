@@ -1,9 +1,52 @@
+function initializeApp() {
+    console.log("Genesis Core: Environment Ready.");
+    window.dispatchEvent(new Event('app-ready'));
+}
+
+function ensureSetupModal() {
+    let existing = document.getElementById('setupModal');
+    if (existing) return existing;
+    const modal = document.createElement('div');
+    modal.id = 'setupModal';
+    Object.assign(modal.style, {
+        position: 'fixed', inset: '0', display: 'flex', justifyContent: 'center', alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.9)', zIndex: '999999999', padding: '20px',
+    });
+    modal.innerHTML = `
+        <div style="max-width:400px;width:100%;background:var(--bg, #fff);padding:24px;border-radius:12px;text-align:center;font-family:Arial, sans-serif;color:var(--text, #222);box-shadow:0 0 25px rgba(0,0,0,0.5);">
+            <h2 style="margin-top:0;">Welcome to Genesis-AI</h2>
+            <p style="margin:8px 0 18px;">Please enter your name to get started.</p>
+            <input id="setupNameInput" type="text" placeholder="Your full name" style="width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border: 1px solid var(--border, #ccc); border-radius: 8px; font-size: 1rem; background: var(--input-bg, #f0f4f9); color: var(--text, #222);">
+            <button id="setupConfirmBtn" style="width: 100%; padding: 12px; border: none; background-color: var(--primary, #1a73e8); color: white; border-radius: 8px; font-size: 1rem; cursor: pointer;">Continue</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const nameInput = document.getElementById('setupNameInput');
+    const confirmBtn = document.getElementById('setupConfirmBtn');
+
+    const completeSetup = () => {
+        const name = nameInput.value.trim();
+        if (name) {
+            localStorage.setItem('userInfo', JSON.stringify({ name: name }));
+            modal.style.display = 'none';
+            initializeApp();
+        } else {
+            nameInput.style.borderColor = 'red';
+        }
+    };
+
+    confirmBtn.onclick = completeSetup;
+    nameInput.addEventListener('keypress', (e) => e.key === 'Enter' && completeSetup());
+    return modal;
+}
+
 (function() {
-  if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
-    return;
+  if (!localStorage.getItem("userInfo")) {
+    window.addEventListener('DOMContentLoaded', ensureSetupModal);
+  } else {
+    initializeApp();
   }
-  console.log("Genesis Core: Environment Ready.");
 })();
 
 // UI Elements
@@ -389,15 +432,43 @@ function renderChatList() {
   });
 }
 
+function updateChatView() {
+    const chat = chats.find(c => c.id === activeChatId);
+    let greetingEl = document.getElementById('greeting');
+    const chatMain = document.querySelector('.chat-main');
+
+    if (chat && chat.messages.length === 0) {
+        document.body.classList.add('is-new-chat');
+        if (!greetingEl) {
+            greetingEl = document.createElement('div');
+            greetingEl.id = 'greeting';
+            if (chatMain) {
+                chatMain.insertBefore(greetingEl, chatBox);
+            }
+        }
+        const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
+        const hour = new Date().getHours();
+        const greetingText = hour < 12 ? 'Good Morning' : 'Good Afternoon';
+        greetingEl.textContent = `${greetingText}, ${name}`;
+    } else {
+        document.body.classList.remove('is-new-chat');
+        if (greetingEl) {
+            greetingEl.remove();
+        }
+    }
+}
+
 function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
-  if (!chat) return;
+  if (!chat) { updateChatView(); return; }
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) updateURL(chat.title);
+  updateChatView();
 }
 
 function appendMessage(text, role, isNew = false) {
@@ -663,16 +734,34 @@ if (renameConfirm) renameConfirm.onclick = () => {
   renameModal.style.display = "none";
 };
 if (deleteConfirm) deleteConfirm.onclick = () => {
-  chats = chats.filter(c => c.id !== currentDeleteId);
-  if (activeChatId === currentDeleteId) { activeChatId = null; localStorage.removeItem("activeChatId"); chatBox.innerHTML = ""; }
-  saveChats(); renderChatList(); deleteModal.style.display = "none";
+    chats = chats.filter(c => c.id !== currentDeleteId);
+    if (activeChatId === currentDeleteId) {
+        activeChatId = null;
+        localStorage.removeItem("activeChatId");
+        chatBox.innerHTML = "";
+        // After deleting, go to a new chat screen
+        let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
+        if (!newChat) {
+            newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            chats.unshift(newChat);
+        }
+        activeChatId = newChat.id;
+    }
+    saveChats(); renderChatList(); renderMessages(); deleteModal.style.display = "none";
 };
 
 newChatBtn.onclick = () => {
   if (isReadOnlyMode) return;
-  const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-  chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-  saveChats(); renderChatList(); renderMessages(); updateURL(newChat.title);
+  let existingNewChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
+  if (existingNewChat) {
+      activeChatId = existingNewChat.id;
+  } else {
+      const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+      chats.unshift(newChat);
+      activeChatId = newChat.id;
+  }
+  localStorage.setItem("activeChatId", activeChatId);
+  saveChats(); renderChatList(); renderMessages(); updateURL("New Chat");
 };
 
 sendBtn.onclick = sendMessage;
@@ -713,13 +802,23 @@ if (deleteAllBtn) {
 }
 document.getElementById("deleteAllCancel").onclick = () => document.getElementById("deleteAllModal").style.display = "none";
 document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
+function startApp() {
+    if (isCurrentlyBanned()) {
+        showBanModal();
+        return;
+    }
+    if (!loadSharedChat()) {
+        let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
+        if (!newChat) {
+            newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            chats.unshift(newChat);
+            saveChats();
+        }
+        activeChatId = newChat.id;
+        localStorage.setItem("activeChatId", activeChatId);
+    }
+    renderChatList();
+    renderMessages();
+}
 
-window.addEventListener('load', () => {
-  if (!loadSharedChat()) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const chatParam = urlParams.get("chat");
-    if (chatParam) { const found = chats.find(c => c.title === chatParam); if (found) { activeChatId = found.id; localStorage.setItem("activeChatId", activeChatId); } }
-    renderChatList(); renderMessages();
-  }
-  if (isCurrentlyBanned()) showBanModal();
-});
+window.addEventListener('app-ready', startApp);
