@@ -25,7 +25,7 @@ window.processGenesisImageRequest = function(input) {
     };
 };
 
-function findImageInModel(prompt, imageModel) {
+async function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
@@ -58,10 +58,23 @@ function findImageInModel(prompt, imageModel) {
         const rawImageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}`;
         const proxiedImageUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawImageUrl)}`;
         
-        return { 
-            role: "ai", 
-            text: `!${prompt}` 
-        };
+        try {
+            const response = await fetch(proxiedImageUrl);
+            if (!response.ok) throw new Error("Failed to fetch image");
+            const blob = await response.blob();
+            
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve({ 
+                    role: "ai", 
+                    text: `!${prompt}` 
+                });
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error("Image Gen Error:", e);
+            return { role: "ai", text: "I encountered an error generating that image." };
+        }
     } else {
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         const responseText = orderedMessages.length === 1 ? orderedMessages[0] : orderedMessages.join(", ") + " and " + orderedMessages.pop();
@@ -69,7 +82,7 @@ function findImageInModel(prompt, imageModel) {
     }
 }
 
-window.generateImageResponse = function(text, imageModelData) {
+window.generateImageResponse = async function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
-    return findImageInModel(processed.refinedPrompt, imageModelData);
+    return await findImageInModel(processed.refinedPrompt, imageModelData);
 };
