@@ -399,6 +399,10 @@ function injectImageStyles() {
             height: 100%;
             object-fit: cover;
             display: block;
+            clip-path: inset(0 0 0 0); /* Final state for non-new images */
+            filter: blur(0px);
+        }
+        .genesis-generated-image.new {
             clip-path: inset(0 0 100% 0);
             filter: blur(20px);
             animation: genesisScanReveal 4s ease-out forwards;
@@ -454,10 +458,27 @@ function appendMessage(text, role, isNew = false) {
       const url = imgMatch[2];
       imgContainer = document.createElement("div");
       imgContainer.className = "genesis-image-container";
-      const img = document.createElement("img");
+      const img = new Image();
+      img.crossOrigin = "anonymous"; // This attribute is the ONLY thing that stops OpaqueResponseBlocking
       img.src = url;
       img.alt = alt;
       img.className = "genesis-generated-image";
+      img.style.borderRadius = "15px"; // Modern UI style
+      img.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+      
+      if (isNew) {
+          img.classList.add("new"); // Add class to trigger animation only for new images
+          const removeLoader = () => {
+              const loader = chatBox.querySelector('.loading-container');
+              if (loader) loader.remove();
+          };
+          img.onload = removeLoader;
+          img.onerror = () => {
+              removeLoader();
+              img.alt = "Image failed to load.";
+          };
+      }
+
       imgContainer.appendChild(img);
       
       // Remove image markdown from displayed text
@@ -653,25 +674,28 @@ function sendMessage() {
 
     setTimeout(() => {
         (async () => {
-            loadingDiv.remove();
             let botMsg;
 
             if (isImageRequest) {
                 botMsg = await handleImageRequest(text);
             } else {
+                loadingDiv.remove(); // For text responses, remove loader now
                 botMsg = findResponses(text, chat.messages);
             }
 
             if (!botMsg) { // Handle cases where request processing fails
+                if (chatBox.contains(loadingDiv)) loadingDiv.remove();
                 userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                 return;
             }
 
             chat.messages.push(botMsg);
             saveChats();
-            appendMessage(botMsg.text, botMsg.role, true);
+            // For images, appendMessage now handles removing the loader on image load
+            appendMessage(botMsg.text, botMsg.role, true); 
 
-            const timeout = (botMsg.text ? botMsg.text.length * 30 : 0) + 500;
+            // For text, timeout depends on length. For images, it's a fixed short delay.
+            const timeout = (isImageRequest || !botMsg.text) ? 500 : (botMsg.text.length * 30) + 500;
             setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
         })();
     }, 1500);
