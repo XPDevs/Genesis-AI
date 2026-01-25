@@ -38,9 +38,6 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false; 
-let isImageGenMode = localStorage.getItem("isImageGenMode") === "true";
-let imageResponses = {};
-const imageModelURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-image-250126P0137M.bin"; // Ensure this points to your compiled bin
 
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
@@ -380,45 +377,6 @@ function renderChatList() {
   });
 }
 
-function injectImageStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .genesis-image-container {
-            width: 100%;
-            max-width: 300px;
-            aspect-ratio: 1 / 1;
-            overflow: hidden;
-            border-radius: 12px;
-            margin: 10px 0;
-            background: #111;
-            position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-        .genesis-generated-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            clip-path: inset(0 0 0 0); /* Final state for non-new images */
-            filter: blur(0px);
-        }
-        .genesis-generated-image.new {
-            clip-path: inset(0 0 100% 0);
-            filter: blur(20px);
-            animation: genesisScanReveal 4s ease-out forwards;
-        }
-        @keyframes genesisScanReveal {
-            0% { clip-path: inset(0 0 100% 0); filter: blur(20px); }
-            50% { filter: blur(10px); }
-            100% { clip-path: inset(0 0 0 0); filter: blur(0px); }
-        }
-        @media (max-width: 768px) {
-            .genesis-image-container { max-width: 100%; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
 function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
@@ -448,39 +406,6 @@ function appendMessage(text, role, isNew = false) {
   const textSpan = document.createElement("span");
   div.appendChild(textSpan);
 
-  // Image Detection & Rendering
-  const imageRegex = /!\[(.*?)\]\((.*?)\)/;
-  const imgMatch = processedText.match(imageRegex);
-  let imgContainer = null;
-
-  if (imgMatch) {
-      const alt = imgMatch[1];
-      const url = imgMatch[2];
-      imgContainer = document.createElement("div");
-      imgContainer.className = "genesis-image-container";
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = alt;
-      img.className = "genesis-generated-image";
-      img.style.borderRadius = "15px"; // Modern UI style
-      img.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-      img.style.border = "none";
-      
-      if (isNew) {
-          img.classList.add("new"); // Add class to trigger animation only for new images
-          const removeLoader = () => {
-              const loader = chatBox.querySelector('.loading-container');
-              if (loader) loader.remove();
-          };
-          img.onload = removeLoader;
-      }
-
-      imgContainer.appendChild(img);
-      
-      // Remove image markdown from displayed text
-      processedText = processedText.replace(imgMatch[0], "").trim();
-  }
-
   const actionsDiv = document.createElement("div");
   actionsDiv.className = "msg-actions";
   const copyBtn = document.createElement("button");
@@ -500,14 +425,11 @@ function appendMessage(text, role, isNew = false) {
     div.classList.add('latest');
   }
 
-  if (imgContainer) {
-      div.appendChild(imgContainer);
-  }
   div.appendChild(actionsDiv);
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  if (role === "ai" && isNew && !imgMatch) {
+  if (role === "ai" && isNew) {
     let i = 0;
     const interval = setInterval(() => {
       textSpan.textContent += processedText[i]; i++;
@@ -518,58 +440,6 @@ function appendMessage(text, role, isNew = false) {
 }
 
 // --- LOGIC MODULES ---
-function genesisLoadScript(src) {
-    return new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-            return resolve();
-        }
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Script load error for ${src}`));
-        document.head.appendChild(script);
-    });
-}
-
-async function handleImageRequest(text) {
-    try {
-        if (typeof window.generateImageResponse === 'undefined') {
-            await genesisLoadScript('js/image-gen.js');
-        }
-
-        if (Object.keys(imageResponses).length === 0) {
-            const response = await fetch(imageModelURL + "?v=" + Date.now());
-            if (!response.ok) throw new Error("Image model file not found");
-            const buffer = await response.arrayBuffer();
-            const decoded = decodeBinary(buffer);
-            if (!decoded || !decoded.startsWith("{")) {
-                try {
-                    const rawText = new TextDecoder().decode(buffer).trim();
-                    imageResponses = JSON.parse(rawText);
-                    console.log("Genesis-AI: Raw JSON Fallback for Image Model successful.");
-                } catch (innerErr) {
-                    throw new Error("Critical: Image Model is neither valid Genesis-AI Binary nor JSON.");
-                }
-            } else {
-                imageResponses = JSON.parse(decoded);
-                console.log("Genesis-AI: Image Model Binary active.");
-            }
-        }
-
-        if (text === 'pre-load') {
-            return null; // Just load the model, don't process.
-        }
-
-        return window.generateImageResponse(text, imageResponses);
-
-    } catch (e) {
-        console.error("Image request processing failed:", e);
-        appendMessage("Sorry, there was a problem with the image generation module. " + e.message, "error");
-        return null;
-    }
-}
-
 let bannedWords = [];
 async function loadBannedWords() {
   try {
@@ -657,58 +527,25 @@ function sendMessage() {
     typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
   }
 
-  const isImageRequest = isImageGenMode || text.toLowerCase().includes("image");
-
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading-container";
-  if (isImageRequest) {
-      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Generating image...</span>`;
-  } else {
-      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
-  }
+  loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
 
     setTimeout(() => {
-        (async () => {
-            let botMsg;
+        loadingDiv.remove();
+        const botMsg = findResponses(text, chat.messages);
 
-            if (isImageRequest) {
-                botMsg = await handleImageRequest(text);
-            } else {
-                loadingDiv.remove(); // For text responses, remove loader now
-                botMsg = findResponses(text, chat.messages);
-            }
+        chat.messages.push(botMsg);
+        saveChats();
+        appendMessage(botMsg.text, botMsg.role, true); 
 
-            if (!botMsg) { // Handle cases where request processing fails
-                if (chatBox.contains(loadingDiv)) loadingDiv.remove();
-                userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
-                return;
-            }
-
-            chat.messages.push(botMsg);
-            saveChats();
-            // For images, appendMessage now handles removing the loader on image load
-            appendMessage(botMsg.text, botMsg.role, true); 
-
-            // For text, timeout depends on length. For images, it's a fixed short delay.
-            const timeout = (isImageRequest || !botMsg.text) ? 500 : (botMsg.text.length * 30) + 500;
-            setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
-        })();
+        const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
+        setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
     }, 1500);
 }
 
 // --- INITIALIZATION ---
-function switchToImageGenMode() {
-    isImageGenMode = true;
-    localStorage.setItem("isImageGenMode", "true");
-    localStorage.removeItem("selectedModel");
-
-    chatTitle.textContent = "Image Generation";
-    userInput.placeholder = "Describe an image to generate...";
-    
-    handleImageRequest("pre-load");
-}
-
 function showShareModal(chatId) {
     if (!shareLinkInput) return;
     const chat = chats.find(c => c.id === chatId);
@@ -752,43 +589,28 @@ sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    if (isImageGenMode) {
-        document.getElementById("modelNameDisplay").textContent = imageResponses.ver || "Genesis Image Gen";
-        document.getElementById("modelParamsDisplay").textContent = Object.keys(imageResponses).length || "Loading...";
-    } else {
-        document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
-        document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
-    }
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
+    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
 if (modelSelect) {
-    modelSelect.value = isImageGenMode ? 'image-gen-mode' : jsonURL;
+    modelSelect.value = jsonURL;
     modelSelect.onchange = () => {
         const selectedValue = modelSelect.value;
-        if (selectedValue === 'image-gen-mode') {
-            if (!isImageGenMode) {
-                switchToImageGenMode();
-            }
-            settingsModal.style.display = 'none';
-        } else {
-            if (isImageGenMode || selectedValue !== jsonURL) {
-                document.getElementById("refreshWarningModal").style.display = "flex";
-            }
+        if (selectedValue !== jsonURL) {
+            document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
 }
 document.getElementById("refreshConfirm").onclick = () => {
     const selectedValue = modelSelect.value;
-    if (selectedValue !== 'image-gen-mode') {
-        localStorage.setItem("selectedModel", selectedValue);
-        localStorage.removeItem("isImageGenMode");
-    }
+    localStorage.setItem("selectedModel", selectedValue);
     window.location.reload();
 };
 document.getElementById("refreshCancel").onclick = () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    modelSelect.value = isImageGenMode ? 'image-gen-mode' : jsonURL;
+    modelSelect.value = jsonURL;
 };
 
 themeToggle.checked = localStorage.getItem("theme") === "dark";
@@ -803,10 +625,6 @@ document.getElementById("deleteAllCancel").onclick = () => document.getElementBy
 document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
 
 window.addEventListener('load', () => {
-  injectImageStyles();
-  if (isImageGenMode) {
-    switchToImageGenMode();
-  }
   if (!loadSharedChat()) {
     const urlParams = new URLSearchParams(window.location.search);
     const chatParam = urlParams.get("chat");
