@@ -114,6 +114,7 @@
         </button>
       </div>
       <div class="modal-actions">
+        <button id="deleteAccountBtn" style="background:#ff4d4d;color:#fff;">Delete Account</button>
         <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
       </div>
     </div>
@@ -137,6 +138,22 @@
       <div class="modal-actions">
         <button class="cancel" id="deleteCancel">Cancel</button>
         <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Account?</h2>
+      <p>This will permanently delete:</p>
+      <ul style="text-align: left; margin-bottom: 20px; padding-left: 20px;">
+        <li>All chat history</li>
+        <li>Your saved name</li>
+        <li>Agreement to Terms & Privacy Policy</li>
+      </ul>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteAccountCancel">Cancel</button>
+        <button class="confirm" id="deleteAccountConfirm" style="background:#ff4d4d;color:#fff;">Delete All</button>
       </div>
     </div>
   </div>
