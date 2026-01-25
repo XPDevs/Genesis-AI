@@ -58,7 +58,7 @@ async function findImageInModel(prompt, imageModel) {
         
         return { 
             role: "ai", 
-            text: `!${directImageUrl}` 
+            text: `!${prompt}` 
         };
     } else {
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
