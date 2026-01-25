@@ -46,7 +46,7 @@ function findImageInModel(prompt, imageModel) {
   if (foundMatches.length === 0) {
       const encodedPrompt = encodeURIComponent(prompt);
       // Construct a valid markdown image link to an external generation service.
-      responseText = `!Generated Image`;
+      responseText = `!${prompt}`;
   } else {
       const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
       if (orderedMessages.length === 1) responseText = orderedMessages[0];
