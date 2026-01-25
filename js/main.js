@@ -4,54 +4,12 @@
     return;
   }
 
-  if (!localStorage.getItem("userInfo")) {
-    window.addEventListener('DOMContentLoaded', ensureSetupModal);
-  } else {
-    initializeApp();
-  }
+  initializeApp();
 })();
 
 function initializeApp() {
     console.log("Genesis Core: Environment Ready.");
     window.dispatchEvent(new Event('app-ready'));
-}
-
-function ensureSetupModal() {
-    let existing = document.getElementById('setupModal');
-    if (existing) return existing;
-    const modal = document.createElement('div');
-    modal.id = 'setupModal';
-    Object.assign(modal.style, {
-        position: 'fixed', inset: '0', display: 'flex', justifyContent: 'center', alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.9)', zIndex: '999999999', padding: '20px',
-    });
-    modal.innerHTML = `
-        <div style="max-width:400px;width:100%;background:var(--bg, #fff);padding:24px;border-radius:12px;text-align:center;font-family:Arial, sans-serif;color:var(--text, #222);box-shadow:0 0 25px rgba(0,0,0,0.5);">
-            <h2 style="margin-top:0;">Welcome to Genesis-AI</h2>
-            <p style="margin:8px 0 18px;">Please enter your name to get started.</p>
-            <input id="setupNameInput" type="text" placeholder="Your full name" style="width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border: 1px solid var(--border, #ccc); border-radius: 8px; font-size: 1rem; background: var(--input-bg, #f0f4f9); color: var(--text, #222);">
-            <button id="setupConfirmBtn" style="width: 100%; padding: 12px; border: none; background-color: var(--primary, #1a73e8); color: white; border-radius: 8px; font-size: 1rem; cursor: pointer;">Continue</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    const nameInput = document.getElementById('setupNameInput');
-    const confirmBtn = document.getElementById('setupConfirmBtn');
-
-    const completeSetup = () => {
-        const name = nameInput.value.trim();
-        if (name) {
-            localStorage.setItem('userInfo', JSON.stringify({ name: name }));
-            modal.style.display = 'none';
-            initializeApp();
-        } else {
-            nameInput.style.borderColor = 'red';
-        }
-    };
-
-    confirmBtn.onclick = completeSetup;
-    nameInput.addEventListener('keypress', (e) => e.key === 'Enter' && completeSetup());
-    return modal;
 }
 
 // UI Elements
