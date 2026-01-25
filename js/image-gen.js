@@ -1,6 +1,6 @@
 /**
  * Genesis-AI: Image Creator Module
- * Handles %tag% parsing for image generation logic.
+ * Handles %tag% parsing and model lookups for image generation.
  */
 
 const genesisColorPalette = {
@@ -33,7 +33,7 @@ const genesisColorPalette = {
  * @param {string} input - The raw user input (e.g., "smiley face %bg_white%")
  * @returns {object} - The processed prompt and the detected style.
  */
-function processGenesisImageRequest(input) {
+window.processGenesisImageRequest = function(input) {
     let activeStyle = "";
     let cleanedPrompt = input;
 
@@ -59,7 +59,42 @@ function processGenesisImageRequest(input) {
     };
 }
 
-// Example Usage:
-// const request = processGenesisImageRequest("make me an image of a smiley face %bg_white%");
-// console.log(request.refinedPrompt); 
-// Output: "make me an image of a smiley face, on a pure white background"
+/**
+ * Searches the image model for keywords from the prompt and constructs a response.
+ * @param {string} prompt - The user's prompt, cleaned of tags.
+ * @param {object} imageModel - The loaded image model data.
+ * @returns {object} - A message object for the chat.
+ */
+function findImageInModel(prompt, imageModel) {
+  const lowerInput = prompt.toLowerCase();
+
+  const foundMatches = [];
+  // Filter out metadata keys from the model before sorting
+  const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
+  const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
+  
+  let tempInput = lowerInput;
+  sortedKeys.forEach(key => {
+    const lowerKey = key.toLowerCase();
+    let index = tempInput.indexOf(lowerKey);
+    while (index !== -1) {
+      foundMatches.push({ text: imageModel[key], index: index });
+      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+      index = tempInput.indexOf(lowerKey);
+    }
+  });
+
+  if (foundMatches.length === 0) return { role: "ai", text: `I've processed your request for an image: "${prompt}". However, I couldn't find a direct generator for it. Please try a more general subject.` };
+  
+  const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
+  
+  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
+  
+  const last = orderedMessages.pop();
+  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
+}
+
+window.generateImageResponse = function(text, imageModelData) {
+    const processed = window.processGenesisImageRequest(text);
+    return findImageInModel(processed.refinedPrompt, imageModelData);
+}
