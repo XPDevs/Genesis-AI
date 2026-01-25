@@ -1,11 +1,12 @@
 /**
  * Genesis-AI: Image Creator Module
- * Handles %tag% parsing and model lookups for image generation.
+ * Optimized for James Turner (XPDevs)
+ * Handles %tag% parsing, modern endpoint lookups, and visual rendering.
  */
 
 /**
  * Parses user input to extract Genesis tags and clean the prompt.
- * Moves tags like %bg_white% to the end of the prompt for better generation.
+ * Converts tags like %bg_white% into descriptive words for the AI.
  */
 window.processGenesisImageRequest = function(input) {
     const tagRegex = /%([^%]+)%/g;
@@ -14,16 +15,17 @@ window.processGenesisImageRequest = function(input) {
 
     // Extract all %tags%
     while ((match = tagRegex.exec(input)) !== null) {
-        tags.push(match[1].replace('_', ' '));
+        // Replace underscores with spaces for the generator (e.g., bg_white -> bg white)
+        tags.push(match[1].replace(/_/g, ' '));
     }
 
-    // Clean the prompt by removing the tags
+    // Clean the prompt by removing the raw tags
     let cleanPrompt = input.replace(tagRegex, '').trim();
     
-    // Append tags as descriptive keywords if they exist
+    // Append tags as descriptive keywords for better image results
     let refined = cleanPrompt;
     if (tags.length > 0) {
-        refined += " " + tags.join(" ");
+        refined += ", " + tags.join(", ");
     }
 
     return {
@@ -34,13 +36,13 @@ window.processGenesisImageRequest = function(input) {
 }
 
 /**
- * Searches the image model for keywords or generates a new image via external service.
+ * Searches the image model or generates a unique image via stable API.
  */
 function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Filter out metadata
+    // Filter out version/description metadata from the model
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -58,10 +60,17 @@ function findImageInModel(prompt, imageModel) {
     let responseText = "";
 
     if (foundMatches.length === 0) {
-        // FIX: Wrap in Markdown image syntax so the dashboard renders the image
+        // Use the NEW stable endpoint to avoid 502 errors
         const encodedPrompt = encodeURIComponent(prompt);
-        responseText = `![${prompt}](https://image.pollinations.ai/prompt/${encodedPrompt})`;
+        const logoUrl = encodeURIComponent("https://xpdevs.github.io/Genesis-AI/icon.png");
+        
+        // Seed ensures a fresh image and helps bypass gateway timeouts
+        const seed = Math.floor(Math.random() * 999999);
+        
+        // Format as Markdown image for automatic rendering in the UI
+        responseText = `![${prompt}](https://gen.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&logo=${logoUrl})`;
     } else {
+        // Use matches found in the local model
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         if (orderedMessages.length === 1) {
             responseText = orderedMessages[0];
@@ -69,20 +78,20 @@ function findImageInModel(prompt, imageModel) {
             const last = orderedMessages.pop();
             responseText = orderedMessages.join(", ") + " and " + last;
         }
+        
+        // Ensure any model-based links also get the XPDevs branding
+        const logoUrl = "https://xpdevs.github.io/Genesis-AI/icon.png";
+        responseText = responseText.replace(/\]\((https:\/\/gen\.pollinations\.ai\/prompt\/[^)]+)\)/g, (match, url) => {
+            const separator = url.includes('?') ? '&' : '?';
+            return `](${url}${separator}nologo=true&logo=${encodeURIComponent(logoUrl)})`;
+        });
     }
-
-    // Apply XPDevs branding and remove external logos
-    const logoUrl = "https://xpdevs.github.io/Genesis-AI/icon.png";
-    responseText = responseText.replace(/\]\((https:\/\/image\.pollinations\.ai\/prompt\/[^)]+)\)/g, (match, url) => {
-        const separator = url.includes('?') ? '&' : '?';
-        return `](${url}${separator}nologo=true&logo=${encodeURIComponent(logoUrl)})`;
-    });
 
     return { role: "ai", text: responseText };
 }
 
 /**
- * Main entry point for the module
+ * Main Genesis-AI Entry Point
  */
 window.generateImageResponse = function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
