@@ -1,7 +1,7 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Removed ALL extra parameters to bypass OpaqueResponseBlocking.
+ * FIX: Minimal URL structure to bypass OpaqueResponseBlocking.
  */
 
 window.processGenesisImageRequest = function(input) {
@@ -9,12 +9,10 @@ window.processGenesisImageRequest = function(input) {
     let tags = [];
     let match;
 
-    // Cleanly extract %tags%
     while ((match = tagRegex.exec(input)) !== null) {
         tags.push(match[1].replace(/_/g, ' '));
     }
 
-    // Prepare the final prompt text
     let cleanPrompt = input.replace(tagRegex, '').trim();
     let refined = cleanPrompt;
     if (tags.length > 0) {
@@ -31,7 +29,7 @@ function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Sort keys by length to match the most specific phrases first
+    // Sort keys by length for Genesis logic
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -48,14 +46,12 @@ function findImageInModel(prompt, imageModel) {
 
     if (foundMatches.length === 0) {
         const encodedPrompt = encodeURIComponent(prompt);
-        // Using a simple numeric seed to ensure uniqueness without complex strings
         const seed = Math.floor(Math.random() * 999999);
         
         /**
-         * PUREST URL POSSIBLE: 
-         * 1. No logo parameter.
-         * 2. No complex width/height overrides.
-         * 3. Just the prompt and a seed.
+         * PUREST URL: 
+         * No gen. subdomain, no logo params, no width/height logic.
+         * This prevents the browser from flagging the URL as "data-heavy".
          */
         const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}`;
         
