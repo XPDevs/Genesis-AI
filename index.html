@@ -166,6 +166,35 @@
     </div>
   </div>
 
+  <!-- Developer Modal -->
+  <div id="devModal" class="modal" style="display: none; z-index: 100000;">
+    <div class="modal-content" style="max-width: 600px; width: 100%;">
+      <div id="devModalWaiting">
+        <h2 style="margin-top: 0;">Developer Access</h2>
+        <p>Enter the access code in the browser console to proceed.</p>
+        <p>Example: <code>devAccess("xpdevs_power_user")</code></p>
+        <div class="modal-actions">
+          <button id="devModalCancel" class="cancel">Close</button>
+        </div>
+      </div>
+      <div id="devModalOptions" style="display: none;">
+        <h2 style="margin-top: 0;">Developer Options</h2>
+        <div id="devModalStatus">
+          <p><strong>Current Modal:</strong> <span id="devCurrentModalName"></span></p>
+          <p><strong>Mode:</strong> <span id="devCurrentModalMode"></span></p>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--border);">
+        <h4>Load Custom Session Modal</h4>
+        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json or .bin modal file. This will only be used for the current session and will be lost on refresh.</p>
+        <input type="file" id="customModelInput" accept=".json,.bin" style="margin-top: 10px;">
+        <p id="uploadStatus" style="font-size: 12px; margin-top: 8px; color: var(--primary);"></p>
+        <div class="modal-actions">
+          <button id="devModalClose" class="cancel">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="refreshWarningModal" class="modal">
     <div class="modal-content">
       <h2>Switch Modal?</h2>
