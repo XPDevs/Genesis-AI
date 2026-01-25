@@ -52,12 +52,15 @@ function findImageInModel(prompt, imageModel) {
          * PUREST URL: 
          * No gen. subdomain, no logo params, no width/height logic.
          * This prevents the browser from flagging the URL as "data-heavy".
+         * We proxy it through allorigins.win to add the required CORS headers
+         * for cross-origin use, which fixes the browser blocking issue.
          */
-        const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}`;
+        const rawImageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}`;
+        const proxiedImageUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawImageUrl)}`;
         
         return { 
             role: "ai", 
-            text: `![${prompt}](${imageUrl})` 
+            text: `!${prompt}` 
         };
     } else {
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
