@@ -425,7 +425,8 @@ body.dark .action-btn:hover {
 }
 
 #deleteConfirm, 
-#deleteAllConfirm {
+#deleteAllConfirm,
+#deleteAccountConfirm {
   background-color: #ff4d4d !important;
   color: #ffffff !important;
 }
