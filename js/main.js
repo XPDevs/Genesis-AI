@@ -38,8 +38,9 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false; 
+let isImageGenMode = localStorage.getItem("isImageGenMode") === "true";
 let imageResponses = {};
-const imageModelURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-image-250126P0137M.bin";
+const imageModelURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-image-250126P0137M.bin"; // Ensure this points to your compiled bin
 
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
@@ -379,6 +380,41 @@ function renderChatList() {
   });
 }
 
+function injectImageStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .genesis-image-container {
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 12px;
+            margin: 10px 0;
+            background: #111;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .genesis-generated-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            clip-path: inset(0 0 100% 0);
+            filter: blur(20px);
+            animation: genesisScanReveal 4s ease-out forwards;
+        }
+        @keyframes genesisScanReveal {
+            0% { clip-path: inset(0 0 100% 0); filter: blur(20px); }
+            50% { filter: blur(10px); }
+            100% { clip-path: inset(0 0 0 0); filter: blur(0px); }
+        }
+        @media (max-width: 768px) {
+            .genesis-image-container { max-width: 100%; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
@@ -407,6 +443,27 @@ function appendMessage(text, role, isNew = false) {
   div.className = "message " + role;
   const textSpan = document.createElement("span");
   div.appendChild(textSpan);
+
+  // Image Detection & Rendering
+  const imageRegex = /!\[(.*?)\]\((.*?)\)/;
+  const imgMatch = processedText.match(imageRegex);
+  let imgContainer = null;
+
+  if (imgMatch) {
+      const alt = imgMatch[1];
+      const url = imgMatch[2];
+      imgContainer = document.createElement("div");
+      imgContainer.className = "genesis-image-container";
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = alt;
+      img.className = "genesis-generated-image";
+      imgContainer.appendChild(img);
+      
+      // Remove image markdown from displayed text
+      processedText = processedText.replace(imgMatch[0], "").trim();
+  }
+
   const actionsDiv = document.createElement("div");
   actionsDiv.className = "msg-actions";
   const copyBtn = document.createElement("button");
@@ -426,11 +483,14 @@ function appendMessage(text, role, isNew = false) {
     div.classList.add('latest');
   }
 
+  if (imgContainer) {
+      div.appendChild(imgContainer);
+  }
   div.appendChild(actionsDiv);
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  if (role === "ai" && isNew) {
+  if (role === "ai" && isNew && !imgMatch) {
     let i = 0;
     const interval = setInterval(() => {
       textSpan.textContent += processedText[i]; i++;
@@ -478,6 +538,10 @@ async function handleImageRequest(text) {
                 imageResponses = JSON.parse(decoded);
                 console.log("Genesis-AI: Image Model Binary active.");
             }
+        }
+
+        if (text === 'pre-load') {
+            return null; // Just load the model, don't process.
         }
 
         return window.generateImageResponse(text, imageResponses);
@@ -576,7 +640,7 @@ function sendMessage() {
     typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
   }
 
-  const isImageRequest = text.toLowerCase().includes("image");
+  const isImageRequest = isImageGenMode || text.toLowerCase().includes("image");
 
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading-container";
@@ -614,6 +678,17 @@ function sendMessage() {
 }
 
 // --- INITIALIZATION ---
+function switchToImageGenMode() {
+    isImageGenMode = true;
+    localStorage.setItem("isImageGenMode", "true");
+    localStorage.removeItem("selectedModel");
+
+    chatTitle.textContent = "Image Generation";
+    userInput.placeholder = "Describe an image to generate...";
+    
+    handleImageRequest("pre-load");
+}
+
 function showShareModal(chatId) {
     if (!shareLinkInput) return;
     const chat = chats.find(c => c.id === chatId);
@@ -656,18 +731,45 @@ newChatBtn.onclick = () => {
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => {
-  settingsModal.style.display = "flex";
-  document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
-  document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    settingsModal.style.display = "flex";
+    if (isImageGenMode) {
+        document.getElementById("modelNameDisplay").textContent = imageResponses.ver || "Genesis Image Gen";
+        document.getElementById("modelParamsDisplay").textContent = Object.keys(imageResponses).length || "Loading...";
+    } else {
+        document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
+        document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    }
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
 if (modelSelect) {
-  modelSelect.value = jsonURL;
-  modelSelect.onchange = () => { document.getElementById("refreshWarningModal").style.display = "flex"; };
+    modelSelect.value = isImageGenMode ? 'image-gen-mode' : jsonURL;
+    modelSelect.onchange = () => {
+        const selectedValue = modelSelect.value;
+        if (selectedValue === 'image-gen-mode') {
+            if (!isImageGenMode) {
+                switchToImageGenMode();
+            }
+            settingsModal.style.display = 'none';
+        } else {
+            if (isImageGenMode || selectedValue !== jsonURL) {
+                document.getElementById("refreshWarningModal").style.display = "flex";
+            }
+        }
+    };
 }
-document.getElementById("refreshConfirm").onclick = () => { localStorage.setItem("selectedModel", modelSelect.value); window.location.reload(); };
-document.getElementById("refreshCancel").onclick = () => { document.getElementById("refreshWarningModal").style.display = "none"; modelSelect.value = jsonURL; };
+document.getElementById("refreshConfirm").onclick = () => {
+    const selectedValue = modelSelect.value;
+    if (selectedValue !== 'image-gen-mode') {
+        localStorage.setItem("selectedModel", selectedValue);
+        localStorage.removeItem("isImageGenMode");
+    }
+    window.location.reload();
+};
+document.getElementById("refreshCancel").onclick = () => {
+    document.getElementById("refreshWarningModal").style.display = "none";
+    modelSelect.value = isImageGenMode ? 'image-gen-mode' : jsonURL;
+};
 
 themeToggle.checked = localStorage.getItem("theme") === "dark";
 document.body.classList.toggle("dark", themeToggle.checked);
@@ -681,6 +783,10 @@ document.getElementById("deleteAllCancel").onclick = () => document.getElementBy
 document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
 
 window.addEventListener('load', () => {
+  injectImageStyles();
+  if (isImageGenMode) {
+    switchToImageGenMode();
+  }
   if (!loadSharedChat()) {
     const urlParams = new URLSearchParams(window.location.search);
     const chatParam = urlParams.get("chat");
