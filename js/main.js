@@ -1,12 +1,3 @@
-(function() {
-  if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
-    return;
-  }
-
-  initializeApp();
-})();
-
 function initializeApp() {
     console.log("Genesis Core: Environment Ready.");
     window.dispatchEvent(new Event('app-ready'));
@@ -770,7 +761,13 @@ function startApp() {
         showBanModal();
         return;
     }
-    if (!loadSharedChat()) {
+    
+    if (loadSharedChat()) return;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (!isMobile) {
+        // Desktop: Always start with a New Chat
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -779,9 +776,32 @@ function startApp() {
         }
         activeChatId = newChat.id;
         localStorage.setItem("activeChatId", activeChatId);
+    } else {
+        // Mobile: Load last active chat or create new if none exists
+        if (activeChatId && !chats.find(c => c.id === activeChatId)) activeChatId = null;
+        
+        if (!activeChatId && chats.length > 0) {
+            activeChatId = chats[0].id;
+            localStorage.setItem("activeChatId", activeChatId);
+        }
+        if (!activeChatId && chats.length === 0) {
+            const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            chats.unshift(newChat);
+            activeChatId = newChat.id;
+            saveChats();
+            localStorage.setItem("activeChatId", activeChatId);
+        }
     }
     renderChatList();
     renderMessages();
 }
 
 window.addEventListener('app-ready', startApp);
+
+(function() {
+  if (localStorage.getItem("SETUP") !== "FLAG_TRUE" || !localStorage.getItem("userInfo")) {
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
+    return;
+  }
+  initializeApp();
+})();
