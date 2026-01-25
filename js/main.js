@@ -762,6 +762,13 @@ if (deleteAccountBtn) {
     deleteAccountBtn.onclick = () => {
         document.getElementById("settingsModal").style.display = "none";
         document.getElementById("deleteAccountModal").style.display = "flex";
+        const list = document.getElementById("deleteAccountList");
+        if (list) {
+            const count = chats.length;
+            list.innerHTML = `<li>All chat history (${count} chat${count === 1 ? '' : 's'})</li>
+        <li>Your saved name</li>
+        <li>Agreement to Terms & Privacy Policy</li>`;
+        }
     };
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
