@@ -441,7 +441,7 @@ function appendMessage(text, role, isNew = false) {
 }
 
 // --- LOGIC MODULES ---
-function loadScript(src) {
+function genesisLoadScript(src) {
     return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) {
             return resolve();
@@ -458,7 +458,7 @@ function loadScript(src) {
 async function handleImageRequest(text) {
     try {
         if (typeof window.generateImageResponse === 'undefined') {
-            await loadScript('js/image-gen.js');
+            await genesisLoadScript('js/image-gen.js');
         }
 
         if (Object.keys(imageResponses).length === 0) {
