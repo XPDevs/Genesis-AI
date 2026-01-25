@@ -30,6 +30,16 @@ const shareLinkInput = document.getElementById("shareLinkInput");
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
 const inputArea = document.getElementById("inputArea");
+// Dev Modal Elements
+const devModal = document.getElementById("devModal");
+const devModalWaiting = document.getElementById("devModalWaiting");
+const devModalOptions = document.getElementById("devModalOptions");
+const devModalCancel = document.getElementById("devModalCancel");
+const devModalClose = document.getElementById("devModalClose");
+const customModelInput = document.getElementById("customModelInput");
+const devCurrentModalName = document.getElementById("devCurrentModalName");
+const devCurrentModalMode = document.getElementById("devCurrentModalMode");
+const uploadStatus = document.getElementById("uploadStatus");
 
 // State
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
@@ -37,7 +47,9 @@ let activeChatId = localStorage.getItem("activeChatId");
 let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
-let isReadOnlyMode = false; 
+let isReadOnlyMode = false;
+let isDevMode = false;
+const DEV_PASSWORD = "xpdevs_power_user";
 
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
@@ -545,6 +557,83 @@ function sendMessage() {
     }, 1500);
 }
 
+// --- DEVELOPER MODE ---
+function updateDevModalStatus() {
+    if (!devModal || !devModal.style.display || devModal.style.display === 'none') return;
+    devCurrentModalName.textContent = responses.ver || "Unknown Version";
+    devCurrentModalMode.textContent = customModelInput.files.length > 0 ? "Custom (Session)" : "Normal";
+    uploadStatus.textContent = "";
+}
+
+window.devAccess = function(password) {
+    if (password === DEV_PASSWORD) {
+        console.log("Developer access granted.");
+        isDevMode = true;
+        devModalWaiting.style.display = 'none';
+        devModalOptions.style.display = 'block';
+        updateDevModalStatus();
+    } else {
+        console.error("Incorrect developer password.");
+    }
+};
+
+function handleCustomModelUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    uploadStatus.textContent = `Reading ${file.name}...`;
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const buffer = e.target.result;
+        try {
+            let newResponses;
+            if (file.name.endsWith('.json')) {
+                const rawText = new TextDecoder().decode(buffer).trim();
+                newResponses = JSON.parse(rawText);
+                console.log("Genesis-AI: Custom JSON modal loaded for session.");
+            } else if (file.name.endsWith('.bin')) {
+                const decoded = decodeBinary(buffer);
+                if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
+                    throw new Error("Reconstructed string from .bin is not valid JSON.");
+                }
+                newResponses = JSON.parse(decoded);
+                console.log("Genesis-AI: Custom Binary modal loaded for session.");
+            } else {
+                throw new Error("Unsupported file type. Please use .json or .bin");
+            }
+
+            if (typeof newResponses !== 'object' || newResponses === null) {
+                throw new Error("Parsed modal is not a valid object.");
+            }
+
+            responses = newResponses; // Override for session
+            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
+            updateDevModalStatus();
+
+        } catch (err) {
+            console.error("Custom modal load failed:", err);
+            uploadStatus.textContent = `Error: ${err.message}`;
+        }
+    };
+
+    reader.onerror = function() {
+        uploadStatus.textContent = "Error reading file.";
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!devModal) return;
+        devModal.style.display = 'flex';
+        if (isDevMode) { devModalWaiting.style.display = 'none'; devModalOptions.style.display = 'block'; updateDevModalStatus(); } 
+        else { devModalWaiting.style.display = 'block'; devModalOptions.style.display = 'none'; }
+    }
+});
+
 // --- INITIALIZATION ---
 function showShareModal(chatId) {
     if (!shareLinkInput) return;
@@ -565,6 +654,7 @@ if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
     copyShareLinkBtn.textContent = "Copied!"; setTimeout(() => { copyShareLinkBtn.textContent = "Copy"; shareModal.style.display = "none"; }, 1500);
 };
 
+if (devModal) { devModalCancel.onclick = () => devModal.style.display = 'none'; devModalClose.onclick = () => devModal.style.display = 'none'; customModelInput.addEventListener('change', handleCustomModelUpload); }
 if (renameCancel) renameCancel.onclick = () => renameModal.style.display = "none";
 if (deleteCancel) deleteCancel.onclick = () => deleteModal.style.display = "none";
 if (renameConfirm) renameConfirm.onclick = () => {
