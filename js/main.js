@@ -458,13 +458,13 @@ function appendMessage(text, role, isNew = false) {
       const url = imgMatch[2];
       imgContainer = document.createElement("div");
       imgContainer.className = "genesis-image-container";
-      const img = new Image();
-      img.crossOrigin = "anonymous"; // This attribute is the ONLY thing that stops OpaqueResponseBlocking
+      const img = document.createElement("img");
       img.src = url;
       img.alt = alt;
       img.className = "genesis-generated-image";
       img.style.borderRadius = "15px"; // Modern UI style
       img.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+      img.style.border = "none";
       
       if (isNew) {
           img.classList.add("new"); // Add class to trigger animation only for new images
@@ -473,10 +473,6 @@ function appendMessage(text, role, isNew = false) {
               if (loader) loader.remove();
           };
           img.onload = removeLoader;
-          img.onerror = () => {
-              removeLoader();
-              img.alt = "Image failed to load.";
-          };
       }
 
       imgContainer.appendChild(img);
