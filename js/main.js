@@ -147,16 +147,13 @@ function ensureBanModal() {
   if (existing) return existing;
   const modal = document.createElement('div');
   modal.id = 'banModal';
-  Object.assign(modal.style, {
-    position: 'fixed', inset: '0', display: 'none', justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)', zIndex: '999999999', padding: '20px', pointerEvents: 'all'
-  });
+  modal.className = 'modal ban-modal';
   modal.innerHTML = `
-    <div id="banModalCard" style="max-width:520px;width:100%;background:#fff;padding:18px;border-radius:12px;text-align:center;font-family:Arial, sans-serif;color:#222;box-shadow:0 0 25px rgba(0,0,0,0.5);">
+    <div class="modal-content ban-modal-content">
       <h2 id="banModalTitle">You have been banned</h2>
       <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
-      <p id="banModalCountdown" style="font-size:1.1rem;margin:14px 0 8px;">Time left: calculating...</p>
-      <p style="margin:8px 0 18px;">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+      <p id="banModalCountdown" class="ban-countdown">Time left: calculating...</p>
+      <p class="ban-footer">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
     </div>
   `;
   document.body.appendChild(modal);
