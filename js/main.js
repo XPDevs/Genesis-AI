@@ -756,6 +756,16 @@ if (deleteAllBtn) {
 }
 document.getElementById("deleteAllCancel").onclick = () => document.getElementById("deleteAllModal").style.display = "none";
 document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
+
+const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+if (deleteAccountBtn) {
+    deleteAccountBtn.onclick = () => {
+        document.getElementById("settingsModal").style.display = "none";
+        document.getElementById("deleteAccountModal").style.display = "flex";
+    };
+}
+document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
+document.getElementById("deleteAccountConfirm").onclick = () => { localStorage.clear(); window.location.reload(); };
 function startApp() {
     if (isCurrentlyBanned()) {
         showBanModal();
