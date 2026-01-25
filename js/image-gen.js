@@ -2,8 +2,10 @@
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
  * FIX: Direct URL Injection to bypass CORS and OpaqueResponseBlocking.
+ * UPDATE: Prompt suppression - Only returns the image asset.
  */
 
+// 1. Process tags and clean input
 window.processGenesisImageRequest = function(input) {
     const tagRegex = /%([^%]+)%/g;
     let tags = [];
@@ -25,11 +27,12 @@ window.processGenesisImageRequest = function(input) {
     };
 };
 
+// 2. Handle image generation and model matching
 async function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Sort keys by length for Genesis logic
+    // Genesis logic: Sort keys by length
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -44,23 +47,21 @@ async function findImageInModel(prompt, imageModel) {
         }
     });
 
+    // If no local model match is found, use the external generator
     if (foundMatches.length === 0) {
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 999999);
         
-        /**
-         * REPAIR:
-         * We no longer use fetch() or allorigins. fetch() requires CORS headers.
-         * Browsers allow images to load cross-origin via <img> tags automatically.
-         * We return the direct URL formatted for your dashboard to display.
-         */
-        const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
+        // Construct the direct URL
+        const directImageUrl = `https://image.pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
         
+        // FIX: Return only the Markdown image to hide the prompt text
         return { 
             role: "ai", 
-            text: `!${prompt}` 
+            text: `![Genesis-AI Generated Image](${directImageUrl})` 
         };
     } else {
+        // Handle model-specific text responses if matches are found
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         const responseText = orderedMessages.length === 1 
             ? orderedMessages[0] 
@@ -70,6 +71,7 @@ async function findImageInModel(prompt, imageModel) {
     }
 }
 
+// 3. Main execution function
 window.generateImageResponse = async function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
     return await findImageInModel(processed.refinedPrompt, imageModelData);
