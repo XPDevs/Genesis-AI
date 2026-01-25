@@ -1,22 +1,28 @@
 /**
  * Genesis-AI: Image Creator Module
- * Simplified Version: Removed logo branding to bypass OpaqueResponseBlocking.
+ * Version: 2026.01
+ * Architect: James Turner (XPDevs)
+ * Status: Fixed for NS_BINDING_ABORTED and OpaqueResponseBlocking
  */
 
 /**
- * Parses user input to extract Genesis tags and clean the prompt.
- * Converts %tag% into plain text for the generator.
+ * Handles %tag% logic for Genesis-AI.
+ * Converts tags like %bg_white% into plain text descriptors for the AI.
  */
 window.processGenesisImageRequest = function(input) {
     const tagRegex = /%([^%]+)%/g;
     let tags = [];
     let match;
 
+    // Extract all tags
     while ((match = tagRegex.exec(input)) !== null) {
         tags.push(match[1].replace(/_/g, ' '));
     }
 
+    // Remove tags from the string to get the base prompt
     let cleanPrompt = input.replace(tagRegex, '').trim();
+    
+    // Re-attach tags as natural language descriptions
     let refined = cleanPrompt;
     if (tags.length > 0) {
         refined += ", " + tags.join(", ");
@@ -30,13 +36,14 @@ window.processGenesisImageRequest = function(input) {
 };
 
 /**
- * Generates a clean image URL without any external logo parameters.
+ * Core image generator. 
+ * Stripped of all secondary URL parameters to prevent ORB/Binding errors.
  */
 function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Filter out metadata from the Genesis model
+    // Process local matches from James' .bin compiled model
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -52,14 +59,15 @@ function findImageInModel(prompt, imageModel) {
     });
 
     if (foundMatches.length === 0) {
+        // ENCODING: Ensures spaces and symbols don't trigger the abort error
         const encodedPrompt = encodeURIComponent(prompt);
-        // Random seed helps prevent the browser from getting "stuck" on a failed request
         const seed = Math.floor(Math.random() * 1000000);
         
-        // CLEAN URL: No logo, no complex parameters. 
-        // nologo=true refers to the service's own logo, not yours.
+        // STABLE URL: Removed the &logo= parameter completely.
+        // nologo=true refers to the pollinations default watermark.
         const imageUrl = `https://gen.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024`;
         
+        // Returns the visual render for the Dashboard UI
         return { 
             role: "ai", 
             text: `![${prompt}](${imageUrl})` 
@@ -72,7 +80,7 @@ function findImageInModel(prompt, imageModel) {
 }
 
 /**
- * Main module entry point.
+ * Unified entry point for Genesis-AI
  */
 window.generateImageResponse = function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
