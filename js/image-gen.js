@@ -1,71 +1,43 @@
 /**
- * Genesis-AI: Image Creator Module (Version 2026.1.5)
- * Architect: James Turner (XPDevs)
- * Feature: Client-side Canvas Watermarking to bypass ORB/Binding errors.
+ * Genesis-AI: Image Creator Module
+ * Simplified Version: Removed logo branding to bypass OpaqueResponseBlocking.
  */
 
+/**
+ * Parses user input to extract Genesis tags and clean the prompt.
+ * Converts %tag% into plain text for the generator.
+ */
 window.processGenesisImageRequest = function(input) {
     const tagRegex = /%([^%]+)%/g;
     let tags = [];
     let match;
+
     while ((match = tagRegex.exec(input)) !== null) {
         tags.push(match[1].replace(/_/g, ' '));
     }
+
     let cleanPrompt = input.replace(tagRegex, '').trim();
     let refined = cleanPrompt;
     if (tags.length > 0) {
         refined += ", " + tags.join(", ");
     }
-    return { original: input, refinedPrompt: refined, timestamp: new Date().toISOString() };
+
+    return {
+        original: input,
+        refinedPrompt: refined,
+        timestamp: new Date().toISOString()
+    };
 };
 
 /**
- * Bakes the XPDevs logo onto the AI image using a hidden canvas.
- * This returns a safe DataURL that won't be blocked by the browser.
+ * Generates a clean image URL without any external logo parameters.
  */
-async function brandImage(imageUrl) {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const mainImg = new Image();
-        const logoImg = new Image();
-
-        mainImg.crossOrigin = "anonymous";
-        logoImg.crossOrigin = "anonymous";
-
-        mainImg.onload = () => {
-            canvas.width = mainImg.width;
-            canvas.height = mainImg.height;
-            
-            // Draw the generated AI image
-            ctx.drawImage(mainImg, 0, 0);
-            
-            // Load and draw the XPDevs logo once the main image is ready
-            logoImg.onload = () => {
-                const logoSize = canvas.width * 0.15; // 15% of image width
-                const padding = 20;
-                ctx.globalAlpha = 0.8; // Subtle transparency
-                ctx.drawImage(
-                    logoImg, 
-                    canvas.width - logoSize - padding, 
-                    canvas.height - logoSize - padding, 
-                    logoSize, 
-                    logoSize
-                );
-                resolve(canvas.toDataURL("image/png"));
-            };
-            logoImg.src = "https://xpdevs.github.io/Genesis-AI/icon.png";
-        };
-        
-        mainImg.onerror = () => resolve(imageUrl); // Fallback if canvas fails
-        mainImg.src = imageUrl;
-    });
-}
-
-async function findImageInModel(prompt, imageModel) {
+function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
-    const responseKeys = Object.keys(imageModel).filter(k => !['ver', 'description'].includes(k));
+    
+    // Filter out metadata from the Genesis model
+    const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
     let tempInput = lowerInput;
@@ -80,21 +52,29 @@ async function findImageInModel(prompt, imageModel) {
     });
 
     if (foundMatches.length === 0) {
+        const encodedPrompt = encodeURIComponent(prompt);
+        // Random seed helps prevent the browser from getting "stuck" on a failed request
         const seed = Math.floor(Math.random() * 1000000);
-        const rawUrl = `https://gen.pollinations.ai/prompt/${encodeURIComponent(prompt)}?nologo=true&seed=${seed}&width=1024&height=1024`;
         
-        // This is the magic part: it processes the image before displaying it
-        const brandedUrl = await brandImage(rawUrl);
-        return { role: "ai", text: `![${prompt}](${brandedUrl})` };
+        // CLEAN URL: No logo, no complex parameters. 
+        // nologo=true refers to the service's own logo, not yours.
+        const imageUrl = `https://gen.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024`;
+        
+        return { 
+            role: "ai", 
+            text: `![${prompt}](${imageUrl})` 
+        };
     } else {
-        const ordered = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-        const text = ordered.length === 1 ? ordered[0] : ordered.join(", ") + " and " + ordered.pop();
-        return { role: "ai", text: text };
+        const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
+        const responseText = orderedMessages.length === 1 ? orderedMessages[0] : orderedMessages.join(", ") + " and " + orderedMessages.pop();
+        return { role: "ai", text: responseText };
     }
 }
 
-// Updated main function to be async to handle the canvas processing
-window.generateImageResponse = async function(text, imageModelData) {
+/**
+ * Main module entry point.
+ */
+window.generateImageResponse = function(text, imageModelData) {
     const processed = window.processGenesisImageRequest(text);
-    return await findImageInModel(processed.refinedPrompt, imageModelData);
+    return findImageInModel(processed.refinedPrompt, imageModelData);
 };
