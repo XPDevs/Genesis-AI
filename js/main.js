@@ -12,6 +12,7 @@ const newChatBtn = document.getElementById("newChatBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const themeToggle = document.getElementById("themeToggle");
+const autoThemeToggle = document.getElementById("autoThemeToggle");
 const modelSelect = document.getElementById("modelSelect");
 const chatTitle = document.getElementById("chatTitle");
 const readOnlyBanner = document.getElementById("readOnlyBanner");
@@ -766,17 +767,35 @@ document.getElementById("refreshCancel").onclick = () => {
     modelSelect.value = jsonURL;
 };
 
-const savedTheme = localStorage.getItem("theme");
-let isDark;
-if (savedTheme !== null) {
-    isDark = savedTheme === "dark";
-} else {
-    const hour = new Date().getHours();
-    isDark = (hour < 10 || hour >= 17);
+function applyTheme() {
+    // Default to auto if not set, unless legacy theme exists
+    if (localStorage.getItem("autoTheme") === null) {
+        localStorage.setItem("autoTheme", localStorage.getItem("theme") === null ? "true" : "false");
+    }
+    
+    const isAuto = localStorage.getItem("autoTheme") === "true";
+    if (autoThemeToggle) autoThemeToggle.checked = isAuto;
+    
+    if (themeToggle) {
+        themeToggle.disabled = isAuto;
+        themeToggle.parentElement.style.opacity = isAuto ? "0.5" : "1";
+    }
+
+    let isDark;
+    if (isAuto) {
+        const hour = new Date().getHours();
+        isDark = (hour < 10 || hour >= 17);
+    } else {
+        isDark = localStorage.getItem("theme") === "dark";
+    }
+    
+    if (themeToggle) themeToggle.checked = isDark;
+    document.body.classList.toggle("dark", isDark);
 }
-themeToggle.checked = isDark;
-document.body.classList.toggle("dark", isDark);
-themeToggle.onchange = () => { document.body.classList.toggle("dark", themeToggle.checked); localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); };
+
+applyTheme();
+if (autoThemeToggle) autoThemeToggle.onchange = () => { localStorage.setItem("autoTheme", autoThemeToggle.checked); if (!autoThemeToggle.checked) localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); applyTheme(); };
+if (themeToggle) themeToggle.onchange = () => { document.body.classList.toggle("dark", themeToggle.checked); localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); };
 
 const deleteAllBtn = document.getElementById("deleteAllChatsBtn");
 if (deleteAllBtn) {
