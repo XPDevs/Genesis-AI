@@ -1,7 +1,3 @@
-/**
- * Genesis-AI: Image Creator Module
- * Handles %tag% parsing and model lookups for image generation.
- */
 
 const genesisColorPalette = {
     // Standard Colors
@@ -84,14 +80,27 @@ function findImageInModel(prompt, imageModel) {
     }
   });
 
-  if (foundMatches.length === 0) return { role: "ai", text: `I've processed your request for an image: "${prompt}". However, I couldn't find a direct generator for it. Please try a more general subject.` };
-  
-  const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-  
-  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
-  
-  const last = orderedMessages.pop();
-  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
+  let responseText = "";
+
+  if (foundMatches.length === 0) {
+      const encoded = encodeURIComponent(prompt);
+      responseText = `!Generated Image`;
+  } else {
+      const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
+      if (orderedMessages.length === 1) responseText = orderedMessages[0];
+      else {
+          const last = orderedMessages.pop();
+          responseText = orderedMessages.join(", ") + " and " + last;
+      }
+  }
+
+  const logoUrl = "https://xpdevs.github.io/Genesis-AI/icon.png";
+  responseText = responseText.replace(/\]\((https:\/\/image\.pollinations\.ai\/prompt\/[^)]+)\)/g, (match, url) => {
+      const separator = url.includes('?') ? '&' : '?';
+      return `](${url}${separator}nologo=true&logo=${encodeURIComponent(logoUrl)})`;
+  });
+
+  return { role: "ai", text: responseText };
 }
 
 window.generateImageResponse = function(text, imageModelData) {
