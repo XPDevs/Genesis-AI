@@ -460,3 +460,29 @@ body.dark .action-btn:hover {
 
 input:checked + .slider { background-color: var(--primary); }
 input:checked + .slider:before { transform: translateX(24px); }
+
+/* --- New Chat Mobile View --- */
+#greeting {
+  display: none;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 15px;
+  padding-left: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+body.is-new-chat #greeting {
+  display: block;
+}
+
+body.is-new-chat .chat-box {
+  display: none;
+}
+
+body.is-new-chat .input-container {
+  margin-top: auto;
+  padding-bottom: 24px;
+}
