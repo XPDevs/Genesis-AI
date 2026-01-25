@@ -1,7 +1,7 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Uses <iframe> to bypass OpaqueResponseBlocking (ORB) and CORS.
+ * FIX: Uses Data-URI Iframe to bypass ORB and 404/Binding Abortions.
  */
 
 // 1. Process tags and clean input
@@ -31,7 +31,6 @@ async function findImageInModel(prompt, imageModel) {
     const lowerInput = prompt.toLowerCase();
     const foundMatches = [];
     
-    // Genesis logic: Sort keys by length
     const responseKeys = Object.keys(imageModel).filter(k => k !== 'ver' && k !== 'description');
     const sortedKeys = responseKeys.sort((a, b) => b.length - a.length);
     
@@ -46,27 +45,32 @@ async function findImageInModel(prompt, imageModel) {
         }
     });
 
-    // If no local model match is found, use the external generator
     if (foundMatches.length === 0) {
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 999999);
-        
-        // Construct the direct URL
         const directImageUrl = `https://image.pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
         
         /**
-         * REPAIR: Return an iframe string.
-         * This bypasses the NS_BINDING_ABORTED error by loading the resource 
-         * in its own browsing context.
+         * REPAIR: Wrap the image in a static HTML document inside the iframe.
+         * This prevents the browser from trying to "fetch" the image as a script resource.
          */
-        const iframeHtml = `<iframe src="${directImageUrl}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; overflow:hidden;" scrolling="no"></iframe>`;
+        const iframeContent = `
+            <html>
+            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:hidden;">
+                <img src="${directImageUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;" />
+            </body>
+            </html>
+        `;
+        
+        // Encode the HTML to Base64 to bypass security filters
+        const base64Content = btoa(iframeContent);
+        const iframeHtml = `<iframe src="data:text/html;base64,${base64Content}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; overflow:hidden;" scrolling="no"></iframe>`;
         
         return { 
             role: "ai", 
             text: iframeHtml 
         };
     } else {
-        // Handle model-specific text responses
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         const responseText = orderedMessages.length === 1 
             ? orderedMessages[0] 
