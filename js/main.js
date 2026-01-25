@@ -1,3 +1,16 @@
+(function() {
+  if (localStorage.getItem("SETUP") !== "FLAG_TRUE") {
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
+    return;
+  }
+
+  if (!localStorage.getItem("userInfo")) {
+    window.addEventListener('DOMContentLoaded', ensureSetupModal);
+  } else {
+    initializeApp();
+  }
+})();
+
 function initializeApp() {
     console.log("Genesis Core: Environment Ready.");
     window.dispatchEvent(new Event('app-ready'));
@@ -40,14 +53,6 @@ function ensureSetupModal() {
     nameInput.addEventListener('keypress', (e) => e.key === 'Enter' && completeSetup());
     return modal;
 }
-
-(function() {
-  if (!localStorage.getItem("userInfo")) {
-    window.addEventListener('DOMContentLoaded', ensureSetupModal);
-  } else {
-    initializeApp();
-  }
-})();
 
 // UI Elements
 const chatList = document.getElementById("chatList");
