@@ -1,7 +1,7 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Minimal URL structure to bypass OpaqueResponseBlocking.
+ * FIX: Direct URL Injection to bypass CORS and OpaqueResponseBlocking.
  */
 
 window.processGenesisImageRequest = function(input) {
@@ -49,35 +49,23 @@ async function findImageInModel(prompt, imageModel) {
         const seed = Math.floor(Math.random() * 999999);
         
         /**
-         * PUREST URL: 
-         * No gen. subdomain, no logo params, no width/height logic.
-         * This prevents the browser from flagging the URL as "data-heavy".
-         * We proxy it through allorigins.win to add the required CORS headers
-         * for cross-origin use, which fixes the browser blocking issue.
+         * REPAIR:
+         * We no longer use fetch() or allorigins. fetch() requires CORS headers.
+         * Browsers allow images to load cross-origin via <img> tags automatically.
+         * We return the direct URL formatted for your dashboard to display.
          */
-        const rawImageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}`;
-        const proxiedImageUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawImageUrl)}`;
+        const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
         
-        try {
-            const response = await fetch(proxiedImageUrl);
-            if (!response.ok) throw new Error("Failed to fetch image");
-            const blob = await response.blob();
-            
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve({ 
-                    role: "ai", 
-                    text: `!${prompt}` 
-                });
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) {
-            console.error("Image Gen Error:", e);
-            return { role: "ai", text: "I encountered an error generating that image." };
-        }
+        return { 
+            role: "ai", 
+            text: `!${directImageUrl}` 
+        };
     } else {
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-        const responseText = orderedMessages.length === 1 ? orderedMessages[0] : orderedMessages.join(", ") + " and " + orderedMessages.pop();
+        const responseText = orderedMessages.length === 1 
+            ? orderedMessages[0] 
+            : orderedMessages.slice(0, -1).join(", ") + " and " + orderedMessages.slice(-1);
+        
         return { role: "ai", text: responseText };
     }
 }
