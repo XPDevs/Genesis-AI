@@ -145,6 +145,11 @@ body.dark .chat-item:hover {
   background: var(--active-chat);
 }
 
+.chat-options {
+  display: flex;
+  align-items: center;
+}
+
 /* --- Dropdown Menus --- */
 .dropdown {
   position: absolute;
