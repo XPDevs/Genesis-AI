@@ -1,8 +1,7 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Direct URL Injection to bypass CORS and OpaqueResponseBlocking.
- * UPDATE: Prompt suppression - Only returns the image asset.
+ * FIX: Uses <iframe> to bypass OpaqueResponseBlocking (ORB) and CORS.
  */
 
 // 1. Process tags and clean input
@@ -55,13 +54,19 @@ async function findImageInModel(prompt, imageModel) {
         // Construct the direct URL
         const directImageUrl = `https://image.pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
         
-        // FIX: Return only the Markdown image to hide the prompt text
+        /**
+         * REPAIR: Return an iframe string.
+         * This bypasses the NS_BINDING_ABORTED error by loading the resource 
+         * in its own browsing context.
+         */
+        const iframeHtml = `<iframe src="${directImageUrl}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; overflow:hidden;" scrolling="no"></iframe>`;
+        
         return { 
             role: "ai", 
-            text: `![Genesis-AI Generated Image](${directImageUrl})` 
+            text: iframeHtml 
         };
     } else {
-        // Handle model-specific text responses if matches are found
+        // Handle model-specific text responses
         const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
         const responseText = orderedMessages.length === 1 
             ? orderedMessages[0] 
