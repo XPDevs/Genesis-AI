@@ -1,7 +1,8 @@
 /**
  * Genesis-AI: Image Creator Module
  * Optimized for James Turner (XPDevs)
- * FIX: Uses Data-URI Iframe to bypass ORB and 404/Binding Abortions.
+ * FIX: Updated for new Pollinations.ai API standards.
+ * Bypasses ORB/CORS using a sandboxed Data-URI Iframe.
  */
 
 // 1. Process tags and clean input
@@ -46,25 +47,38 @@ async function findImageInModel(prompt, imageModel) {
     });
 
     if (foundMatches.length === 0) {
+        // Updated for the latest Pollinations.ai URL structure
         const encodedPrompt = encodeURIComponent(prompt);
         const seed = Math.floor(Math.random() * 999999);
-        const directImageUrl = `https://image.pollinations.ai/p/${encodedPrompt}?seed=${seed}&nologo=true`;
+        const width = 1024;
+        const height = 1024;
+        
+        // New Pollinations URL format with dimension and model parameters
+        const directImageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
         
         /**
-         * REPAIR: Wrap the image in a static HTML document inside the iframe.
-         * This prevents the browser from trying to "fetch" the image as a script resource.
+         * REPAIR: Constructing the Iframe content as a standalone HTML document.
+         * This forces the browser to interpret the request as a simple image load
+         * within a sub-frame, bypassing the GitHub Pages cross-origin restrictions.
          */
         const iframeContent = `
+            <!DOCTYPE html>
             <html>
-            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;overflow:hidden;">
-                <img src="${directImageUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;" />
+            <head>
+                <style>
+                    body { margin: 0; padding: 0; background: transparent; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+                    img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; font-family: sans-serif; color: #666; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <img src="${directImageUrl}" alt="Generating ${prompt}..." />
             </body>
             </html>
         `;
         
-        // Encode the HTML to Base64 to bypass security filters
-        const base64Content = btoa(iframeContent);
-        const iframeHtml = `<iframe src="data:text/html;base64,${base64Content}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; overflow:hidden;" scrolling="no"></iframe>`;
+        // Safe Base64 encoding for modern browsers
+        const base64Content = btoa(unescape(encodeURIComponent(iframeContent)));
+        const iframeHtml = `<iframe src="data:text/html;base64,${base64Content}" style="width:100%; aspect-ratio:1/1; border:none; border-radius:12px; background: #1a1a1a;" scrolling="no"></iframe>`;
         
         return { 
             role: "ai", 
