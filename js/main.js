@@ -38,6 +38,8 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false; 
+let imageResponses = {};
+const imageModelURL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-image-250126P0137M.bin";
 
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
@@ -439,6 +441,54 @@ function appendMessage(text, role, isNew = false) {
 }
 
 // --- LOGIC MODULES ---
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) {
+            return resolve();
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Script load error for ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function handleImageRequest(text) {
+    try {
+        if (typeof window.generateImageResponse === 'undefined') {
+            await loadScript('js/image-gen.js');
+        }
+
+        if (Object.keys(imageResponses).length === 0) {
+            const response = await fetch(imageModelURL + "?v=" + Date.now());
+            if (!response.ok) throw new Error("Image model file not found");
+            const buffer = await response.arrayBuffer();
+            const decoded = decodeBinary(buffer);
+            if (!decoded || !decoded.startsWith("{")) {
+                try {
+                    const rawText = new TextDecoder().decode(buffer).trim();
+                    imageResponses = JSON.parse(rawText);
+                    console.log("Genesis-AI: Raw JSON Fallback for Image Model successful.");
+                } catch (innerErr) {
+                    throw new Error("Critical: Image Model is neither valid Genesis-AI Binary nor JSON.");
+                }
+            } else {
+                imageResponses = JSON.parse(decoded);
+                console.log("Genesis-AI: Image Model Binary active.");
+            }
+        }
+
+        return window.generateImageResponse(text, imageResponses);
+
+    } catch (e) {
+        console.error("Image request processing failed:", e);
+        appendMessage("Sorry, there was a problem with the image generation module. " + e.message, "error");
+        return null;
+    }
+}
+
 let bannedWords = [];
 async function loadBannedWords() {
   try {
@@ -526,17 +576,41 @@ function sendMessage() {
     typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
   }
 
+  const isImageRequest = text.toLowerCase().includes("image");
+
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading-container";
-  loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
+  if (isImageRequest) {
+      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Generating image...</span>`;
+  } else {
+      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
+  }
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
 
-  setTimeout(() => {
-    loadingDiv.remove();
-    let botMsg = findResponses(text, chat.messages);
-    chat.messages.push(botMsg); saveChats(); appendMessage(botMsg.text, botMsg.role, true);
-    setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, (botMsg.text.length * 30) + 500);
-  }, 1500);
+    setTimeout(() => {
+        (async () => {
+            loadingDiv.remove();
+            let botMsg;
+
+            if (isImageRequest) {
+                botMsg = await handleImageRequest(text);
+            } else {
+                botMsg = findResponses(text, chat.messages);
+            }
+
+            if (!botMsg) { // Handle cases where request processing fails
+                userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+                return;
+            }
+
+            chat.messages.push(botMsg);
+            saveChats();
+            appendMessage(botMsg.text, botMsg.role, true);
+
+            const timeout = (botMsg.text ? botMsg.text.length * 30 : 0) + 500;
+            setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
+        })();
+    }, 1500);
 }
 
 // --- INITIALIZATION ---
