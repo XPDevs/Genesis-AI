@@ -482,7 +482,7 @@ function findResponses(input, history) {
     }
   });
 
-  if (foundMatches.length === 0) return { role: "ai", text: "I can't find a direct response for that, but I'm learning! Try asking about XPDevs kernels like NexShell." };
+  if (foundMatches.length === 0) return { role: "ai", text: "I’m not quite sure I follow. Could you give me a bit more detail?" };
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
   if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
   const last = orderedMessages.pop();
