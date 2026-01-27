@@ -243,11 +243,10 @@ function decodeBinary(buffer) {
     let i = 0;
 
     // 1. Signature Check (SIG_ULTRA: 0x58504456)
-    if (bytes.length > 4) {
+    if (bytes.length >= 4) {
         const sig = view.getUint32(0, true);
         if (sig === 0x58504456) {
             i = 4; // Skip header
-            console.log("Genesis-AI: Signature verified.");
         }
     }
 
@@ -255,23 +254,23 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Support (0x10 to 0x19)
+        // Dictionary Support (0x10 and above)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
-            i++; // Move to next byte
+            // Dictionary tokens are single bytes; pointer moves to next byte naturally at the end of loop
         } else {
             switch(b) {
-                case 0x01: jsonString += "{"; i++; break;
-                case 0x02: jsonString += "}"; i++; break;
-                case 0x03: jsonString += ":"; i++; break;
-                case 0x04: jsonString += ","; i++; break;
-                case 0x05: jsonString += "["; i++; break;
-                case 0x06: jsonString += "]"; i++; break;
-                case 0x07: // T_STR: Unique Data String
+                case 0x01: jsonString += "{"; break; // T_START
+                case 0x02: jsonString += "}"; break; // T_END
+                case 0x03: jsonString += ":"; break; // T_SEP
+                case 0x04: jsonString += ","; break; // T_NEXT
+                case 0x05: jsonString += "["; break; // T_ARR_S
+                case 0x06: jsonString += "]"; break; // T_ARR_E
+                case 0x07: // T_STR
                     i++; // Skip the 0x07 token
                     let start = i;
                     
-                    // Find the 0x00 terminator
+                    // Seek the 0x00 null terminator written by fputc(0x00, dest)
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         i++;
                     }
@@ -283,14 +282,14 @@ function decodeBinary(buffer) {
                     }
                     
                     jsonString += '"' + decoder.decode(decrypted) + '"';
-                    i++; // Skip the 0x00 terminator
+                    // 'i' is now at the 0x00 byte; the i++ at the end of the loop moves us past it.
                     break;
                 default:
-                    // Skip any unexpected padding/nulls
-                    i++;
+                    // Ignore null padding if present
                     break;
             }
         }
+        i++; // Increments the pointer exactly once per loop iteration
     }
     
     return jsonString.trim();
