@@ -242,11 +242,10 @@ function decodeBinary(buffer) {
     
     let i = 0;
 
-    // 1. Signature Check (SIG_ULTRA: 0x58504456)
+    // 1. Signature Check
     if (bytes.length >= 4) {
-        const sig = view.getUint32(0, true);
-        if (sig === 0x58504456) {
-            i = 4; // Skip header
+        if (view.getUint32(0, true) === 0x58504456) {
+            i = 4; 
         }
     }
 
@@ -254,44 +253,38 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Support (0x10 and above)
+        // Dictionary Support (0x10+)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
-            // Dictionary tokens are single bytes; pointer moves to next byte naturally at the end of loop
+            i++; 
         } else {
             switch(b) {
-                case 0x01: jsonString += "{"; break; // T_START
-                case 0x02: jsonString += "}"; break; // T_END
-                case 0x03: jsonString += ":"; break; // T_SEP
-                case 0x04: jsonString += ","; break; // T_NEXT
-                case 0x05: jsonString += "["; break; // T_ARR_S
-                case 0x06: jsonString += "]"; break; // T_ARR_E
+                case 0x01: jsonString += "{"; i++; break;
+                case 0x02: jsonString += "}"; i++; break;
+                case 0x03: jsonString += ":"; i++; break;
+                case 0x04: jsonString += ","; i++; break;
+                case 0x05: jsonString += "["; i++; break;
+                case 0x06: jsonString += "]"; i++; break;
                 case 0x07: // T_STR
-                    i++; // Skip the 0x07 token
+                    i++; // Skip T_STR token
                     let start = i;
-                    
-                    // Seek the 0x00 null terminator written by fputc(0x00, dest)
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         i++;
                     }
-                    
                     const chunk = bytes.slice(start, i);
                     const decrypted = new Uint8Array(chunk.length);
                     for (let j = 0; j < chunk.length; j++) {
                         decrypted[j] = chunk[j] ^ XOR_KEY;
                     }
-                    
                     jsonString += '"' + decoder.decode(decrypted) + '"';
-                    // 'i' is now at the 0x00 byte; the i++ at the end of the loop moves us past it.
+                    i++; // Move past the 0x00 null terminator
                     break;
                 default:
-                    // Ignore null padding if present
+                    i++; // Skip any 0x00 or padding that shouldn't be there
                     break;
             }
         }
-        i++; // Increments the pointer exactly once per loop iteration
     }
-    
     return jsonString.trim();
 }
 
