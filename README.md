@@ -51,7 +51,6 @@ This method removes the need for neural processing or external APIs while keepin
 - **Customizable Themes:** Switch between Light and Dark modes, or enable Auto-Theming based on the time of day.
 - **Text-to-Speech:** Listen to the AI's responses with a single click.
 - **Built-in Calculator:** Solves mathematical expressions directly in the chat.
-- **Developer Mode:** A hidden mode for power users to load custom AI modals (`.json` or `.bin`) for a session.
 - **Cross-Platform & Mobile Friendly:** Works on all modern desktop and mobile browsers.
 - **Robust Error Handling:** Provides clear messages for load issues and safety violations.
 
