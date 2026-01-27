@@ -241,10 +241,10 @@ function decodeBinary(buffer) {
     let jsonString = "";
     
     let i = 0;
-    // 1. Signature Check (SIG_ULTRA 0x58504456)
+    // 1. Signature Check
     try {
         if (view.getUint32(0, true) === 0x58504456) {
-            i = 4; 
+            i = 4; // Skip SIG_ULTRA
         }
     } catch (e) { i = 0; }
 
@@ -255,16 +255,18 @@ function decodeBinary(buffer) {
         // Dictionary Support (0x10+)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
+            // Dictionary tokens in your C code are single bytes, 
+            // so we just move to the next byte afterward.
         } else {
             switch(b) {
-                case 0x01: jsonString += "{"; break;
-                case 0x02: jsonString += "}"; break;
-                case 0x03: jsonString += ":"; break;
-                case 0x04: jsonString += ","; break;
-                case 0x05: jsonString += "["; break;
-                case 0x06: jsonString += "]"; break;
-                case 0x07: // T_STR
-                    i++; // Move past T_STR token
+                case 0x01: jsonString += "{"; break; // T_START
+                case 0x02: jsonString += "}"; break; // T_END
+                case 0x03: jsonString += ":"; break; // T_SEP
+                case 0x04: jsonString += ","; break; // T_NEXT
+                case 0x05: jsonString += "["; break; // T_ARR_S
+                case 0x06: jsonString += "]"; break; // T_ARR_E
+                case 0x07: // T_STR (XOR Encrypted + Null Terminated)
+                    i++; // Skip the 0x07 token
                     let start = i;
                     
                     // Find the 0x00 terminator
@@ -279,12 +281,12 @@ function decodeBinary(buffer) {
                     }
                     
                     jsonString += '"' + decoder.decode(decrypted) + '"';
-                    // Loop ends at the 0x00 byte; the i++ at the bottom 
-                    // of the while loop will move us to the next token.
+                    // 'i' is now at the 0x00 position. 
+                    // The i++ at the end of the loop will move it to the next token.
                     break;
             }
         }
-        i++; // Move to the next byte
+        i++; 
     }
     return jsonString.trim();
 }
