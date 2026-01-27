@@ -225,29 +225,28 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V6.1 Elite) ---
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+// --- XPDevs Genesis-AI Ultra-Decoder (V6.3 Elite Sync) ---
+// Precisely aligned with James Turner's json2bin.c logic
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
+const XOR_KEY = 0xAA;
 
 /**
  * Reconstructs JSON from XPDevs Binary format.
- * Aligned with json2bin.c structural tokens and version injection.
+ * Handles the custom 'ver' injection and XOR-encrypted strings.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
 
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
-    const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     let jsonString = "";
     let i = 0;
 
-    // 1. Precise Signature Check (SIG_ULTRA: 0x58504456)
-    // Matches: fwrite(&sig, 4, 1, dest) in json2bin.c
+    // 1. Precise Signature Skip (SIG_ULTRA: 0x58504456)
+    // fwrite(&sig, 4, 1, dest) in json2bin.c
     if (view.getUint32(0, true) === 0x58504456) {
         i = 4; 
     }
@@ -262,8 +261,9 @@ function decodeBinary(buffer) {
             jsonString += '"' + key + '"';
             i++;
 
-            // Handle json2bin.c Version Injection Exception:
-            // The compiler skips the colon after "ver" and injects the value immediately.
+            // CRITICAL: json2bin.c handles 'ver' as a special case.
+            // It writes the key token but skips the colon and original value.
+            // We manually add the colon here to keep the JSON valid.
             if (key === "ver") {
                 jsonString += ":";
             }
@@ -277,11 +277,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (XOR String + Null Terminator)
-                i++; // Move past T_STR token
+            case 0x07: // T_STR (Unique XOR-encrypted string)
+                i++; // Skip 0x07 token
                 let start = i;
                 
-                // Seek 0x00 terminator written by fputc(0x00, dest)
+                // Find 0x00 null terminator written by fputc(0x00, dest)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -293,19 +293,20 @@ function decodeBinary(buffer) {
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
-                // Technical Sanity: Escape JSON-breaking characters
+                
+                // Sanitize for JSON safety (essential for long tech descriptions)
                 let sanitized = decodedStr
-                    .replace(/\\/g, "\\\\")
-                    .replace(/"/g, '\\"')
-                    .replace(/\n/g, "\\n")
+                    .replace(/\\/g, "\\\\") // Escape backslashes first
+                    .replace(/"/g, '\\"')   // Escape quotes
+                    .replace(/\n/g, "\\n")  // Escape newlines
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip the 0x00 byte
+                i++; // Step over 0x00 byte
                 break;
             default:
-                i++; // Skip padding/nulls
+                i++; // Skip unknown padding bytes
                 break;
         }
     }
@@ -318,31 +319,38 @@ function decodeBinary(buffer) {
     return finalJson;
 }
 
-// 4. Execution & Global System Loader
+// 4. Integrated Loader with Fallback Logic
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Network Error"))
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Network failure"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
-      // Critical check: Did we actually get JSON or raw binary garbage?
-      if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
-          throw new Error("Reconstruction resulted in invalid structure");
-      }
-
-      responses = JSON.parse(decoded);
-      console.log("Genesis-AI: Binary Core V6.1 Active.");
+      // Ensure we are parsing from the actual start of the JSON object
+      const jsonStart = decoded.indexOf("{");
+      if (jsonStart === -1) throw new Error("Missing JSON root");
+      
+      const cleanJson = decoded.substring(jsonStart);
+      responses = JSON.parse(cleanJson);
+      console.log("Genesis-AI: System Online (Binary Core V6.3).");
     } catch (e) {
       console.warn("Binary Reconstruction Failed: " + e.message);
       
-      // Fallback Attempt
+      // Attempt Raw Recovery for non-binary JSON files
       try {
-        const rawText = new TextDecoder().decode(buffer).trim();
-        responses = JSON.parse(rawText);
-        console.log("Genesis-AI: Raw Fallback Active.");
+        if (jsonURL.endsWith(".json")) {
+            const rawText = new TextDecoder().decode(buffer).trim();
+            responses = JSON.parse(rawText);
+            console.log("Genesis-AI: Raw Fallback Active.");
+        } else {
+            throw new Error("Cannot raw-parse binary file");
+        }
       } catch (err) {
         console.error("Critical: Model Corrupt.");
-        // Emergency Load of Legacy SPT 1.0
+        // Emergency Fallback to local 1.0 JSON
         fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
           .then(res => res.json())
           .then(data => { responses = data; });
