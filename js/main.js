@@ -225,8 +225,8 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Sync Decoder (V5.9) ---
-// Finalized for James Turner's Genesis-AI Ecosystem
+// --- XPDevs Genesis-AI Ultra-Decoder (V6.0 Final) ---
+// Precisely aligned with json2bin.c Version Injection Logic
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -252,15 +252,18 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Check
+        // Dictionary Check (0x10+)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
             i++;
-            
-            // Special Logic for 'ver' injection in json2bin.c
-            // If the next byte is T_STR (0x07), handle it immediately 
-            // even if a colon hasn't appeared yet.
+
+            // CRITICAL: json2bin.c special case for "ver" injection
+            // If we just wrote "ver", we must manually add the colon 
+            // because the binary skips it and goes straight to the version string.
+            if (key === "ver") {
+                jsonString += ":";
+            }
             continue;
         }
 
@@ -271,7 +274,7 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break;
             case 0x05: jsonString += "["; i++; break;
             case 0x06: jsonString += "]"; i++; break;
-            case 0x07: // Unique Data String
+            case 0x07: // T_STR (Unique XOR-encrypted string)
                 i++; // Skip 0x07
                 let start = i;
                 while (i < bytes.length && bytes[i] !== 0x00) {
@@ -285,7 +288,7 @@ function decodeBinary(buffer) {
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
-                // JSON Safety: Escape controls and special chars
+                // Sanitize for JSON (handles nested quotes and tech descriptions)
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -294,7 +297,7 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip 0x00
+                i++; // Step over 0x00
                 break;
             default:
                 i++; // Skip padding
@@ -302,44 +305,40 @@ function decodeBinary(buffer) {
         }
     }
 
-    // 3. Structural Polish
-    let finalJson = jsonString.trim();
-    // Remove trailing commas before closing braces/brackets
-    finalJson = finalJson.replace(/,\s*([}\]])/g, '$1');
-    
-    return finalJson;
+    // Final Clean-up: Remove trailing commas before closing symbols
+    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
 }
 
-// 4. Integrated Loading and Fallback Logic
+// 3. Execution & Global Responses loading
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
-      // Safety check: ensure valid start
+      // Ensure the result is at least a valid JSON object/array
       if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
-          throw new Error("Invalid Binary Map");
+          throw new Error("Malformed binary stream");
       }
 
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: Binary System Online.");
+      console.log("Genesis-AI: System Core V6.0 Active.");
     } catch (e) {
-      console.warn("Binary Error: " + e.message + ". Attempting raw recovery...");
+      console.warn("Binary Reconstruction Failed: " + e.message + ". Trying raw fallback...");
       try {
         const rawText = new TextDecoder().decode(buffer).trim();
         responses = JSON.parse(rawText);
         console.log("Genesis-AI: Raw Fallback Success.");
-      } catch (err) {
+      } catch (innerErr) {
         console.error("Critical: Model Integrity Compromised.");
-        // Emergency Fallback to SPT 1.0
+        // Emergency Fallback to Legacy SPT 1.0
         fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
           .then(res => res.json())
           .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Genesis-AI Connection Error.", err));
+  .catch(err => console.error("Genesis-AI: Connection failed.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
