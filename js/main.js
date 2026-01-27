@@ -225,16 +225,19 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V6.0 Final) ---
-// Precisely aligned with json2bin.c Version Injection Logic
+// --- XPDevs Genesis-AI Ultra-Decoder (V6.1 Elite) ---
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 
+/**
+ * Reconstructs JSON from XPDevs Binary format.
+ * Aligned with json2bin.c structural tokens and version injection.
+ */
 function decodeBinary(buffer) {
-    if (!buffer || buffer.byteLength === 0) return "";
+    if (!buffer || buffer.byteLength < 4) return "";
 
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
@@ -243,8 +246,9 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Signature Check (SIG_ULTRA: 0x58504456)
-    if (bytes.length >= 4 && view.getUint32(0, true) === 0x58504456) {
+    // 1. Precise Signature Check (SIG_ULTRA: 0x58504456)
+    // Matches: fwrite(&sig, 4, 1, dest) in json2bin.c
+    if (view.getUint32(0, true) === 0x58504456) {
         i = 4; 
     }
 
@@ -258,9 +262,8 @@ function decodeBinary(buffer) {
             jsonString += '"' + key + '"';
             i++;
 
-            // CRITICAL: json2bin.c special case for "ver" injection
-            // If we just wrote "ver", we must manually add the colon 
-            // because the binary skips it and goes straight to the version string.
+            // Handle json2bin.c Version Injection Exception:
+            // The compiler skips the colon after "ver" and injects the value immediately.
             if (key === "ver") {
                 jsonString += ":";
             }
@@ -268,15 +271,17 @@ function decodeBinary(buffer) {
         }
 
         switch(b) {
-            case 0x01: jsonString += "{"; i++; break;
-            case 0x02: jsonString += "}"; i++; break;
-            case 0x03: jsonString += ":"; i++; break;
-            case 0x04: jsonString += ","; i++; break;
-            case 0x05: jsonString += "["; i++; break;
-            case 0x06: jsonString += "]"; i++; break;
-            case 0x07: // T_STR (Unique XOR-encrypted string)
-                i++; // Skip 0x07
+            case 0x01: jsonString += "{"; i++; break; // T_START
+            case 0x02: jsonString += "}"; i++; break; // T_END
+            case 0x03: jsonString += ":"; i++; break; // T_SEP
+            case 0x04: jsonString += ","; i++; break; // T_NEXT
+            case 0x05: jsonString += "["; i++; break; // T_ARR_S
+            case 0x06: jsonString += "]"; i++; break; // T_ARR_E
+            case 0x07: // T_STR (XOR String + Null Terminator)
+                i++; // Move past T_STR token
                 let start = i;
+                
+                // Seek 0x00 terminator written by fputc(0x00, dest)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -288,7 +293,7 @@ function decodeBinary(buffer) {
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
-                // Sanitize for JSON (handles nested quotes and tech descriptions)
+                // Technical Sanity: Escape JSON-breaking characters
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -297,48 +302,54 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Step over 0x00
+                i++; // Skip the 0x00 byte
                 break;
             default:
-                i++; // Skip padding
+                i++; // Skip padding/nulls
                 break;
         }
     }
 
-    // Final Clean-up: Remove trailing commas before closing symbols
-    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
+    // 3. Final structural integrity check
+    let finalJson = jsonString.trim();
+    // Strip trailing commas before closing braces/brackets
+    finalJson = finalJson.replace(/,\s*([}\]])/g, '$1');
+    
+    return finalJson;
 }
 
-// 3. Execution & Global Responses loading
+// 4. Execution & Global System Loader
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Network Error"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
-      // Ensure the result is at least a valid JSON object/array
+      // Critical check: Did we actually get JSON or raw binary garbage?
       if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
-          throw new Error("Malformed binary stream");
+          throw new Error("Reconstruction resulted in invalid structure");
       }
 
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: System Core V6.0 Active.");
+      console.log("Genesis-AI: Binary Core V6.1 Active.");
     } catch (e) {
-      console.warn("Binary Reconstruction Failed: " + e.message + ". Trying raw fallback...");
+      console.warn("Binary Reconstruction Failed: " + e.message);
+      
+      // Fallback Attempt
       try {
         const rawText = new TextDecoder().decode(buffer).trim();
         responses = JSON.parse(rawText);
-        console.log("Genesis-AI: Raw Fallback Success.");
-      } catch (innerErr) {
-        console.error("Critical: Model Integrity Compromised.");
-        // Emergency Fallback to Legacy SPT 1.0
+        console.log("Genesis-AI: Raw Fallback Active.");
+      } catch (err) {
+        console.error("Critical: Model Corrupt.");
+        // Emergency Load of Legacy SPT 1.0
         fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
           .then(res => res.json())
           .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Genesis-AI: Connection failed.", err));
+  .catch(err => console.error("Genesis-AI Connection Error.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
