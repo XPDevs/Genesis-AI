@@ -230,62 +230,97 @@ function showBanModal() {
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
-const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10;
-
+/**
+ * XPDevs Genesis-AI Ultra-Robust Decoder V5.5
+ * Optimized for James Turner's Genesis-AI Ecosystem
+ */
 function decodeBinary(buffer) {
+    if (!buffer || buffer.byteLength === 0) return "";
+
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
     
+    // XPDevs Global Dictionary (Matches json2bin.c)
+    const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
+    const DICT_OFFSET = 0x10;
+    
+    let jsonString = "";
     let i = 0;
 
-    // 1. Signature Check
+    // 1. Signature Check (SIG_ULTRA: 0x58504456)
     if (bytes.length >= 4) {
-        if (view.getUint32(0, true) === 0x58504456) {
-            i = 4; 
+        try {
+            if (view.getUint32(0, true) === 0x58504456) {
+                i = 4; // Header verified, skip it
+            }
+        } catch (e) {
+            console.warn("Signature check failed, parsing from start.");
+            i = 0;
         }
     }
 
-    // 2. Token-based Reconstruction
+    // 2. Main Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Support (0x10+)
+        // Handle Dictionary Tokens (0x10 - 0x19)
+        // These are written as single bytes in your C compiler.
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
             i++; 
-        } else {
-            switch(b) {
-                case 0x01: jsonString += "{"; i++; break;
-                case 0x02: jsonString += "}"; i++; break;
-                case 0x03: jsonString += ":"; i++; break;
-                case 0x04: jsonString += ","; i++; break;
-                case 0x05: jsonString += "["; i++; break;
-                case 0x06: jsonString += "]"; i++; break;
-                case 0x07: // T_STR
-                    i++; // Skip T_STR token
-                    let start = i;
-                    while (i < bytes.length && bytes[i] !== 0x00) {
-                        i++;
-                    }
+            continue;
+        }
+
+        // Handle Structural Tokens & Unique Strings
+        switch(b) {
+            case 0x01: jsonString += "{"; i++; break;
+            case 0x02: jsonString += "}"; i++; break;
+            case 0x03: jsonString += ":"; i++; break;
+            case 0x04: jsonString += ","; i++; break;
+            case 0x05: jsonString += "["; i++; break;
+            case 0x06: jsonString += "]"; i++; break;
+            
+            case 0x07: // T_STR (Unique XOR-encrypted string)
+                i++; // Skip the 0x07 token
+                let start = i;
+                
+                // Seek the 0x00 null terminator written by fputc(0x00, dest)
+                // Added a safety check to prevent infinite loops on corrupt data
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
+                
+                try {
                     const chunk = bytes.slice(start, i);
                     const decrypted = new Uint8Array(chunk.length);
                     for (let j = 0; j < chunk.length; j++) {
                         decrypted[j] = chunk[j] ^ XOR_KEY;
                     }
-                    jsonString += '"' + decoder.decode(decrypted) + '"';
-                    i++; // Move past the 0x00 null terminator
-                    break;
-                default:
-                    i++; // Skip any 0x00 or padding that shouldn't be there
-                    break;
-            }
+                    
+                    // Escaping special characters for JSON safety
+                    let decodedStr = decoder.decode(decrypted);
+                    jsonString += '"' + decodedStr.replace(/"/g, '\\"') + '"';
+                } catch (e) {
+                    console.error("String block decode failed at byte " + start);
+                    jsonString += '""'; // Fallback to empty string to keep JSON valid
+                }
+                
+                i++; // Step over the 0x00 terminator
+                break;
+
+            default:
+                // This is the "Robust" part: if the byte is 0x00 (padding) 
+                // or an unknown token, we just skip it and keep looking.
+                i++; 
+                break;
         }
     }
-    return jsonString.trim();
+
+    // Final Clean-up: Remove any trailing commas that might have sneaked in
+    // and trim whitespace.
+    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
 }
 
 // 3. Execution & Fallback logic
