@@ -225,7 +225,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V5.6 Final) ---
+// --- XPDevs Genesis-AI Ultra-Decoder (V5.8) ---
 // Precisely aligned with json2bin.c for James Turner (XPDevs)
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
@@ -253,6 +253,7 @@ function decodeBinary(buffer) {
         const b = bytes[i];
         
         // Dictionary Check (0x10+)
+        // In json2bin.c, dictionary matches are single-byte tokens
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
             i++;
@@ -268,10 +269,10 @@ function decodeBinary(buffer) {
             case 0x05: jsonString += "["; i++; break;
             case 0x06: jsonString += "]"; i++; break;
             case 0x07: // Unique Data String (T_STR)
-                i++; // Skip 0x07
+                i++; // Skip 0x07 token
                 let start = i;
                 
-                // Find 0x00 null terminator
+                // Seek the 0x00 null terminator
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -283,51 +284,65 @@ function decodeBinary(buffer) {
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
-                // JSON safety: escape quotes and backslashes
-                jsonString += '"' + decodedStr.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
                 
-                i++; // Step over 0x00
+                // ESCAPING LOGIC: This prevents "expected ':'" errors by 
+                // ensuring the reconstructed JSON string is valid.
+                let sanitized = decodedStr
+                    .replace(/\\/g, "\\\\") // Escape backslashes first
+                    .replace(/"/g, '\\"')   // Escape quotes
+                    .replace(/\n/g, "\\n")  // Escape newlines
+                    .replace(/\r/g, "\\r")  // Escape carriage returns
+                    .replace(/\t/g, "\\t"); // Escape tabs
+                
+                jsonString += '"' + sanitized + '"';
+                
+                i++; // Step over 0x00 terminator
                 break;
             default:
-                // Skip padding or unexpected 0x00 bytes
+                // Skip padding or unexpected nulls
                 i++;
                 break;
         }
     }
 
-    // Clean up any potential malformations from the compression logic
+    // 3. Final structural fixes
     let finalJson = jsonString.trim();
-    // Fix common trailing comma issues in automated binary mapping
+    // Fix trailing commas which crash JSON.parse
     finalJson = finalJson.replace(/,\s*([}\]])/g, '$1');
     
     return finalJson;
 }
 
-// 3. Execution Logic
+// 4. Execution & Loader
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
+      
+      // Verification: Log a small snippet to console to check alignment
+      if (decoded.length > 50) {
+          console.log("Genesis-AI: Stream decoded. Sample: " + decoded.substring(0, 50) + "...");
+      }
+
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: Binary Core Active.");
+      console.log("Genesis-AI: Binary Core V5.8 Active.");
     } catch (e) {
-      console.warn("Binary Reconstruction Failed: " + e.message);
-      // Raw Fallback
+      console.warn("Binary Error: " + e.message + ". Checking fallback...");
       try {
         const rawText = new TextDecoder().decode(buffer).trim();
         responses = JSON.parse(rawText);
-        console.log("Genesis-AI: Raw Fallback Active.");
+        console.log("Genesis-AI: Raw JSON Fallback used.");
       } catch (err) {
         console.error("Critical: Model Corrupt.");
-        // Emergency Fallback to 1.0 JSON
+        // Emergency Fallback
         fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-          .then(r => r.json())
+          .then(res => res.json())
           .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Network Error:", err));
+  .catch(err => console.error("Genesis-AI: Connection failed.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
