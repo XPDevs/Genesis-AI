@@ -2,7 +2,7 @@
 
 ## Introduction
 Genesis-AI is an experimental, web-based artificial intelligence platform created by XPDevs.  
-It represents a new approach to lightweight AI design — replacing traditional machine learning models with human-readable JSON files that define the AI’s entire behavior and responses.
+It represents a new approach to lightweight AI design — replacing traditional machine learning models with a custom binary format and human-readable JSON files that define the AI’s entire behavior and responses.
 
 Unlike other systems that require users to install software, manage APIs, or process data on remote servers, Genesis-AI runs entirely within the web browser. Users simply visit the website and begin interacting instantly, with no downloads, no setup, and no external dependencies.
 
@@ -28,32 +28,41 @@ Users are encouraged to explore its logic, test boundaries, and contribute ideas
 
 ## How It Works
 Genesis-AI functions entirely on client-side code, meaning:
-- When a user visits the website, the browser loads the HTML, CSS, and JavaScript files.  
-- The AI “model” (called a **modal**) is represented as one or more JSON files containing predefined data, including:
-  - Example questions and responses.  
-  - Contextual triggers and keywords.  
-  - Optional personality or tone parameters.  
+- When a user visits the website, the browser loads the HTML, CSS, and JavaScript files.
+- The AI “model” (called a **modal**) is primarily a custom, compressed binary file (`.bin`) for maximum performance. This binary is decoded in the browser.
+- The system also supports human-readable JSON files, which are ideal for creating and testing custom modals.
+- The modal contains predefined data, including:
+  - Keywords, questions, and responses.
+  - Contextual triggers.
+  - Personality or tone parameters.
 
-The JavaScript layer reads these JSON files, matches user input to structured rules, and returns the most suitable response.  
+The JavaScript engine decodes the modal, performs advanced pattern matching against user input (going beyond simple key-value lookups), and can even combine multiple relevant responses into a single, coherent answer.
 This method removes the need for neural processing or external APIs while keeping every behavior transparent to the public.
 
 ## Features
-- **Web-Based AI:** Runs entirely inside the browser — no installation, no servers.  
-- **Instant Access:** Visit the website and start chatting immediately.  
-- **JSON-Driven Behavior:** All intelligence is defined in simple, editable JSON structures.  
-- **Lightweight Performance:** Loads in seconds even on slower networks.  
-- **Safety Filters:** Detects unsafe messages and automatically prevents their display.  
-- **Privacy by Design:** No user messages are stored, logged, or transmitted anywhere.  
-- **Light & Dark Modes:** Users can toggle between both instantly for better readability.  
-- **Cross-Platform Accessibility:** Works on most desktop systems running modern browsers.  
-- **Error Handling System:** Provides clear messages for mobile access, load issues, and safety violations.  
+- **Web-Based & Serverless:** Runs entirely inside the browser — no installation, no servers.
+- **Instant Access:** Visit the website and start chatting immediately with no setup.
+- **Binary & JSON Modals:** AI behavior is defined in a high-performance binary format or editable JSON.
+- **Advanced Chat Management:** Create, rename, delete, and pin conversations.
+- **Shareable Conversations:** Generate unique, shareable links for your chat sessions.
+- **Lightweight Performance:** Loads in seconds and responds instantly.
+- **Tiered Safety System:** Detects unsafe messages and applies a tiered ban system for repeat violations.
+- **Privacy by Design:** No user messages are stored, logged, or transmitted.
+- **Customizable Themes:** Switch between Light and Dark modes, or enable Auto-Theming based on the time of day.
+- **Text-to-Speech:** Listen to the AI's responses with a single click.
+- **Built-in Calculator:** Solves mathematical expressions directly in the chat.
+- **Developer Mode:** A hidden mode for power users to load custom AI modals (`.json` or `.bin`) for a session.
+- **Cross-Platform & Mobile Friendly:** Works on all modern desktop and mobile browsers.
+- **Robust Error Handling:** Provides clear messages for load issues and safety violations.
 
 ## Appearance and Interface
 Genesis-AI provides a clean, minimal interface built for focus and accessibility.  
 The chat layout adapts dynamically, offering:
 - **Theme Toggle:** A visible switch between *Light Mode* and *Dark Mode* for user comfort.  
+- **Auto-Theming:** An option to automatically sync the theme with the time of day.
 - **Text Emphasis:** Responses are displayed in clearly readable text, maintaining accessibility standards.  
 - **Adaptive Layout:** Automatically adjusts spacing and scaling for clarity on desktop screens.  
+- **Message Actions:** Easily copy or listen to AI responses using integrated buttons.
 
 This design approach reflects XPDevs’ principle of simplicity — removing unnecessary clutter and keeping interactions smooth, readable, and human.
 
@@ -71,19 +80,32 @@ Once the page loads:
 If a response cannot be generated, an appropriate error message will appear (see below).  
 Because everything is handled in-browser, you can close or refresh the page at any time without data loss or security risk.
 
+## Genesis AI Studio
+For developers and power users, XPDevs offers **Genesis AI Studio** — a comprehensive environment for testing, tuning, and managing Genesis AI models.
+
+**Features:**
+- **Playground:** Test prompts and system instructions in real-time with adjustable parameters.
+- **API Key Management:** Generate and manage keys for integrating Genesis AI into external applications.
+- **Model Tuning:** Create custom tuned models based on existing baselines.
+- **Batch Testing:** Run prompts against multiple inputs to validate consistency.
+- **Prompt Library:** Save and organize your system prompts.
+
+Access the Studio here:
+**[https://xpdevs.github.io/Genesis-AI/developers/AI-Studio](https://xpdevs.github.io/Genesis-AI/developers/AI-Studio)**
+
 ## Architecture Overview
 Genesis-AI is structured around a three-layer design:
 
 | Layer | Description |
 |-------|--------------|
 | **Frontend (UI)** | HTML/CSS layout built for responsiveness and simplicity. |
-| **Logic Engine** | JavaScript handler that interprets input and selects appropriate responses. |
-| **Model (Modal)** | JSON-based files that define how the AI should act, think, and respond. |
+| **Logic Engine** | JavaScript handler that decodes modals, manages state, and selects appropriate responses. |
+| **Model (Modal)** | Compressed binary (`.bin`) or JSON files that define the AI's knowledge base and responses. |
 
 This structure separates presentation, logic, and data, allowing developers to update each component independently without breaking the overall system.
 
-## JSON Model (Modal) Structure
-Each JSON modal file defines AI behavior in a structured, human-readable format.  
+## AI Model (Modal) Structure
+While the primary distribution format is a compressed binary (`.bin`) for performance, the source of this binary is a human-readable JSON file. This allows developers to easily define and extend the AI's behavior.
 A simplified example might look like:
 
 ```json
@@ -103,28 +125,7 @@ This makes Genesis-AI easily expandable — developers can create new modals (su
 Genesis-AI includes built-in feedback for specific conditions.  
 These messages help users understand what has gone wrong and how to fix it.
 
-### 1. Mobile Device Error
-**Message:**
-> “Genesis AI is not functional on mobile devices. Please use a desktop computer to access this application.”
-
-**Meaning:**  
-Displayed when Genesis-AI detects a mobile device. The interface and performance are optimized for desktop use, so mobile access is disabled to prevent display issues.
-
-**Suggested Action:**  
-Use a desktop or laptop with a modern web browser.
-
-### 2. Model Load Failure
-**Message:**
-> “Failed to load”  
-> *Followed by a modal name such as:* **Genesis-SPT-1.0**
-
-**Meaning:**  
-The browser failed to load the AI model file. This could be due to a network issue, missing JSON file, or caching error.
-
-**Suggested Action:**  
-Check your internet connection or refresh the page. If the problem persists, the model file may be temporarily unavailable.
-
-### 3. AI Safety Violation
+### 1. AI Safety Violation
 **Message:**
 > “This message violates AI safety and use policies. Please try again.”
 
@@ -135,9 +136,9 @@ Genesis-AI automatically deletes the unsafe input and blocks the response to mai
 **Suggested Action:**  
 Avoid sending restricted or unsafe content. Continue chatting normally after the alert.
 
-### 4. Processing Failure
+### 2. Processing Failure
 **Message:**
-> “Sorry, I couldn’t process that.”
+> “I’m not quite sure I follow. Could you give me a bit more detail?”
 
 **Meaning:**  
 A general fallback message shown when Genesis-AI cannot find a valid response or understand the input. This is the most common error message during normal use.
@@ -149,10 +150,8 @@ Try rephrasing the question or simplifying your message.
 
 | Error Message | Meaning | Suggested Action |
 |----------------|----------|------------------|
-| Genesis AI is not functional on mobile devices. | The site is being accessed on mobile. | Switch to a desktop computer. |
-| Failed to load *(e.g., Genesis-SPT-1.0)* | The AI model failed to load. | Refresh the page or check connection. |
 | This message violates AI safety and use policies. | Unsafe or banned input detected. | Remove restricted words and retry. |
-| Sorry, I couldn’t process that. | The AI couldn’t generate a response. | Rephrase or simplify your message. |
+| I’m not quite sure I follow. Could you give me a bit more detail? | The AI couldn’t generate a response. | Rephrase or simplify your message. |
 
 ## Data and Privacy
 Genesis-AI prioritizes privacy:
@@ -180,12 +179,11 @@ These ideas shape both the interface and the technology behind Genesis-AI.
 
 ## Terms and Policies
 By using Genesis-AI, you agree to the following official documents:
-- **[Terms of Service](https://xpdevs.github.io/terms-of-service)**  
-- **[Privacy Policy](https://xpdevs.github.io/Genesis-AI/privacy-policy)**
+- **[Terms of Service](https://xpdevs.github.io/legal/terms-of-service)**  
+- **[Privacy Policy](https://xpdevs.github.io/Genesis-AI/legal/privacy-policy)**
 
 These policies explain how Genesis-AI operates, including acceptable use, safety rules, and privacy standards.
 
 ## Contact
 For information, suggestions, or inquiries:  
 Visit the [XPDevs official website](https://xpdevs.github.io/) for updates, contact options, and related projects.
-
