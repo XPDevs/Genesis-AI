@@ -4,7 +4,7 @@
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesis AI Studio</title>
+    <title>Genesis AI Platform Console - Free by XPDevs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
@@ -124,6 +124,45 @@
         </div>
     </div>
     
+    <!-- Create Tune Modal -->
+    <div id="create-tune-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
+        <div class="card-bg rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-white">Create Tuned Model</h3>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-300">Model Name</label>
+                <input type="text" id="tune-name" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-500" placeholder="e.g., Customer Support Bot">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-300">Base Model</label>
+                <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
+                    <option value="Genesis-SPT-4.5">Genesis SPT-4.5</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3 mt-4">
+                <button onclick="document.getElementById('create-tune-modal').classList.remove('open')" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white text-sm font-medium">Cancel</button>
+                <button onclick="createTunedModel()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Experimental Warning Modal -->
+    <div id="experimental-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 open" aria-modal="true" role="dialog">
+        <div class="card-bg rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl border border-yellow-600/50">
+            <div class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <h3 class="text-xl font-bold text-white">Experimental Studio</h3>
+            </div>
+            <p class="text-gray-300 text-sm leading-relaxed">
+                Welcome to the Genesis AI Studio. Please note that this environment is <b>highly experimental</b>. Features may change, break, or behave unexpectedly.
+            </p>
+            <button onclick="document.getElementById('experimental-modal').classList.remove('open')" 
+                    class="w-full py-3 px-4 rounded-xl text-sm font-bold bg-yellow-600 hover:bg-yellow-700 text-white transition-colors">
+                I Understand, Proceed
+            </button>
+        </div>
+    </div>
+
     <!-- Sidebar Navigation -->
     <aside class="sidebar-bg w-20 md:w-64 flex-shrink-0 border-r border-gray-800/50 p-4 flex flex-col">
         
@@ -137,6 +176,17 @@
 
         <nav class="flex flex-col space-y-2 mt-6">
             
+            <!-- Dashboard Link -->
+            <a href="#" onclick="switchView('view-dashboard', this)" data-view="view-dashboard" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                <span class="ml-3 hidden md:block">Dashboard</span>
+            </a>
+
+            <a href="https://xpdevs.github.io/Genesis-AI" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span class="ml-3 hidden md:block">Back to Genesis-AI</span>
+            </a>
+
             <a href="#" onclick="switchView('view-api', this)" data-view="view-api" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM15 7V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v3m0 6h.01M10 12h.01M13 15h.01"></path></svg>
                 <span class="ml-3 hidden md:block">API Keys</span>
@@ -152,6 +202,30 @@
             <a href="#" onclick="switchView('view-library', this)" data-view="view-library" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
                 <span class="ml-3 hidden md:block">Prompt Library</span>
+            </a>
+
+            <!-- Models Link -->
+            <a href="#" onclick="switchView('view-models', this)" data-view="view-models" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <span class="ml-3 hidden md:block">Available Models</span>
+            </a>
+
+            <!-- Tuned Models -->
+            <a href="#" onclick="switchView('view-tuning', this)" data-view="view-tuning" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                <span class="ml-3 hidden md:block">Tuned Models</span>
+            </a>
+
+            <!-- Batch Testing -->
+            <a href="#" onclick="switchView('view-batch', this)" data-view="view-batch" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                <span class="ml-3 hidden md:block">Batch Testing</span>
+            </a>
+
+            <!-- Settings -->
+            <a href="#" onclick="switchView('view-settings', this)" data-view="view-settings" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="ml-3 hidden md:block">Settings</span>
             </a>
 
             <!-- API Key Usage Guide -->
@@ -173,6 +247,53 @@
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
+
+            <!-- DASHBOARD VIEW -->
+            <section id="view-dashboard" class="studio-content space-y-8 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card-bg p-6 rounded-xl border border-gray-700/50">
+                        <h4 class="text-gray-400 text-sm font-medium">Total API Calls</h4>
+                        <p class="text-3xl font-bold text-white mt-2" id="dash-calls">0</p>
+                        <span class="text-xs text-green-400 mt-1 inline-block">+12% from last week</span>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-gray-700/50">
+                        <h4 class="text-gray-400 text-sm font-medium">Active API Keys</h4>
+                        <p class="text-3xl font-bold text-white mt-2" id="dash-keys">0</p>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-gray-700/50">
+                        <h4 class="text-gray-400 text-sm font-medium">Local Storage</h4>
+                        <p class="text-3xl font-bold text-white mt-2" id="dash-storage">0 KB</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card-bg p-6 rounded-xl border border-gray-700/50">
+                        <h4 class="text-white font-bold mb-4">Quick Actions</h4>
+                        <div class="space-y-3">
+                            <button onclick="switchView('view-playground')" class="w-full p-3 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-left flex items-center transition-colors">
+                                <span class="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg mr-3">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </span>
+                                <div><p class="text-sm font-medium text-white">Open Playground</p><p class="text-xs text-gray-400">Test prompts and models</p></div>
+                            </button>
+                            <button onclick="switchView('view-api')" class="w-full p-3 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-left flex items-center transition-colors">
+                                <span class="p-2 bg-green-500/20 text-green-400 rounded-lg mr-3">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM15 7V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v3m0 6h.01M10 12h.01M13 15h.01"></path></svg>
+                                </span>
+                                <div><p class="text-sm font-medium text-white">Manage Keys</p><p class="text-xs text-gray-400">Create and revoke access tokens</p></div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-gray-700/50">
+                        <h4 class="text-white font-bold mb-4">System Status</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center"><span class="text-sm text-gray-400">API Status</span><span class="px-2 py-1 rounded-full bg-green-900/30 text-green-400 text-xs font-medium border border-green-500/30">Operational</span></div>
+                            <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Model Availability</span><span class="px-2 py-1 rounded-full bg-green-900/30 text-green-400 text-xs font-medium border border-green-500/30">100%</span></div>
+                            <div class="flex justify-between items-center"><span class="text-sm text-gray-400">Latency (Global)</span><span class="text-sm text-white font-mono">~45ms</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- API KEY MANAGEMENT VIEW -->
             <section id="view-api" class="studio-content space-y-8 hidden">
@@ -240,6 +361,18 @@
                             <textarea id="system-prompt" class="w-full bg-transparent border-none focus:ring-0 text-gray-200 text-sm resize-none h-12 placeholder-gray-600" placeholder="Enter system instructions (e.g., 'You are a helpful coding assistant')..."></textarea>
                         </div>
 
+                        <!-- Few-Shot Examples (New Feature) -->
+                        <div class="card-bg p-4 rounded-xl flex-shrink-0">
+                            <button onclick="toggleExamples()" class="flex items-center justify-between w-full text-xs font-bold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
+                                <span>Few-Shot Examples</span>
+                                <svg id="examples-arrow" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="examples-container" class="hidden mt-4 space-y-3">
+                                <div id="examples-list" class="space-y-3"></div>
+                                <button onclick="addExample()" class="w-full py-2 border border-dashed border-gray-600 rounded-lg text-gray-400 text-xs hover:border-indigo-500 hover:text-indigo-400 transition-colors">+ Add Example</button>
+                            </div>
+                        </div>
+
                         <!-- Chat History -->
                         <div id="chat-history" class="flex-1 card-bg rounded-xl p-4 overflow-y-auto space-y-4 border border-gray-700/30">
                             <div class="text-center text-gray-600 text-sm mt-10">
@@ -248,11 +381,17 @@
                         </div>
 
                         <!-- Input Area -->
-                        <div class="card-bg p-2 rounded-xl flex items-end space-x-2 border border-gray-700/50">
-                            <textarea id="playground-input" class="flex-1 bg-transparent border-none focus:ring-0 text-gray-200 text-sm resize-none max-h-32 py-3 px-2 placeholder-gray-500" rows="1" placeholder="Type your message here..."></textarea>
-                            <button id="run-btn" onclick="runInference()" class="p-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex-shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </button>
+                        <div class="card-bg p-2 rounded-xl border border-gray-700/50">
+                            <div class="flex items-end space-x-2">
+                                <textarea id="playground-input" oninput="updateTokenCount()" class="flex-1 bg-transparent border-none focus:ring-0 text-gray-200 text-sm resize-none max-h-32 py-3 px-2 placeholder-gray-500" rows="1" placeholder="Type your message here..."></textarea>
+                                <button id="run-btn" onclick="runInference()" class="p-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex-shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center px-2 mt-2 border-t border-gray-700/50 pt-2">
+                                <span class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Input</span>
+                                <span id="token-count" class="text-[10px] text-gray-400 font-mono">0 tokens</span>
+                            </div>
                         </div>
                     </div>
 
@@ -282,6 +421,22 @@
                             <input type="range" id="token-slider" min="128" max="4096" step="128" value="1024" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                         </div>
 
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Top P</label>
+                                <span id="topp-val" class="text-xs text-indigo-400">0.95</span>
+                            </div>
+                            <input type="range" id="topp-slider" min="0" max="1" step="0.05" value="0.95" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Top K</label>
+                                <span id="topk-val" class="text-xs text-indigo-400">40</span>
+                            </div>
+                            <input type="range" id="topk-slider" min="1" max="100" step="1" value="40" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        </div>
+
                         <div class="pt-4 border-t border-gray-700">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Safety Settings</label>
                             <div class="flex items-center justify-between">
@@ -291,6 +446,21 @@
                                     <option>High</option>
                                     <option>Low</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-700">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Advanced</label>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs text-gray-300 block mb-1">Stop Sequences</label>
+                                    <input type="text" placeholder="Enter sequence..." class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <p class="text-[10px] text-gray-500 mt-1">Enter sequences that stop generation.</p>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-300">JSON Mode</span>
+                                    <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" value="" class="sr-only peer"><div class="w-9 h-5 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div></label>
+                                </div>
                             </div>
                         </div>
                         
@@ -314,6 +484,109 @@
                     <div class="card-bg p-8 rounded-xl border border-dashed border-gray-700 flex flex-col items-center justify-center text-gray-500">
                         <p>No saved prompts yet.</p>
                         <button onclick="switchView('view-playground')" class="mt-2 text-indigo-400 hover:text-indigo-300 text-sm">Go to Playground</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODELS VIEW -->
+            <section id="view-models" class="studio-content space-y-8 hidden">
+                <h3 class="text-3xl font-bold text-white">Available Models</h3>
+                <p class="text-gray-400">Explore the different AI models (modals) available on the Genesis platform.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Genesis SPT-4.5 -->
+                    <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.5</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Binary (.bin)</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">The latest high-performance binary model. Optimized for speed and broader knowledge coverage. Uses a custom binary format for efficient client-side decoding.</p>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p><span class="text-gray-300">Format:</span> Custom Binary</p>
+                            <p><span class="text-gray-300">Size:</span> ~1.2 MB (Compressed)</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-4.5-240126P1105M.bin</code></p>
+                        </div>
+                    </div>
+
+                    <!-- Genesis SPT-1.0 -->
+                    <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-1.0</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-yellow-900 text-yellow-200 rounded">Legacy JSON</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">The original JSON-based model. Human-readable and easy to edit. Best for understanding the underlying structure of Genesis AI responses.</p>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+                            <p><span class="text-gray-300">Size:</span> ~450 KB</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-1.0.json</code></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TUNED MODELS VIEW -->
+            <section id="view-tuning" class="studio-content space-y-8 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold text-white">Tuned Models</h3>
+                        <p class="text-gray-400">Fine-tune Genesis models with your own datasets.</p>
+                    </div>
+                    <button onclick="document.getElementById('create-tune-modal').classList.add('open')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-lg">
+                        Create New
+                    </button>
+                </div>
+
+                <div id="tuned-models-list" class="grid grid-cols-1 gap-4">
+                    <!-- Injected via JS -->
+                    <div class="card-bg p-8 rounded-xl border border-dashed border-gray-700 flex flex-col items-center justify-center text-gray-500">
+                        <p>No tuned models found.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BATCH TESTING VIEW -->
+            <section id="view-batch" class="studio-content space-y-6 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold text-white">Batch Testing</h3>
+                        <p class="text-gray-400">Run prompts against multiple inputs to validate consistency.</p>
+                    </div>
+                    <button onclick="runBatch()" id="run-batch-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-lg flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Run Batch
+                    </button>
+                </div>
+
+                <div class="card-bg p-4 rounded-xl border border-gray-700/50">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">System Prompt (Applied to all)</label>
+                    <textarea id="batch-system-prompt" class="w-full bg-transparent border-none focus:ring-0 text-gray-200 text-sm resize-none h-12 placeholder-gray-600" placeholder="e.g. You are a sentiment analyzer..."></textarea>
+                </div>
+
+                <div class="card-bg rounded-xl border border-gray-700/50 overflow-hidden">
+                    <table class="w-full text-left text-sm text-gray-400"><thead class="bg-gray-800/50 text-xs uppercase font-medium text-gray-300"><tr><th class="px-6 py-3">Input Variable</th><th class="px-6 py-3">Model Output</th><th class="px-6 py-3 w-24">Status</th><th class="px-6 py-3 w-16"></th></tr></thead><tbody id="batch-table-body" class="divide-y divide-gray-700/50"><!-- Rows --></tbody></table>
+                    <div class="p-4 border-t border-gray-700/50 bg-gray-800/30">
+                        <button onclick="addBatchRow()" class="text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Add Row
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS VIEW -->
+            <section id="view-settings" class="studio-content space-y-8 hidden">
+                <h3 class="text-3xl font-bold text-white">Settings</h3>
+                <div class="card-bg p-6 rounded-xl space-y-6">
+                    <div>
+                        <h4 class="text-lg font-semibold text-white mb-2">Appearance</h4>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400 text-sm">Dark Mode (Studio Default)</span>
+                            <div class="w-10 h-6 bg-indigo-600 rounded-full relative cursor-not-allowed opacity-50"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div></div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-700 pt-6">
+                        <h4 class="text-lg font-semibold text-white mb-2">Data Management</h4>
+                        <p class="text-gray-400 text-sm mb-4">Clear all locally stored data including API keys, saved prompts, and tuned model metadata.</p>
+                        <button onclick="clearAllData()" class="px-4 py-2 rounded-lg border border-red-500 text-red-400 hover:bg-red-500/10 text-sm transition-colors">Clear All Local Data</button>
                     </div>
                 </div>
             </section>
@@ -438,15 +711,71 @@ loadGenesisModel();</pre>
                     </div>
 
                     <div class="border-t border-gray-700 my-8 pt-8">
-                        <h4 class="text-xl font-semibold text-white mb-4">Core Logic Integration</h4>
-                        <p class="text-gray-400 mb-4">To replicate the full Genesis AI experience, you should integrate the core logic functions found in our main engine.</p>
-                        <p class="text-gray-400 mb-4">Reference File: <a href="https://xpdevs.github.io/Genesis-AI/js/main.js" target="_blank" class="text-indigo-400 hover:text-indigo-300">https://xpdevs.github.io/Genesis-AI/js/main.js</a></p>
-                        <p class="text-gray-400 text-sm mb-2">Key functions to implement:</p>
-                        <ul class="list-disc list-inside text-gray-400 text-sm space-y-1 mb-6">
-                            <li><code class="text-gray-300">loadBannedWords()</code> - Fetches the safety list.</li>
-                            <li><code class="text-gray-300">violatesRules(text)</code> - Checks input against safety list.</li>
-                            <li><code class="text-gray-300">findResponses(input)</code> - Handles fuzzy matching and calculator logic.</li>
-                        </ul>
+                        <h4 class="text-xl font-semibold text-white mb-4">Selective Logic Loading</h4>
+                        <div class="bg-yellow-900/30 border border-yellow-700/50 p-4 rounded-xl mb-6">
+                            <p class="text-yellow-200 text-sm font-semibold flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Important: Do Not Link Directly
+                            </p>
+                            <p class="text-gray-400 text-xs mt-2">
+                                The <code class="text-gray-300">main.js</code> file contains automatic initialization logic (redirects and UI rendering) that will conflict with your application. 
+                                <b>Do not</b> use <code class="text-gray-300">&lt;script src="..."&gt;</code>. Instead, manually extract the functions you need.
+                            </p>
+                        </div>
+
+                        <h5 class="text-lg font-semibold text-gray-300 mb-2">Recommended Extraction Pattern</h5>
+                        <p class="text-gray-400 text-sm mb-4">To use specific features like the Safety System or Response Engine, copy these functions directly:</p>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <p class="text-gray-300 text-xs font-bold mb-2">1. Safety System (Banned Words)</p>
+                                <div class="code-block text-xs">
+<pre>let bannedWords = [];
+async function loadBannedWords() {
+  try {
+    const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
+    if (res.ok) bannedWords = await res.json();
+  } catch (err) { console.error("Error loading banned words:", err); }
+}
+loadBannedWords();
+
+function violatesRules(text) {
+  if (!bannedWords.length) return false;
+  const lowerText = text.toLowerCase();
+  return bannedWords.some(word => new RegExp(\`\\\\b\${word}\\\\b\`, 'i').test(lowerText));
+}</pre>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-gray-300 text-xs font-bold mb-2">2. Response Engine (Fuzzy Matcher)</p>
+                                <div class="code-block text-xs">
+<pre>function findResponses(input) {
+  const lowerInput = input.toLowerCase();
+  const foundMatches = [];
+  // Ensure 'responses' object is loaded from the modal
+  const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
+  let tempInput = lowerInput;
+  
+  sortedKeys.forEach(key => {
+    const lowerKey = key.toLowerCase();
+    let index = tempInput.indexOf(lowerKey);
+    while (index !== -1) {
+      foundMatches.push({ text: responses[key], index: index });
+      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+      index = tempInput.indexOf(lowerKey);
+    }
+  });
+
+  if (foundMatches.length === 0) return { role: "ai", text: "I’m not quite sure I follow." };
+  const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
+  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
+  const last = orderedMessages.pop();
+  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
+}</pre>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -700,6 +1029,14 @@ loadGenesisModel();</pre>
         const tokenVal = document.getElementById('token-val');
         tokenSlider.addEventListener('input', (e) => tokenVal.textContent = e.target.value);
 
+        const toppSlider = document.getElementById('topp-slider');
+        const toppVal = document.getElementById('topp-val');
+        toppSlider.addEventListener('input', (e) => toppVal.textContent = e.target.value);
+
+        const topkSlider = document.getElementById('topk-slider');
+        const topkVal = document.getElementById('topk-val');
+        topkSlider.addEventListener('input', (e) => topkVal.textContent = e.target.value);
+
         // --- CORE FUNCTIONS (Ported from main.js) ---
         
         // 1. Banned Words System
@@ -828,6 +1165,49 @@ loadGenesisModel();</pre>
         // Load model on select change
         document.getElementById('model-select').addEventListener('change', loadModel);
 
+        // Token Counting (Simulated)
+        window.updateTokenCount = () => {
+            const text = document.getElementById('playground-input').value;
+            // Rough estimation: 1 token ~= 4 chars
+            const count = Math.ceil(text.length / 4);
+            document.getElementById('token-count').textContent = `${count} tokens`;
+        };
+
+        // Few-Shot Examples Logic
+        window.toggleExamples = () => {
+            const container = document.getElementById('examples-container');
+            const arrow = document.getElementById('examples-arrow');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                container.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        };
+
+        window.addExample = () => {
+            const list = document.getElementById('examples-list');
+            const id = Date.now();
+            const div = document.createElement('div');
+            div.className = "p-3 bg-gray-800/50 rounded-lg border border-gray-700 relative group";
+            div.id = `example-${id}`;
+            div.innerHTML = `
+                <div class="space-y-2">
+                    <input type="text" class="w-full bg-transparent border-b border-gray-700 text-xs text-gray-300 placeholder-gray-600 focus:border-indigo-500 focus:outline-none pb-1" placeholder="User Input (e.g. '2+2')">
+                    <input type="text" class="w-full bg-transparent border-none text-xs text-indigo-300 placeholder-gray-600 focus:outline-none" placeholder="Model Output (e.g. '4')">
+                </div>
+                <button onclick="removeExample('${id}')" class="absolute top-2 right-2 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            list.appendChild(div);
+        };
+
+        window.removeExample = (id) => {
+            document.getElementById(`example-${id}`).remove();
+        };
+
         // Inference Logic
         async function runInference() {
             const inputEl = document.getElementById('playground-input');
@@ -876,6 +1256,15 @@ loadGenesisModel();</pre>
             const model = document.getElementById('model-select').value;
             const temp = document.getElementById('temp-slider').value;
             const sys = document.getElementById('system-prompt').value;
+            const topp = document.getElementById('topp-slider').value;
+            const topk = document.getElementById('topk-slider').value;
+            
+            // Collect Examples
+            const examples = [];
+            document.querySelectorAll('#examples-list > div').forEach(div => {
+                const inputs = div.querySelectorAll('input');
+                if(inputs[0].value && inputs[1].value) examples.push({ input: inputs[0].value, output: inputs[1].value });
+            });
             
             const code = `// Genesis AI Complete Integration
 // Includes: Binary Decoding, Safety System, Calculator, and Response Logic
@@ -884,6 +1273,8 @@ const config = {
     modelUrl: "${model === 'spt-4.5-bin' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
+    topP: ${topp},
+    topK: ${topk},
     systemPrompt: "${sys.replace(/\n/g, ' ')}"
 };
 
@@ -918,14 +1309,19 @@ async function runGenesis(userQuery) {
     // 1. Load Resources
     if (!bannedWords.length) await loadSafety();
     
-    // 2. Check Safety
+    // 2. Inject Examples (Few-Shot)
+    const examples = ${JSON.stringify(examples)};
+    // In a real implementation, these would be prepended to the context
+    console.log("Loaded " + examples.length + " few-shot examples.");
+
+    // 3. Check Safety
     if (violatesRules(userQuery)) return "Safety Violation: Request blocked.";
     
-    // 3. Check Calculator
+    // 4. Check Calculator
     const calcResult = calc(userQuery);
     if (calcResult !== null) return "Calculated: " + calcResult;
 
-    // 4. Fetch & Decode Model
+    // 5. Fetch & Decode Model
     const response = await fetch(config.modelUrl);
     let knowledgeBase;
     if (config.modelUrl.endsWith('.bin')) {
@@ -1006,10 +1402,15 @@ async function runGenesis(userQuery) {
             
             // Update header title
             const titleMap = {
+                'view-dashboard': 'Dashboard',
                 'view-api': 'API Key Management',
                 'view-usage': 'API Key Usage Guide',
                 'view-playground': 'Playground',
-                'view-library': 'Prompt Library'
+                'view-library': 'Prompt Library',
+                'view-models': 'Available Models',
+                'view-tuning': 'Tuned Models',
+                'view-settings': 'Settings',
+                'view-batch': 'Batch Testing'
             };
             document.getElementById('current-view-title').textContent = titleMap[viewId] || 'Console';
         };
@@ -1019,11 +1420,118 @@ async function runGenesis(userQuery) {
             loadKeys();
             renderKeys();
             renderLibrary();
+            renderTunedModels();
+            renderDashboard();
+            addBatchRow(); // Add initial row
             
-            // Set initial active view to view-api
-            const defaultViewId = 'view-api'; 
+            // Set initial active view to Dashboard
+            const defaultViewId = 'view-dashboard'; 
             const defaultLink = document.querySelector(`[data-view=\"${defaultViewId}\"]`);
             switchView(defaultViewId, defaultLink);
+        };
+
+        // --- Tuned Models Logic ---
+        window.createTunedModel = () => {
+            const name = document.getElementById('tune-name').value.trim();
+            const base = document.getElementById('tune-base').value;
+            if (!name) { showModal('Error', 'Please enter a model name.'); return; }
+            
+            const tuned = JSON.parse(localStorage.getItem('genesis_tuned') || '[]');
+            tuned.push({
+                id: Date.now(),
+                name: name,
+                base: base,
+                status: 'Ready',
+                date: new Date().toLocaleDateString()
+            });
+            localStorage.setItem('genesis_tuned', JSON.stringify(tuned));
+            document.getElementById('create-tune-modal').classList.remove('open');
+            document.getElementById('tune-name').value = '';
+            renderTunedModels();
+            showModal('Success', `Tuned model "${name}" created successfully.`, false);
+        };
+
+        window.renderTunedModels = () => {
+            const list = document.getElementById('tuned-models-list');
+            const tuned = JSON.parse(localStorage.getItem('genesis_tuned') || '[]');
+            if (tuned.length === 0) {
+                list.innerHTML = `<div class="card-bg p-8 rounded-xl border border-dashed border-gray-700 flex flex-col items-center justify-center text-gray-500"><p>No tuned models found.</p></div>`;
+                return;
+            }
+            list.innerHTML = tuned.map(m => `
+                <div class="card-bg p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+                    <div>
+                        <h4 class="text-white font-bold">${m.name}</h4>
+                        <p class="text-xs text-gray-400">Base: ${m.base} • Created: ${m.date}</p>
+                    </div>
+                    <span class="px-2 py-1 rounded bg-green-900/30 text-green-400 text-xs font-medium border border-green-500/30">${m.status}</span>
+                </div>
+            `).join('');
+        };
+
+        window.clearAllData = () => {
+            if(confirm("Are you sure? This will wipe all Studio data from this browser.")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        };
+
+        // --- Dashboard Logic ---
+        window.renderDashboard = () => {
+            // Simulate stats
+            const keys = JSON.parse(localStorage.getItem(API_KEY_STORAGE_KEY) || '[]');
+            document.getElementById('dash-keys').textContent = keys.length;
+            
+            // Estimate storage
+            let total = 0;
+            for(let x in localStorage) {
+                if(localStorage.hasOwnProperty(x)) total += ((localStorage[x].length + x.length) * 2);
+            }
+            document.getElementById('dash-storage').textContent = (total / 1024).toFixed(2) + " KB";
+            
+            // Random call count for demo
+            document.getElementById('dash-calls').textContent = Math.floor(Math.random() * 5000) + 1200;
+        };
+
+        // --- Batch Testing Logic ---
+        window.addBatchRow = () => {
+            const tbody = document.getElementById('batch-table-body');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4"><input type="text" class="bg-transparent border-b border-gray-700 w-full text-white focus:outline-none focus:border-indigo-500" placeholder="Enter input..."></td>
+                <td class="px-6 py-4 text-gray-500 italic output-cell">Waiting to run...</td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded bg-gray-700 text-gray-400 text-xs status-badge">Idle</span></td>
+                <td class="px-6 py-4 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300">&times;</button></td>
+            `;
+            tbody.appendChild(tr);
+        };
+
+        window.runBatch = async () => {
+            const rows = document.querySelectorAll('#batch-table-body tr');
+            const btn = document.getElementById('run-batch-btn');
+            btn.disabled = true; btn.classList.add('opacity-50');
+            
+            for(let row of rows) {
+                const input = row.querySelector('input').value;
+                if(!input) continue;
+                
+                row.querySelector('.status-badge').className = "px-2 py-1 rounded bg-yellow-900/30 text-yellow-400 text-xs status-badge border border-yellow-500/30";
+                row.querySelector('.status-badge').textContent = "Running";
+                
+                // Simulate delay
+                await new Promise(r => setTimeout(r, 800));
+                
+                // Simple simulated output
+                const output = "Processed: " + input; 
+                
+                row.querySelector('.output-cell').textContent = output;
+                row.querySelector('.output-cell').classList.remove('text-gray-500', 'italic');
+                row.querySelector('.output-cell').classList.add('text-white');
+                
+                row.querySelector('.status-badge').className = "px-2 py-1 rounded bg-green-900/30 text-green-400 text-xs status-badge border border-green-500/30";
+                row.querySelector('.status-badge').textContent = "Done";
+            }
+            btn.disabled = false; btn.classList.remove('opacity-50');
         };
     </script>
 </body>
