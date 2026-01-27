@@ -225,12 +225,11 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY DECODER (V5.0 ULTRA OPTIMIZED) ---
-// Matches XPDevs Ultra-Compressor (json2bin.c)
+// --- UPDATED BINARY DECODER (V5.1 ULTRA MATCH) ---
+// Precisely aligned with XPDevs json2bin.c 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
-// Global Dictionary: Maps common Genesis-AI keys to 1-byte tokens (0x10 and above)
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 
@@ -242,15 +241,14 @@ function decodeBinary(buffer) {
     let jsonString = "";
     
     let i = 0;
+    // 1. Signature Check: SIG_ULTRA 0x58504456 ("XPDV")
     try {
-        // 1. Signature Check (Match #define SIG_ULTRA 0x58504456)
-        // We check the first 4 bytes for the new "XPDV" signature
-        const sig = view.getUint32(0, true); // true = little-endian
+        const sig = view.getUint32(0, true); 
         if (sig === 0x58504456) {
-            i = 4; // Skip "XPDV" header
+            i = 4; 
             console.log("Genesis-AI: Signature verified.");
         } else {
-            console.warn("Genesis-AI: Signature mismatch, attempting legacy skip-less parse.");
+            console.warn("Genesis-AI: Signature mismatch.");
             i = 0;
         }
     } catch (e) {
@@ -261,28 +259,22 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Support: Handle bytes 0x10 to 0x19 as full strings
+        // Dictionary Support: 0x10 and above
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
         } else {
-            // Structural Support: Handle 0x01 through 0x07
             switch(b) {
                 case 0x01: jsonString += "{"; break; // T_START
                 case 0x02: jsonString += "}"; break; // T_END
                 case 0x03: jsonString += ":"; break; // T_SEP
-                case 0x04: // T_NEXT
-                    // Prevent trailing commas
-                    if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
-                        jsonString += ",";
-                    }
-                    break;
+                case 0x04: jsonString += ","; break; // T_NEXT (Literal match to C logic)
                 case 0x05: jsonString += "["; break; // T_ARR_S
                 case 0x06: jsonString += "]"; break; // T_ARR_E
-                case 0x07: // T_STR (Unique Data String Start)
+                case 0x07: // T_STR (Unique Data or Version Injection)
                     i++; 
                     let start = i;
                     
-                    // Find the 0x00 null terminator
+                    // Find null terminator (0x00)
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         i++;
                     }
@@ -293,12 +285,7 @@ function decodeBinary(buffer) {
                         decrypted[j] = chunk[j] ^ XOR_KEY;
                     }
                     
-                    // Decode the XOR-decrypted content
-                    const stringContent = decoder.decode(decrypted);
-                    jsonString += '"' + stringContent + '"';
-                    break;
-                default:
-                    // Ignore padding or null bytes
+                    jsonString += '"' + decoder.decode(decrypted) + '"';
                     break;
             }
         }
@@ -308,42 +295,36 @@ function decodeBinary(buffer) {
     return jsonString.trim();
 }
 
-// 3. Model Loading Logic
+// 3. Execution & Fallback logic
 fetch(jsonURL + "?v=" + Date.now())
   .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
-      // Safety: Ensure the result is valid JSON before parsing
-      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-          throw new Error("Reconstructed string is not valid JSON.");
+      // Strict JSON check
+      if (!decoded.startsWith("{") && !decoded.startsWith("[")) {
+          throw new Error("Invalid Binary Structure");
       }
       
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: SPT-4.5 Binary active.");
+      console.log("Genesis-AI: System Loaded.");
     } catch (e) {
-      console.warn("Binary reconstruction failed: " + e.message);
-      
-      // Fallback: Check if the file was just raw JSON all along
+      console.warn("Binary Error: " + e.message + ". Trying raw fallback...");
       try {
           const rawText = new TextDecoder().decode(buffer).trim();
           responses = JSON.parse(rawText);
-          console.log("Genesis-AI: Raw JSON Fallback successful.");
       } catch (innerErr) {
-          throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
+          throw new Error("File Corrupt.");
       }
     }
   })
   .catch(err => {
-    console.error("Critical Reconstruction Error:", err);
-    // Legacy Safety Fallback to 1.0 JSON
+    console.error("Critical:", err);
+    // Legacy 1.0 JSON Fallback
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
       .then(r => r.json())
-      .then(data => { 
-        responses = data; 
-        if (typeof showLegacyModal === "function") showLegacyModal(); 
-      });
+      .then(data => { responses = data; });
   });
 
 // --- UI & MESSAGING ---
