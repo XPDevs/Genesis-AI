@@ -539,10 +539,19 @@ function typeChatTitle(newTitle, callback) {
 
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
-  
-  // XPDevs Logic: Priority on Kernels and System info
-  if (lowerInput.includes("kernel")) {
-      return { role: "ai", text: "XPDevs utilizes custom kernels, primarily NexShell, which is a highly optimized x86 kernel based on basekernel." };
+
+
+  // Calculator Integration
+  if (typeof window.calc === 'function') {
+      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
+      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(input) && /[\d]/.test(input) && /[-+*/^x]/.test(input);
+      
+      if (isExplicit || isMathExpression) {
+          const result = window.calc(input);
+          if (result !== "Error" && result !== "Invalid input") {
+              return { role: "ai", text: `The answer is ${result}` };
+          }
+      }
   }
 
   const foundMatches = [];
