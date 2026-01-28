@@ -246,8 +246,9 @@ function decodeBinary(buffer) {
 
     // 1. Signature Verification (Matches: fwrite(&sig, 4, 1, dest))
     if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.error("Invalid Signature: Not an XPDevs Genesis-AI Binary.");
-        return "";
+        // Fallback: If signature fails, assume it's a standard JSON text file
+        console.warn("Invalid Signature: Attempting legacy JSON parse.");
+        return decoder.decode(bytes);
     }
     i = 4; 
 
@@ -263,6 +264,8 @@ function decodeBinary(buffer) {
                 jsonString = jsonString.slice(0, -1) + key + '"';
             } else if (jsonString.endsWith('"')) {
                 jsonString += ':"' + key + '"';
+            } else if (jsonString.endsWith('}') || jsonString.endsWith(']')) {
+                jsonString += ',"' + key + '"';
             } else {
                 jsonString += '"' + key + '"';
             }
@@ -309,6 +312,8 @@ function decodeBinary(buffer) {
                     jsonString = jsonString.slice(0, -1) + sanitized + '"';
                 } else if (jsonString.endsWith('"')) {
                     jsonString += ':"' + sanitized + '"';
+                } else if (jsonString.endsWith('}') || jsonString.endsWith(']')) {
+                    jsonString += ',"' + sanitized + '"';
                 } else {
                     jsonString += '"' + sanitized + '"';
                 }
