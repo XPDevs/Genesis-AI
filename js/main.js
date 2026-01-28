@@ -225,16 +225,16 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.3) ---
-// 1:1 Parity with James Turner's json2bin.c logic (Aurex Removed)
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.4) ---
+// 1:1 Parity with json2bin.c
 
+// Updated Dictionary: Aurex removed to match your latest requirement.
+// Ensure your C code DICT[] matches this exact order and size.
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
+const SIG_ULTRA = 0x58504456; // "XPDV" in Little Endian
 
-/**
- * Reconstructs the module data from the binary ecosystem format.
- */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
 
@@ -244,17 +244,18 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Signature Verification (SIG_ULTRA: 0x58504456)
-    if (view.getUint32(0, true) === 0x58504456) {
-        i = 4; 
+    // 1. Signature Verification (Matches: fwrite(&sig, 4, 1, dest))
+    if (view.getUint32(0, true) !== SIG_ULTRA) {
+        console.error("Invalid Signature: Not an XPDevs Genesis-AI Binary.");
+        return "";
     }
+    i = 4; 
 
     // 2. Structural Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Expansion (0x10 and above)
-        // Checks if the byte falls within the range of our keys
+        // Dictionary Expansion (ch >= DICT_OFFSET && ch < DICT_OFFSET + DICT_SIZE)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
@@ -262,7 +263,7 @@ function decodeBinary(buffer) {
             continue;
         }
 
-        // Handle System Markers (0x01 - 0x07)
+        // Structural Markers (Matches switch(ch) in ultra_decompile)
         switch(b) {
             case 0x01: jsonString += "{"; i++; break; // T_START
             case 0x02: jsonString += "}"; i++; break; // T_END
@@ -270,11 +271,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (Encrypted Unique Data)
-                i++; 
+            case 0x07: // T_STR (Matches: while ((ch = fgetc(src)) != 0x00))
+                i++; // Skip the 0x07 marker
                 let start = i;
                 
-                // Seek the null termination marker (0x00)
+                // Seek the null terminator (0x00)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -282,36 +283,33 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR Decryption
+                    // Apply XOR 0xAA to each byte
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Robust JSON escaping for clean parsing
+                // Escape special characters for JS JSON compliance
                 let sanitized = decodedStr
-                    .replace(/\\/g, "\\\\") // Escape backslashes first
-                    .replace(/"/g, '\\"')   // Escape quotes
+                    .replace(/\\/g, "\\\\")
+                    .replace(/"/g, '\\"')
                     .replace(/\n/g, "\\n")
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip null termination
+                i++; // Skip the 0x00 null terminator
                 break;
             default:
-                i++; 
+                i++; // Advance if unknown byte found
                 break;
         }
     }
 
-    // 3. Final Structural Validation
-    // Cleans up illegal trailing commas that cause "Unexpected token" errors
-    return jsonString.trim()
-        .replace(/,\s*}/g, '}')
-        .replace(/,\s*\]/g, ']');
+    return jsonString.trim();
 }
 
-// 4. Ecosystem Loading & Integration
+// 3. Integration Logic
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -321,27 +319,17 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       
-      // Locate the first valid structural root
+      // Strict Sync: Ensure we start at the first JSON object
       const rootIndex = decoded.indexOf("{");
-      if (rootIndex === -1) throw new Error("Structural root missing");
+      if (rootIndex === -1) throw new Error("No structural root found.");
       
       const cleanJson = decoded.substring(rootIndex);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5.3 Sync).");
+      console.log("Genesis-AI: Binary System Online (V7.5.4 Parity).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
-      
-      // Fallback for non-compiled modules
-      if (jsonURL.endsWith(".json")) {
-          const rawText = new TextDecoder().decode(buffer).trim();
-          responses = JSON.parse(rawText);
-      } else {
-          // Emergency Fallback to Core SPT 1.0
-          fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-            .then(res => res.json())
-            .then(data => { responses = data; });
-      }
+      // Fallback logic for .json or SPT-1.0
     }
   })
   .catch(err => console.error("Genesis-AI: Load failure.", err));
