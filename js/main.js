@@ -225,18 +225,17 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.8.0) ---
-// 1:1 Parity with XPDevs json2bin.c V2.1
-// Optimized for James Turner (XPDevs) Binary Standards
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.8.3) ---
+// Full JS for James Turner (XPDevs)
+// Fixes "expected ':'" for Unique Keys (Column 60 Error)
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10; 
 const XOR_KEY = 0xAA;     
-const SIG_ULTRA = 0x58504456; // "XPDV"
+const SIG_ULTRA = 0x58504456; 
 
 /**
- * High-Efficiency Decoder
- * Uses Null-Terminator seeking for maximum stability.
+ * Full Decoder: Reconstructs JSON with Structural Enforcement
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -246,49 +245,64 @@ function decodeBinary(buffer) {
     const decoder = new TextDecoder('utf-8');
     const outputParts = []; 
     let i = 0;
+    
+    // Structural state tracking
+    let inArray = 0;
+    let expectsValue = false;
 
-    // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.warn("XPDevs: Signature mismatch. Falling back to raw text.");
+        console.warn("XPDevs: Signature mismatch. Falling back to text.");
         return decoder.decode(bytes);
     }
     i = 4; 
 
-    // 2. Main Reconstruction Loop
     while (i < bytes.length) {
         const ch = bytes[i];
         
-        // Dictionary Expansion (Matches V2.1 Dictionary Logic)
+        // Dictionary Key Handling
         if (ch >= DICT_OFFSET && ch < DICT_OFFSET + GENESIS_DICT.length) {
             outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
+            outputParts.push(':'); // Always a key
+            expectsValue = true;
             i++;
             continue;
         }
 
         switch(ch) {
-            case 0x01: outputParts.push('{'); i++; break; // T_START
-            case 0x02: outputParts.push('}'); i++; break; // T_END
-            case 0x03: outputParts.push(':'); i++; break; // T_SEP
-            case 0x04: outputParts.push(','); i++; break; // T_NEXT
-            case 0x05: outputParts.push('['); i++; break; // T_ARR_S
-            case 0x06: outputParts.push(']'); i++; break; // T_ARR_E
-            case 0x07: // T_STR (XOR Encrypted + Null Terminated)
+            case 0x01: // T_START {
+                outputParts.push('{'); 
+                expectsValue = false;
+                i++; break; 
+            case 0x02: // T_END }
+                outputParts.push('}'); 
+                expectsValue = false;
+                i++; break; 
+            case 0x03: // T_SEP :
+                if (outputParts[outputParts.length - 1] !== ':') outputParts.push(':');
+                expectsValue = true;
+                i++; break; 
+            case 0x04: // T_NEXT ,
+                outputParts.push(','); 
+                expectsValue = false;
+                i++; break; 
+            case 0x05: // T_ARR_S [
+                outputParts.push('['); 
+                inArray++;
+                i++; break; 
+            case 0x06: // T_ARR_E ]
+                outputParts.push(']'); 
+                inArray--;
+                i++; break; 
+            case 0x07: // T_STR (XOR + Null Terminated)
                 i++; 
                 let start = i;
-                
-                // Seek the 0x00 byte written by V2.1 Compiler
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
+                while (i < bytes.length && bytes[i] !== 0x00) i++;
                 
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
+                for (let j = 0; j < chunk.length; j++) decrypted[j] = chunk[j] ^ XOR_KEY;
                 
                 let rawStr = decoder.decode(decrypted);
-                // Sanitize to prevent broken JSON structures
                 let sanitized = rawStr
                     .replace(/\\/g, "\\\\") 
                     .replace(/"/g, '\\"')   
@@ -296,19 +310,28 @@ function decodeBinary(buffer) {
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
 
-                outputParts.push('"' + sanitized + '"');
-                i++; // Skip the 0x00 terminator
+                // V7.8.3 FIX: If we aren't in an array and we don't expect a value, 
+                // this string MUST be a property name. Force a colon after it.
+                if (!inArray && !expectsValue) {
+                    outputParts.push('"' + sanitized + '"');
+                    outputParts.push(':');
+                    expectsValue = true;
+                } else {
+                    outputParts.push('"' + sanitized + '"');
+                    expectsValue = false;
+                }
+                
+                i++; // Skip null
                 break;
             default:
-                i++; 
-                break;
+                i++; break;
         }
     }
 
     return outputParts.join('');
 }
 
-// 3. Automated Ecosystem Loader
+// Automated Ecosystem Loader
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -319,26 +342,23 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       finalStr = decodeBinary(buffer);
       responses = JSON.parse(finalStr);
-      console.log("Genesis-AI: Ecosystem Online (V7.8.0 Binary).");
+      console.log("Genesis-AI: Binary System Online (V7.8.3 Robust).");
     } catch (e) {
       console.error("--- XPDevs DIAGNOSTIC REPORT ---");
       console.error("Structure Error:", e.message);
       
-      // Detailed Debugging for James
       const match = e.message.match(/column (\d+)/);
       if (match && finalStr) {
           const pos = parseInt(match[1]);
-          console.log("Fail Point Context:");
-          console.log(finalStr.substring(pos - 30, pos) + " [!!] " + finalStr.substring(pos, pos + 30));
+          console.log("Context: " + finalStr.substring(pos - 40, pos + 40));
       }
 
-      // Revert to stable fallback
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
         .then(res => res.json())
         .then(data => { responses = data; });
     }
   })
-  .catch(err => console.error("Genesis-AI: Network failure.", err));
+  .catch(err => console.error("Genesis-AI: Load failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
