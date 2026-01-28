@@ -225,140 +225,120 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.8.3) ---
-// Full JS for James Turner (XPDevs)
-// Fixes "expected ':'" for Unique Keys (Column 60 Error)
+// --- BINARY DECODER (V4.5 OPTIMIZED) ---
+// Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
-const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10; 
-const XOR_KEY = 0xAA;     
-const SIG_ULTRA = 0x58504456; 
-
-/**
- * Full Decoder: Reconstructs JSON with Structural Enforcement
- */
 function decodeBinary(buffer) {
-    if (!buffer || buffer.byteLength < 4) return "";
-
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
+    const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
-    const outputParts = []; 
-    let i = 0;
+    let jsonString = "";
     
-    // Structural state tracking
-    let inArray = 0;
-    let expectsValue = false;
-
-    if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.warn("XPDevs: Signature mismatch. Falling back to text.");
-        return decoder.decode(bytes);
-    }
-    i = 4; 
-
-    while (i < bytes.length) {
-        const ch = bytes[i];
-        
-        // Dictionary Key Handling
-        if (ch >= DICT_OFFSET && ch < DICT_OFFSET + GENESIS_DICT.length) {
-            outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
-            outputParts.push(':'); // Always a key
-            expectsValue = true;
-            i++;
-            continue;
+    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
+    // We check the first 4 bytes for the "GNIS" signature
+    let i = 0;
+    try {
+        const sig = view.getUint32(0, true); // true = little-endian
+        if (sig === 0x53494E47) {
+            i = 4; // Skip "GNIS" header
+            console.log("Genesis-AI: Valid Binary Signature detected.");
+        } else {
+            console.warn("Genesis-AI: Signature mismatch, attempting skip-less parse.");
+            i = 0;
         }
+    } catch (e) {
+        i = 0;
+    }
 
-        switch(ch) {
-            case 0x01: // T_START {
-                outputParts.push('{'); 
-                expectsValue = false;
-                i++; break; 
-            case 0x02: // T_END }
-                outputParts.push('}'); 
-                expectsValue = false;
-                i++; break; 
-            case 0x03: // T_SEP :
-                if (outputParts[outputParts.length - 1] !== ':') outputParts.push(':');
-                expectsValue = true;
-                i++; break; 
-            case 0x04: // T_NEXT ,
-                outputParts.push(','); 
-                expectsValue = false;
-                i++; break; 
-            case 0x05: // T_ARR_S [
-                outputParts.push('['); 
-                inArray++;
-                i++; break; 
-            case 0x06: // T_ARR_E ]
-                outputParts.push(']'); 
-                inArray--;
-                i++; break; 
-            case 0x07: // T_STR (XOR + Null Terminated)
+    // 2. Token-based Reconstruction
+    while (i < bytes.length) {
+        const b = bytes[i];
+        
+        switch(b) {
+            case 0x01: jsonString += "{"; break; // T_START
+            case 0x02: jsonString += "}"; break; // T_END
+            case 0x03: jsonString += ":"; break; // T_SEP
+            case 0x04: // T_NEXT
+                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
+                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
+                    jsonString += ",";
+                }
+                break;
+            case 0x05: jsonString += "["; break; // T_ARR_S
+            case 0x06: jsonString += "]"; break; // T_ARR_E
+            case 0x07: // T_STR (String Start)
                 i++; 
                 let start = i;
-                while (i < bytes.length && bytes[i] !== 0x00) i++;
+                
+                // Find the 0x00 null terminator used in json2bin.c
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
                 
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) decrypted[j] = chunk[j] ^ XOR_KEY;
-                
-                let rawStr = decoder.decode(decrypted);
-                let sanitized = rawStr
-                    .replace(/\\/g, "\\\\") 
-                    .replace(/"/g, '\\"')   
-                    .replace(/\n/g, "\\n")  
-                    .replace(/\r/g, "\\r")
-                    .replace(/\t/g, "\\t");
-
-                // V7.8.3 FIX: If we aren't in an array and we don't expect a value, 
-                // this string MUST be a property name. Force a colon after it.
-                if (!inArray && !expectsValue) {
-                    outputParts.push('"' + sanitized + '"');
-                    outputParts.push(':');
-                    expectsValue = true;
-                } else {
-                    outputParts.push('"' + sanitized + '"');
-                    expectsValue = false;
+                for (let j = 0; j < chunk.length; j++) {
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
-                i++; // Skip null
+                // The C compiler preserves the string content as it appears in the JSON file,
+                // including escape characters like \". Using JSON.stringify would re-escape
+                // these, corrupting the data (e.g., \" becomes \\").
+                // The correct approach is to simply wrap the decoded string in quotes,
+                // mirroring the behavior of the nano_decompile function in json2bin.c.
+                const stringContent = decoder.decode(decrypted);
+                jsonString += '"' + stringContent + '"';
                 break;
             default:
-                i++; break;
+                // Ignore unexpected bytes (like padding)
+                break;
         }
+        i++;
     }
-
-    return outputParts.join('');
+    
+    return jsonString.trim();
 }
 
-// Automated Ecosystem Loader
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
-
+// 3. Model Loading Logic
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Ecosystem connection failed"))
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
   .then(buffer => {
-    let finalStr = "";
     try {
-      finalStr = decodeBinary(buffer);
-      responses = JSON.parse(finalStr);
-      console.log("Genesis-AI: Binary System Online (V7.8.3 Robust).");
-    } catch (e) {
-      console.error("--- XPDevs DIAGNOSTIC REPORT ---");
-      console.error("Structure Error:", e.message);
+      const decoded = decodeBinary(buffer);
       
-      const match = e.message.match(/column (\d+)/);
-      if (match && finalStr) {
-          const pos = parseInt(match[1]);
-          console.log("Context: " + finalStr.substring(pos - 40, pos + 40));
+      // Safety: Ensure the result is valid JSON before parsing
+      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
+          throw new Error("Reconstructed string is not valid JSON.");
       }
-
-      fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-        .then(res => res.json())
-        .then(data => { responses = data; });
+      
+      responses = JSON.parse(decoded);
+      console.log("Genesis-AI: SPT-4.5 Binary active.");
+    } catch (e) {
+      console.warn("Binary reconstruction failed: " + e.message);
+      
+      // Fallback: Check if the file was just raw JSON all along
+      try {
+          const rawText = new TextDecoder().decode(buffer).trim();
+          responses = JSON.parse(rawText);
+          console.log("Genesis-AI: Raw JSON Fallback successful.");
+      } catch (innerErr) {
+          throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
+      }
     }
   })
-  .catch(err => console.error("Genesis-AI: Load failure.", err));
+  .catch(err => {
+    console.error("Critical Reconstruction Error:", err);
+    // Legacy Safety Fallback to 1.0 JSON
+    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+      .then(r => r.json())
+      .then(data => { 
+        responses = data; 
+        if (typeof showLegacyModal === "function") showLegacyModal(); 
+      });
+  });
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
