@@ -225,18 +225,18 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.6.1) ---
-// 1:1 Structural Parity with XPDevs json2bin.c 
-// Optimized for James Turner (XPDevs) System Architecture
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.6.5) ---
+// Extreme Robustness Version for James Turner (XPDevs)
+// 1:1 Binary-to-Structure Mapping with json2bin.c Parity
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
-const SIG_ULTRA = 0x58504456; // "XPDV"
+const SIG_ULTRA = 0x58504456; 
 
 /**
- * Decodes XPDevs Binary format back into a JSON String
- * Follows T_SEP (0x03) and T_NEXT (0x04) strictly from source
+ * High-performance, robust binary decoder.
+ * COLLECTS chunks in an array to prevent memory fragmentation in 300KB+ files.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -244,10 +244,10 @@ function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
+    const outputParts = []; // Buffer-streaming for memory efficiency
     let i = 0;
 
-    // 1. Signature Verification (fwrite(&sig, 4, 1, dest))
+    // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
         return decoder.decode(bytes);
     }
@@ -255,95 +255,94 @@ function decodeBinary(buffer) {
 
     // 2. Main Reconstruction Loop
     while (i < bytes.length) {
-        const b = bytes[i];
+        const ch = bytes[i];
         
-        // Dictionary Expansion (DICT_OFFSET + i)
-        if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
-            jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
+        // Dictionary Expansion
+        if (ch >= DICT_OFFSET && ch < DICT_OFFSET + GENESIS_DICT.length) {
+            outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
             i++;
-            continue;
-        }
+        } else {
+            switch(ch) {
+                case 0x01: outputParts.push('{'); i++; break;
+                case 0x02: outputParts.push('}'); i++; break;
+                case 0x03: outputParts.push(':'); i++; break;
+                case 0x04: outputParts.push(','); i++; break;
+                case 0x05: outputParts.push('['); i++; break;
+                case 0x06: outputParts.push(']'); i++; break;
+                case 0x07: // Unique String
+                    i++; 
+                    let start = i;
+                    while (i < bytes.length && bytes[i] !== 0x00) {
+                        i++;
+                    }
+                    
+                    const chunk = bytes.slice(start, i);
+                    const decrypted = new Uint8Array(chunk.length);
+                    for (let j = 0; j < chunk.length; j++) {
+                        decrypted[j] = chunk[j] ^ XOR_KEY;
+                    }
+                    
+                    // Robust Sanitization: Handles all control characters
+                    let rawStr = decoder.decode(decrypted);
+                    let sanitized = rawStr
+                        .replace(/\\/g, "\\\\") // Escape backslashes first
+                        .replace(/"/g, '\\"')   // Escape quotes
+                        .replace(/\n/g, "\\n")  // Newlines
+                        .replace(/\r/g, "\\r")  // Carriages
+                        .replace(/\t/g, "\\t")  // Tabs
+                        .replace(/[\x00-\x1F\x7F-\x9F]/g, ""); // Remove non-printable control chars
 
-        switch(b) {
-            case 0x01: // T_START {
-                jsonString += "{"; i++; break;
-            case 0x02: // T_END }
-                jsonString += "}"; i++; break;
-            case 0x03: // T_SEP :
-                jsonString += ":"; i++; break;
-            case 0x04: // T_NEXT ,
-                jsonString += ","; i++; break;
-            case 0x05: // T_ARR_S [
-                jsonString += "["; i++; break;
-            case 0x06: // T_ARR_E ]
-                jsonString += "]"; i++; break;
-            case 0x07: // T_STR (XOR Encrypted String)
-                i++; // Move past T_STR marker
-                let start = i;
-                // Seek null terminator (0x00)
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
-                
-                const chunk = bytes.slice(start, i);
-                const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    // Apply XOR_KEY (0xAA)
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
-                
-                // Escape characters for valid JSON parsing
-                let rawStr = decoder.decode(decrypted);
-                let sanitized = rawStr
-                    .replace(/\\/g, "\\\\")
-                    .replace(/"/g, '\\"')
-                    .replace(/\n/g, "\\n")
-                    .replace(/\r/g, "\\r")
-                    .replace(/\t/g, "\\t");
-
-                jsonString += '"' + sanitized + '"';
-                i++; // Skip the 0x00 terminator
-                break;
-
-            default:
-                i++; // Advance on unknown byte
-                break;
+                    outputParts.push('"' + sanitized + '"');
+                    i++; // Skip null
+                    break;
+                default:
+                    i++; 
+                    break;
+            }
         }
     }
 
-    return jsonString.trim();
+    // Join all parts at once for maximum speed and stability
+    return outputParts.join('');
 }
 
-// 3. Automated Loader for Genesis-AI
+// 3. Robust Automated Loader
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
+console.log("Genesis-AI: Attempting Ecosystem Connection...");
+
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Ecosystem connection failed"))
+  .then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.arrayBuffer();
+  })
   .then(buffer => {
     try {
-      const decoded = decodeBinary(buffer);
+      const decodedString = decodeBinary(buffer);
       
-      // Ensure we start at the first JSON object
-      const rootIndex = decoded.indexOf("{");
-      if (rootIndex === -1) throw new Error("No structural root found.");
+      // Safety: Trim potential whitespace or trailing nulls
+      const cleanJson = decodedString.trim();
       
-      const cleanJson = decoded.substring(rootIndex);
+      // Final Parse
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.6.1 Parity).");
+      console.log("Genesis-AI: Binary System Online (V7.6.5 Robust).");
+      if (typeof updateDevModalStatus === 'function') updateDevModalStatus();
     } catch (e) {
-      console.warn("Module Reconstruction Failed: " + e.message);
-      // Fallback for legacy compatibility
+      console.error("Module Reconstruction Failed at Runtime: ", e.message);
+      
+      // Fallback Strategy to legacy SPT-1.0
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-        .then(r => r.json())
+        .then(res => res.json())
         .then(data => {
             responses = data;
-            console.log("Genesis-AI: Fallback System Online.");
-        });
+            console.log("Genesis-AI: Fallback System Online (SPT-1.0).");
+        })
+        .catch(err => console.error("Genesis-AI: Total System Failure. No Fallback Available."));
     }
   })
-  .catch(err => console.error("Genesis-AI: Load failure.", err));
+  .catch(err => console.error("Genesis-AI: Network/Load failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
