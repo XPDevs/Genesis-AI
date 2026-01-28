@@ -225,16 +225,13 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.3 Final) ---
-// 1:1 Parity with James Turner's json2bin.c logic
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.4) ---
+// 1:1 Parity with json2bin.c logic for James Turner (XPDevs)
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
 
-/**
- * Reconstructs JSON from XPDevs Binary format.
- */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
 
@@ -244,23 +241,23 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Signature Guard (SIG_ULTRA: 0x58504456)
+    // 1. Skip Signature (SIG_ULTRA: 0x58504456)
     if (view.getUint32(0, true) === 0x58504456) {
-        i = 4; // Skip the XPDevs header
+        i = 4; 
     }
 
-    // 2. Reconstruction Loop
+    // 2. Main Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Check (0x10+)
+        // Dictionary Check (0x10 - 0x19)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
             i++;
 
             // Manual Colon Injection for 'ver' key logic in json2bin.c
-            // This is required because the compiler skips the colon in the source.
+            // The compiler skips the colon and original value for 'ver'.
             if (key === "ver") {
                 jsonString += ":";
             }
@@ -277,6 +274,7 @@ function decodeBinary(buffer) {
             case 0x07: // T_STR (XOR String Segment)
                 i++; 
                 let start = i;
+                // Seek 0x00 null terminator
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -284,12 +282,12 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR 0xAA
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Deep Sanitization for valid JSON output
+                // Escape characters for valid JSON
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -301,16 +299,17 @@ function decodeBinary(buffer) {
                 i++; // Skip null terminator
                 break;
             default:
-                i++; // Skip unknown/padding
+                i++; // Skip padding
                 break;
         }
     }
 
-    return jsonString.trim();
+    // Clean up trailing commas before parsing
+    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
 }
 
-// 3. Execution & Loading Logic
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
+// 3. System Loading Logic
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 fetch(jsonURL + "?v=" + Date.now())
@@ -319,36 +318,30 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       
-      // SYNC-SEEKER: Ensure parsing starts only at the root JSON object
+      // Sync-Seeker: Ensure parsing starts only at the root JSON object
       const startIdx = decoded.indexOf("{");
-      if (startIdx === -1) throw new Error("Missing JSON root");
+      if (startIdx === -1) throw new Error("No JSON root found");
       
-      const cleanJson = decoded.substring(startIdx).replace(/,\s*([}\]])/g, '$1');
+      const cleanJson = decoded.substring(startIdx);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: System Online (Core V7.3).");
+      console.log("Genesis-AI: System Online (1:1 V7.4 Sync).");
     } catch (e) {
       console.warn("Binary Error: " + e.message);
       
       // Fallback for .json files
-      try {
-        if (jsonURL.endsWith(".json")) {
-            const rawText = new TextDecoder().decode(buffer).trim();
-            responses = JSON.parse(rawText);
-            console.log("Genesis-AI: JSON Fallback Active.");
-        } else {
-            throw new Error("Cannot parse .bin as raw text");
-        }
-      } catch (err) {
-        console.error("Critical: Model Corrupt.");
-        // Emergency Fallback to SPT 1.0
-        fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-          .then(res => res.json())
-          .then(data => { responses = data; });
+      if (jsonURL.endsWith(".json")) {
+          const rawText = new TextDecoder().decode(buffer).trim();
+          responses = JSON.parse(rawText);
+      } else {
+          // Emergency Fallback
+          fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+            .then(res => res.json())
+            .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Genesis-AI Load Error:", err));
+  .catch(err => console.error("Genesis-AI Load Failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
