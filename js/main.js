@@ -64,28 +64,32 @@ const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
 async function loadAndDecodeModel() {
     try {
+        // Fetching the binary file with a cache-buster
         const response = await fetch(modelURL + "?v=" + Date.now());
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
         
-        // 1. Signature Verification (First 4 bytes)
+        // 1. Signature Verification
+        // Updated to GNIS (0x53494E47 in Little-endian for 'GNIS')
+        const SIG_GNIS = 0x53494E47; 
         const view = new DataView(buffer);
-        const fileSig = view.getUint32(0, true); // Little-endian
-        if (fileSig !== SIG_ULTRA) {
-            throw new Error("Invalid Binary Signature: System Rejected.");
+        const fileSig = view.getUint32(0, true); 
+
+        if (fileSig !== SIG_GNIS) {
+            throw new Error("Invalid Genesis-AI Signature: System Rejected.");
         }
 
         // 2. Structural Reconstruction
         const decoder = new TextDecoder('utf-8');
         let jsonResult = "";
-        let i = 4; // Skip the "XPDV" header
+        let i = 4; // Skip the "GNIS" header
 
         while (i < bytes.length) {
             const b = bytes[i];
             
-            // Check for Dictionary Keys (0x10 - 0x19)
+            // Check for Dictionary Keys (using your DICT_OFFSET range)
             if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
                 jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
             } else {
@@ -100,6 +104,7 @@ async function loadAndDecodeModel() {
                         i++;
                         let strArr = [];
                         while (i < bytes.length && bytes[i] !== 0x00) {
+                            // Apply your XOR decryption key
                             strArr.push(bytes[i] ^ XOR_KEY);
                             i++;
                         }
@@ -110,17 +115,17 @@ async function loadAndDecodeModel() {
             i++;
         }
 
+        // Finalize the logic into the local responses object
         responses = JSON.parse(jsonResult);
-        console.log("Genesis-AI: Binary Logic Loaded Successfully.");
+        console.log("Genesis-AI: GNIS Binary Logic Loaded Successfully.");
         return responses;
 
     } catch (err) {
-        console.error("Critical System Error:", err);
+        console.error("Critical Genesis-AI Error:", err);
         return null;
     }
 }
 
-// Start Model Loading
 loadAndDecodeModel();
 
 // --- SHARED CHAT LOGIC ---
