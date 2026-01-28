@@ -236,7 +236,7 @@ const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
  */
 async function loadAndDecodeModel() {
     try {
-        const response = await fetch(jsonURL);
+        const response = await fetch(jsonURL + "?v=" + Date.now());
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
@@ -246,15 +246,30 @@ async function loadAndDecodeModel() {
         const sanitizedJSON = jsonContent.replace(/,+(?=\s*[\}\]])/g, "");
 
         try {
-            return JSON.parse(sanitizedJSON);
+            // Attempt Binary Reconstruction
+            responses = JSON.parse(sanitizedJSON);
+            console.log("Genesis-AI: SPT-4.5 Binary active.");
+            return responses;
         } catch (parseErr) {
-            console.error("Critical Reconstruction Error: Result is not valid JSON.");
-            console.log("Faulty Data String:", sanitizedJSON);
-            throw parseErr;
+            console.warn("Binary reconstruction failed, attempting raw JSON fallback.");
+            
+            // Fallback: Check if the file was raw JSON
+            try {
+                const rawText = new TextDecoder().decode(buffer).trim();
+                responses = JSON.parse(rawText);
+                console.log("Genesis-AI: Raw JSON Fallback successful.");
+                return responses;
+            } catch (innerErr) {
+                throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
+            }
         }
     } catch (err) {
-        console.error("Failed to load Genesis-AI binary:", err);
-        return null;
+        console.error("Critical Reconstruction Error:", err);
+        // Legacy Safety Fallback
+        const legacyRes = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json");
+        responses = await legacyRes.json();
+        if (typeof showLegacyModal === "function") showLegacyModal();
+        return responses;
     }
 }
 
@@ -267,44 +282,36 @@ function decodeBinary(buffer) {
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     
-    // XPDevs Dictionary Mapping (DICT_OFFSET 0x10)
     const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
     const DICT_OFFSET = 0x10;
     
     let jsonString = "";
     let i = 0;
 
-    // 1. Signature Check (SIG_ULTRA: 0x58504456 "XPDV")
     if (bytes.length >= 4) {
         const sig = view.getUint32(0, true); 
         if (sig === 0x58504456) {
-            i = 4; // Skip "XPDV" header
+            i = 4; 
             console.log("Genesis-AI: Valid XPDV Signature detected.");
-        } else {
-            console.warn("Genesis-AI: Signature mismatch. Ensure file is a compiled .bin.");
         }
     }
 
-    // 2. Token-based Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
-        
-        // Handle Dictionary Keys (0x10 to 0x19)
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
             const dictIndex = b - DICT_OFFSET;
             jsonString += '"' + DICT[dictIndex] + '"';
         } else {
             switch(b) {
-                case 0x01: jsonString += "{"; break; // T_START
-                case 0x02: jsonString += "}"; break; // T_END
-                case 0x03: jsonString += ":"; break; // T_SEP
-                case 0x04: jsonString += ","; break; // T_NEXT (Fixed: Literal comma)
-                case 0x05: jsonString += "["; break; // T_ARR_S
-                case 0x06: jsonString += "]"; break; // T_ARR_E
-                case 0x07: // T_STR (XOR Encrypted String)
+                case 0x01: jsonString += "{"; break; 
+                case 0x02: jsonString += "}"; break; 
+                case 0x03: jsonString += ":"; break; 
+                case 0x04: jsonString += ","; break; 
+                case 0x05: jsonString += "["; break; 
+                case 0x06: jsonString += "]"; break; 
+                case 0x07: 
                     i++; 
                     let stringBytes = [];
-                    // Collect bytes until null terminator (0x00)
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         stringBytes.push(bytes[i] ^ XOR_KEY);
                         i++;
@@ -315,47 +322,11 @@ function decodeBinary(buffer) {
         }
         i++;
     }
-    
     return jsonString.trim();
 }
 
-// 3. Model Loading Logic
-fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
-  .then(buffer => {
-    try {
-      const decoded = decodeBinary(buffer);
-      
-      // Safety: Ensure the result is valid JSON before parsing
-      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-          throw new Error("Reconstructed string is not valid JSON.");
-      }
-      
-      responses = JSON.parse(decoded);
-      console.log("Genesis-AI: SPT-4.5 Binary active.");
-    } catch (e) {
-      console.warn("Binary reconstruction failed: " + e.message);
-      
-      // Fallback: Check if the file was just raw JSON all along
-      try {
-          const rawText = new TextDecoder().decode(buffer).trim();
-          responses = JSON.parse(rawText);
-          console.log("Genesis-AI: Raw JSON Fallback successful.");
-      } catch (innerErr) {
-          throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
-      }
-    }
-  })
-  .catch(err => {
-    console.error("Critical Reconstruction Error:", err);
-    // Legacy Safety Fallback to 1.0 JSON
-    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
-      .then(r => r.json())
-      .then(data => { 
-        responses = data; 
-        if (typeof showLegacyModal === "function") showLegacyModal(); 
-      });
-  });
+// Execute Model Loading
+loadAndDecodeModel();
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
@@ -557,7 +528,6 @@ function typeChatTitle(newTitle, callback) {
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
 
-
   // Calculator Integration
   if (typeof window.calc === 'function') {
       const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
@@ -677,20 +647,15 @@ function handleCustomModelUpload(event) {
                 console.log("Genesis-AI: Custom JSON modal loaded for session.");
             } else if (file.name.endsWith('.bin')) {
                 const decoded = decodeBinary(buffer);
-                if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-                    throw new Error("Reconstructed string from .bin is not valid JSON.");
-                }
-                newResponses = JSON.parse(decoded);
+                // Apply same sanitization as main loader
+                const sanitized = decoded.replace(/,+(?=\s*[\}\]])/g, "");
+                newResponses = JSON.parse(sanitized);
                 console.log("Genesis-AI: Custom Binary modal loaded for session.");
             } else {
                 throw new Error("Unsupported file type. Please use .json or .bin");
             }
 
-            if (typeof newResponses !== 'object' || newResponses === null) {
-                throw new Error("Parsed modal is not a valid object.");
-            }
-
-            responses = newResponses; // Override for session
+            responses = newResponses; 
             uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
             updateDevModalStatus();
 
@@ -699,11 +664,6 @@ function handleCustomModelUpload(event) {
             uploadStatus.textContent = `Error: ${err.message}`;
         }
     };
-
-    reader.onerror = function() {
-        uploadStatus.textContent = "Error reading file.";
-    };
-
     reader.readAsArrayBuffer(file);
 }
 
@@ -751,7 +711,6 @@ if (deleteConfirm) deleteConfirm.onclick = () => {
         activeChatId = null;
         localStorage.removeItem("activeChatId");
         chatBox.innerHTML = "";
-        // After deleting, go to a new chat screen
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -805,19 +764,15 @@ document.getElementById("refreshCancel").onclick = () => {
 };
 
 function applyTheme() {
-    // Default to auto if not set, unless legacy theme exists
     if (localStorage.getItem("autoTheme") === null) {
         localStorage.setItem("autoTheme", localStorage.getItem("theme") === null ? "true" : "false");
     }
-    
     const isAuto = localStorage.getItem("autoTheme") === "true";
     if (autoThemeToggle) autoThemeToggle.checked = isAuto;
-    
     if (themeToggle) {
         themeToggle.disabled = isAuto;
         themeToggle.parentElement.style.opacity = isAuto ? "0.5" : "1";
     }
-
     let isDark;
     if (isAuto) {
         const hour = new Date().getHours();
@@ -825,7 +780,6 @@ function applyTheme() {
     } else {
         isDark = localStorage.getItem("theme") === "dark";
     }
-    
     if (themeToggle) themeToggle.checked = isDark;
     document.body.classList.toggle("dark", isDark);
 }
@@ -857,18 +811,16 @@ if (deleteAccountBtn) {
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
 document.getElementById("deleteAccountConfirm").onclick = () => { localStorage.clear(); window.location.reload(); };
+
 function startApp() {
     if (isCurrentlyBanned()) {
         showBanModal();
         return;
     }
-    
     if (loadSharedChat()) return;
 
     const isMobile = window.innerWidth <= 768;
-
     if (!isMobile) {
-        // Desktop: Always start with a New Chat
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -878,9 +830,7 @@ function startApp() {
         activeChatId = newChat.id;
         localStorage.setItem("activeChatId", activeChatId);
     } else {
-        // Mobile: Load last active chat or create new if none exists
         if (activeChatId && !chats.find(c => c.id === activeChatId)) activeChatId = null;
-        
         if (!activeChatId && chats.length > 0) {
             activeChatId = chats[0].id;
             localStorage.setItem("activeChatId", activeChatId);
