@@ -225,17 +225,17 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.7.1) ---
-// 1:1 Parity with James Turner (XPDevs) json2bin.c
-// Optimized for Large Modules (4.5/4.6) & Samsung Galaxy A15
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.7.2) ---
+// 1:1 Parity with James Turner (XPDevs) json2bin.c Logic
+// Developed for James Turner (XPDevs) Architecture
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10; 
-const XOR_KEY = 0xAA;     
-const SIG_ULTRA = 0x58504456; // "XPDV"
+const DICT_OFFSET = 0x10; //
+const XOR_KEY = 0xAA;     //
+const SIG_ULTRA = 0x58504456; // "XPDV" signature
 
 /**
- * Robust Decoder: Reconstructs JSON from XPDevs Binary Stream
+ * Robust Decoder: Reconstructs JSON while self-healing missing colons.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -243,7 +243,7 @@ function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const decoder = new TextDecoder('utf-8');
-    const outputParts = []; 
+    const outputParts = []; // Array-joining for memory safety on Galaxy A15
     let i = 0;
 
     // 1. Signature Verification
@@ -262,8 +262,8 @@ function decodeBinary(buffer) {
             outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
             i++;
             
-            // SELF-HEALING: In large files (4.5+), if a colon token (0x03) 
-            // is missing after a key, inject it to prevent JSON.parse failure.
+            // SELF-HEALING: If the compiler desynced and missed T_SEP (0x03),
+            // we force the colon here to prevent the "expected ':'" error.
             if (i < bytes.length && bytes[i] !== 0x03) {
                 outputParts.push(':');
             }
@@ -286,11 +286,11 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR
                 }
                 
                 let rawStr = decoder.decode(decrypted);
-                // JSON-Safe Sanitization
+                // JSON-Safe Sanitization to handle quotes within strings
                 let sanitized = rawStr
                     .replace(/\\/g, "\\\\") 
                     .replace(/"/g, '\\"')   
@@ -300,7 +300,7 @@ function decodeBinary(buffer) {
                     .replace(/[\x00-\x1F\x7F-\x9F]/g, ""); 
 
                 outputParts.push('"' + sanitized + '"');
-                i++; // Move past 0x00
+                i++; // Skip null byte
                 break;
             default:
                 i++; 
@@ -322,12 +322,11 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       finalStr = decodeBinary(buffer);
       responses = JSON.parse(finalStr);
-      console.log("Genesis-AI: Binary System Online (V7.7.1 Robust).");
+      console.log("Genesis-AI: Binary System Online (V7.7.2 Robust).");
     } catch (e) {
       console.error("--- XPDevs DIAGNOSTIC REPORT ---");
       console.error("Parse Error:", e.message);
       
-      // Auto-Locate Error Point
       const match = e.message.match(/column (\d+)/);
       if (match && finalStr) {
           const pos = parseInt(match[1]);
