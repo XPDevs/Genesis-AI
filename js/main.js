@@ -224,7 +224,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI BINARY DECODER (V5.2) ---
+// --- BINARY SYSTEM DECODER (V5.3) ---
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
@@ -237,20 +237,20 @@ async function loadAndDecodeModel() {
         const buffer = await response.arrayBuffer();
         const jsonContent = decodeBinary(buffer);
         
-        // Detailed sanitation: clean up structural errors before parsing
+        // Final structural check to ensure keys and values are correctly separated
         const sanitizedJSON = jsonContent
-            .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-            .replace(/}\s*{/g, '},{')      // Fix missing commas between objects
-            .replace(/]\s*\[/g, '],[')      // Fix missing commas between arrays
+            .replace(/"\s*"/g, '","')  // Insert missing commas between quotes
+            .replace(/}\s*"/g, '},"')  // Insert missing commas between objects and keys
+            .replace(/"\s*{/g, '":{')  // Fix keys followed by objects
+            .replace(/,(\s*[}\]])/g, '$1') // Clean trailing commas
             .trim();
 
         try {
             responses = JSON.parse(sanitizedJSON);
-            console.log("Genesis-AI: System active.");
+            console.log("Genesis-AI: Active.");
             return responses;
         } catch (parseErr) {
             console.warn("Structural Error: Logic mapping incomplete.", parseErr);
-            // Fallback: If parsing fails, try to wrap the string or log the raw output for debugging
             throw parseErr;
         }
     } catch (err) {
@@ -261,26 +261,18 @@ async function loadAndDecodeModel() {
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
-    const view = new DataView(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     
-    // Core dictionary for Genesis-AI keys
     const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
     const DICT_OFFSET = 0x10;
     
     let result = "";
-    let i = 0;
-
-    // Skip XPDV Header
-    if (bytes.length >= 4 && view.getUint32(0, true) === 0x58504456) {
-        i = 4;
-    }
+    let i = 4; // Skip XPDV Header
 
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Mapping (0x10 - 0x19)
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
             result += `"${DICT[b - DICT_OFFSET]}"`;
         } else {
@@ -291,7 +283,7 @@ function decodeBinary(buffer) {
                 case 0x04: result += ","; break; 
                 case 0x05: result += "["; break; 
                 case 0x06: result += "]"; break; 
-                case 0x07: // Manual String Start
+                case 0x07: 
                     i++; 
                     let strArr = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
@@ -300,9 +292,6 @@ function decodeBinary(buffer) {
                     }
                     result += `"${decoder.decode(new Uint8Array(strArr))}"`;
                     break;
-                default:
-                    // Ignore padding or unknown bytes
-                    break;
             }
         }
         i++;
@@ -310,7 +299,7 @@ function decodeBinary(buffer) {
     return result;
 }
 
-// Initial load
+// Start sequence
 loadAndDecodeModel();
 
 // --- UI & MESSAGING ---
@@ -329,18 +318,6 @@ function renderChatList() {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
     
-    let pressTimer;
-    li.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => {
-            document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
-            document.querySelectorAll('.dots-btn').forEach(b => b.style.background = "");
-            dropdown.style.display = "flex";
-            dots.style.background = "var(--active-chat)";
-        }, 1500);
-    }, {passive: true});
-    li.addEventListener('touchend', () => clearTimeout(pressTimer));
-    li.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
     const span = document.createElement("span");
     span.textContent = chat.title;
     span.className = "chat-name";
@@ -479,7 +456,7 @@ function appendMessage(text, role, isNew = false) {
   } else { textSpan.textContent = processedText; }
 }
 
-// --- LOGIC MODULES ---
+// --- LOGIC ---
 let bannedWords = [];
 async function loadBannedWords() {
   try {
@@ -510,7 +487,6 @@ function typeChatTitle(newTitle, callback) {
 
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
-
   const foundMatches = [];
   const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
   let tempInput = lowerInput;
@@ -578,7 +554,7 @@ function sendMessage() {
     }, 1500);
 }
 
-// --- DEVELOPER MODE ---
+// --- DEVELOPER ACCESS ---
 function updateDevModalStatus() {
     if (!devModal || !devModal.style.display || devModal.style.display === 'none') return;
     devCurrentModalName.textContent = responses.ver || "Unknown Version";
