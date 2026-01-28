@@ -62,6 +62,45 @@ const DICT_OFFSET = 0x10;
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
+// Helper function to process the binary stream into a valid logic object
+function decodeBinaryStream(bytes) {
+    const decoder = new TextDecoder('utf-8');
+    let jsonResult = "";
+    let i = 4; // Skip "XPDV" header
+
+    while (i < bytes.length) {
+        const b = bytes[i];
+        
+        if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
+            jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
+        } else {
+            switch(b) {
+                case 0x01: jsonResult += "{"; break; 
+                case 0x02: jsonResult += "}"; break; 
+                case 0x03: jsonResult += ":"; break; 
+                case 0x04: jsonResult += ","; break; 
+                case 0x05: jsonResult += "["; break; 
+                case 0x06: jsonResult += "]"; break; 
+                case 0x07: // Unique String Handler
+                    i++;
+                    let strArr = [];
+                    while (i < bytes.length && bytes[i] !== 0x00) {
+                        strArr.push(bytes[i] ^ XOR_KEY);
+                        i++;
+                    }
+                    // Escape quotes and backslashes for valid JSON
+                    const decodedStr = decoder.decode(new Uint8Array(strArr))
+                        .replace(/\\/g, '\\\\')
+                        .replace(/"/g, '\\"');
+                    jsonResult += `"${decodedStr}"`;
+                    break;
+            }
+        }
+        i++;
+    }
+    return JSON.parse(jsonResult);
+}
+
 async function loadAndDecodeModel() {
     try {
         const response = await fetch(modelURL + "?v=" + Date.now());
@@ -70,48 +109,14 @@ async function loadAndDecodeModel() {
         const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
         
-        // 1. Signature Verification (First 4 bytes)
         const view = new DataView(buffer);
-        const fileSig = view.getUint32(0, true); // Little-endian
+        const fileSig = view.getUint32(0, true); 
         if (fileSig !== SIG_ULTRA) {
-            throw new Error("Invalid Binary Signature: System Rejected.");
+            throw new Error("Invalid Binary Signature.");
         }
 
-        // 2. Structural Reconstruction
-        const decoder = new TextDecoder('utf-8');
-        let jsonResult = "";
-        let i = 4; // Skip the "XPDV" header
-
-        while (i < bytes.length) {
-            const b = bytes[i];
-            
-            // Check for Dictionary Keys (0x10 - 0x19)
-            if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-                jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
-            } else {
-                switch(b) {
-                    case 0x01: jsonResult += "{"; break; 
-                    case 0x02: jsonResult += "}"; break; 
-                    case 0x03: jsonResult += ":"; break; 
-                    case 0x04: jsonResult += ","; break; 
-                    case 0x05: jsonResult += "["; break; 
-                    case 0x06: jsonResult += "]"; break; 
-                    case 0x07: // Handle Unique String (Null Terminated + XOR)
-                        i++;
-                        let strArr = [];
-                        while (i < bytes.length && bytes[i] !== 0x00) {
-                            strArr.push(bytes[i] ^ XOR_KEY);
-                            i++;
-                        }
-                        jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                        break;
-                }
-            }
-            i++;
-        }
-
-        responses = JSON.parse(jsonResult);
-        console.log("Genesis-AI: Binary Logic Loaded Successfully.");
+        responses = decodeBinaryStream(bytes);
+        console.log("Genesis-AI: Logic Loaded Successfully.");
         return responses;
 
     } catch (err) {
@@ -120,7 +125,7 @@ async function loadAndDecodeModel() {
     }
 }
 
-// Start Model Loading
+// Start Loading
 loadAndDecodeModel();
 
 // --- SHARED CHAT LOGIC ---
@@ -578,36 +583,7 @@ function handleCustomModelUpload(event) {
             const fileSig = view.getUint32(0, true);
             if (fileSig !== SIG_ULTRA) throw new Error("Invalid Format.");
 
-            const decoder = new TextDecoder('utf-8');
-            let jsonResult = "";
-            let i = 4;
-
-            while (i < bytes.length) {
-                const b = bytes[i];
-                if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-                    jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
-                } else {
-                    switch(b) {
-                        case 0x01: jsonResult += "{"; break; 
-                        case 0x02: jsonResult += "}"; break; 
-                        case 0x03: jsonResult += ":"; break; 
-                        case 0x04: jsonResult += ","; break; 
-                        case 0x05: jsonResult += "["; break; 
-                        case 0x06: jsonResult += "]"; break; 
-                        case 0x07: 
-                            i++;
-                            let strArr = [];
-                            while (i < bytes.length && bytes[i] !== 0x00) {
-                                strArr.push(bytes[i] ^ XOR_KEY);
-                                i++;
-                            }
-                            jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                            break;
-                    }
-                }
-                i++;
-            }
-            responses = JSON.parse(jsonResult);
+            responses = decodeBinaryStream(bytes);
             uploadStatus.textContent = `Success! Loaded "${responses.ver || file.name}".`;
             updateDevModalStatus();
         } catch (err) {
