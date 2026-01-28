@@ -225,16 +225,15 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V6.3 Elite Sync) ---
+// --- XPDevs Genesis-AI Ultra-Decoder (V6.4) ---
 // Precisely aligned with James Turner's json2bin.c logic
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
-const XOR_KEY = 0xAA;
+const XOR_KEY = 0xAA; // Matches #define XOR_KEY 0xAA in json2bin.c
 
 /**
  * Reconstructs JSON from XPDevs Binary format.
- * Handles the custom 'ver' injection and XOR-encrypted strings.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -245,10 +244,9 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Precise Signature Skip (SIG_ULTRA: 0x58504456)
-    // fwrite(&sig, 4, 1, dest) in json2bin.c
+    // 1. Signature Check (SIG_ULTRA: 0x58504456 / "XPDV")
     if (view.getUint32(0, true) === 0x58504456) {
-        i = 4; 
+        i = 4; // Skip the 4-byte XPDevs header
     }
 
     // 2. Reconstruction Loop
@@ -261,9 +259,8 @@ function decodeBinary(buffer) {
             jsonString += '"' + key + '"';
             i++;
 
-            // CRITICAL: json2bin.c handles 'ver' as a special case.
-            // It writes the key token but skips the colon and original value.
-            // We manually add the colon here to keep the JSON valid.
+            // Handle 'ver' special case from ultra_compile():
+            // The compiler skips the colon and original value, injecting T_STR instead.
             if (key === "ver") {
                 jsonString += ":";
             }
@@ -277,11 +274,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (Unique XOR-encrypted string)
-                i++; // Skip 0x07 token
+            case 0x07: // T_STR (XOR String + Null Terminator)
+                i++; 
                 let start = i;
                 
-                // Find 0x00 null terminator written by fputc(0x00, dest)
+                // Seek 0x00 terminator written by fputc(0x00, dest)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -294,32 +291,28 @@ function decodeBinary(buffer) {
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Sanitize for JSON safety (essential for long tech descriptions)
+                // Escape characters for valid JSON structure
                 let sanitized = decodedStr
-                    .replace(/\\/g, "\\\\") // Escape backslashes first
-                    .replace(/"/g, '\\"')   // Escape quotes
-                    .replace(/\n/g, "\\n")  // Escape newlines
+                    .replace(/\\/g, "\\\\")
+                    .replace(/"/g, '\\"')
+                    .replace(/\n/g, "\\n")
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Step over 0x00 byte
+                i++; // Step over 0x00
                 break;
             default:
-                i++; // Skip unknown padding bytes
+                i++; // Skip non-token bytes
                 break;
         }
     }
 
-    // 3. Final structural integrity check
-    let finalJson = jsonString.trim();
-    // Strip trailing commas before closing braces/brackets
-    finalJson = finalJson.replace(/,\s*([}\]])/g, '$1');
-    
-    return finalJson;
+    // 3. Precision Cleaning
+    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
 }
 
-// 4. Integrated Loader with Fallback Logic
+// 4. Integrated Loader with forced Seeker Logic
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -329,35 +322,36 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       
-      // Ensure we are parsing from the actual start of the JSON object
-      const jsonStart = decoded.indexOf("{");
-      if (jsonStart === -1) throw new Error("Missing JSON root");
+      // FORCED SEEKER: Find the first '{' to avoid any leading binary noise
+      const validStart = decoded.indexOf("{");
+      if (validStart === -1) throw new Error("No JSON object found");
       
-      const cleanJson = decoded.substring(jsonStart);
+      const cleanJson = decoded.substring(validStart);
       responses = JSON.parse(cleanJson);
-      console.log("Genesis-AI: System Online (Binary Core V6.3).");
-    } catch (e) {
-      console.warn("Binary Reconstruction Failed: " + e.message);
       
-      // Attempt Raw Recovery for non-binary JSON files
+      console.log("Genesis-AI: System Online (Binary V6.4).");
+    } catch (e) {
+      console.warn("Binary Error: " + e.message);
+      
+      // Fallback for .json files
       try {
         if (jsonURL.endsWith(".json")) {
             const rawText = new TextDecoder().decode(buffer).trim();
             responses = JSON.parse(rawText);
             console.log("Genesis-AI: Raw Fallback Active.");
         } else {
-            throw new Error("Cannot raw-parse binary file");
+            throw new Error("Cannot parse .bin as text");
         }
       } catch (err) {
         console.error("Critical: Model Corrupt.");
-        // Emergency Fallback to local 1.0 JSON
+        // Emergency Load SPT 1.0
         fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
           .then(res => res.json())
           .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Genesis-AI Connection Error.", err));
+  .catch(err => console.error("Genesis-AI: Load failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
