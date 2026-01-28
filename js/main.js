@@ -226,12 +226,14 @@ function showBanModal() {
 }
 
 // --- XPDevs Genesis-AI Ultra-Decoder (V7.5.4) ---
-// 1:1 Parity with James Turner's json2bin.c logic
+// 1:1 Parity with json2bin.c
 
+// Updated Dictionary: Aurex removed to match your latest requirement.
+// Ensure your C code DICT[] matches this exact order and size.
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
-const SIG_ULTRA = 0x58504456; // "XPDV" (XPDevs Signature)
+const SIG_ULTRA = 0x58504456; // "XPDV" in Little Endian
 
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -253,7 +255,7 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Expansion (0x10 and above)
+        // Dictionary Expansion (ch >= DICT_OFFSET && ch < DICT_OFFSET + DICT_SIZE)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
@@ -261,7 +263,7 @@ function decodeBinary(buffer) {
             continue;
         }
 
-        // Structural Markers (Matches T_ tokens in json2bin.c)
+        // Structural Markers (Matches switch(ch) in ultra_decompile)
         switch(b) {
             case 0x01: jsonString += "{"; i++; break; // T_START
             case 0x02: jsonString += "}"; i++; break; // T_END
@@ -269,11 +271,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (Encrypted Data Block)
+            case 0x07: // T_STR (Matches: while ((ch = fgetc(src)) != 0x00))
                 i++; // Skip the 0x07 marker
                 let start = i;
                 
-                // Seek the null terminator (0x00) inserted by the compiler
+                // Seek the null terminator (0x00)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -281,12 +283,13 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR 0xAA logic
+                    // Apply XOR 0xAA to each byte
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Sanitization for JSON integrity
+                // Escape special characters for JS JSON compliance
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -298,7 +301,7 @@ function decodeBinary(buffer) {
                 i++; // Skip the 0x00 null terminator
                 break;
             default:
-                i++; // Advance pointer for non-token bytes
+                i++; // Advance if unknown byte found
                 break;
         }
     }
