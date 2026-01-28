@@ -229,29 +229,47 @@ function showBanModal() {
 // Matches XPDevs Genesis-AI Ultra-Compressor V2.1 (json2bin.c)
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
+/**
+ * Loads the compiled .bin model and reconstructs the JSON ecosystem.
+ */
 async function loadAndDecodeModel() {
-    const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
     const binURL = localStorage.getItem("selectedModel") || defaultModel;
 
     try {
         const response = await fetch(binURL);
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        
         const buffer = await response.arrayBuffer();
         const jsonContent = decodeBinary(buffer);
-        return JSON.parse(jsonContent);
+        
+        // Final sanitization: Remove trailing commas before closing braces/brackets
+        // This prevents the "expected ':'" and "unexpected token" errors
+        const sanitizedJSON = jsonContent.replace(/,+(?=\s*[\}\]])/g, "");
+
+        try {
+            return JSON.parse(sanitizedJSON);
+        } catch (parseErr) {
+            console.error("Critical Reconstruction Error: Result is not valid JSON.");
+            console.log("Raw Output for Debugging:", sanitizedJSON);
+            throw parseErr;
+        }
     } catch (err) {
         console.error("Failed to load Genesis-AI binary:", err);
+        return null;
     }
 }
 
+/**
+ * Core Decoder: Reconstructs XPDV Binary into Logic Strings
+ */
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     
-    // Dictionary mapping from json2bin.c (DICT_OFFSET 0x10)
+    // XPDevs Dictionary Mapping (DICT_OFFSET 0x10)
     const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
     const DICT_OFFSET = 0x10;
     
@@ -259,7 +277,7 @@ function decodeBinary(buffer) {
     let i = 0;
 
     // 1. Signature Check (SIG_ULTRA: 0x58504456 "XPDV")
-    try {
+    if (bytes.length >= 4) {
         const sig = view.getUint32(0, true); 
         if (sig === 0x58504456) {
             i = 4; // Skip "XPDV" header
@@ -267,8 +285,6 @@ function decodeBinary(buffer) {
         } else {
             console.warn("Genesis-AI: Signature mismatch. Ensure file is a compiled .bin.");
         }
-    } catch (e) {
-        i = 0;
     }
 
     // 2. Token-based Reconstruction
@@ -284,25 +300,18 @@ function decodeBinary(buffer) {
                 case 0x01: jsonString += "{"; break; // T_START
                 case 0x02: jsonString += "}"; break; // T_END
                 case 0x03: jsonString += ":"; break; // T_SEP
-                case 0x04: // T_NEXT
-                    if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
-                        jsonString += ",";
-                    }
-                    break;
+                case 0x04: jsonString += ","; break; // T_NEXT (Fixed: Treat as literal comma)
                 case 0x05: jsonString += "["; break; // T_ARR_S
                 case 0x06: jsonString += "]"; break; // T_ARR_E
-                case 0x07: // T_STR (Encrypted String)
+                case 0x07: // T_STR (XOR Encrypted String)
                     i++; 
-                    let start = i;
+                    let stringBytes = [];
+                    // Collect bytes until null terminator (0x00)
                     while (i < bytes.length && bytes[i] !== 0x00) {
+                        stringBytes.push(bytes[i] ^ XOR_KEY);
                         i++;
                     }
-                    const chunk = bytes.slice(start, i);
-                    const decrypted = new Uint8Array(chunk.length);
-                    for (let j = 0; j < chunk.length; j++) {
-                        decrypted[j] = chunk[j] ^ XOR_KEY;
-                    }
-                    jsonString += '"' + decoder.decode(decrypted) + '"';
+                    jsonString += '"' + decoder.decode(new Uint8Array(stringBytes)) + '"';
                     break;
             }
         }
