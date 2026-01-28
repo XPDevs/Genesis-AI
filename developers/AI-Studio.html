@@ -68,7 +68,7 @@
         }
     </style>
 </head>
-<body class="studio-bg text-gray-100 min-h-screen flex antialiased">
+<body class="studio-bg text-gray-100 h-screen overflow-hidden flex antialiased">
 
     <!-- Custom Modal for Messages -->
     <div id="custom-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
@@ -124,6 +124,23 @@
         </div>
     </div>
     
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
+        <div class="card-bg rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl border border-gray-700">
+            <h3 id="confirm-title" class="text-xl font-bold text-white">Confirm Action</h3>
+            <p id="confirm-message" class="text-gray-300 text-sm"></p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="document.getElementById('confirmation-modal').classList.remove('open')" 
+                        class="px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                    Cancel
+                </button>
+                <button id="confirm-action-btn" class="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors shadow-lg">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Tune Modal -->
     <div id="create-tune-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
         <div class="card-bg rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
@@ -163,15 +180,23 @@
         </div>
     </div>
 
+    <!-- Mobile Backdrop -->
+    <div id="mobile-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm transition-opacity opacity-0"></div>
+
     <!-- Sidebar Navigation -->
-    <aside class="sidebar-bg w-20 md:w-64 flex-shrink-0 border-r border-gray-800/50 p-4 flex flex-col">
+    <aside id="main-sidebar" class="sidebar-bg w-64 flex-shrink-0 border-r border-gray-800/50 p-4 flex flex-col fixed md:relative z-40 h-full transition-transform transform -translate-x-full md:translate-x-0">
         
-        <div class="mb-8 flex items-center justify-center md:justify-start space-x-2">
-            <svg class="w-8 h-8 text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 22H22L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 10L17 20H7L12 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h1 class="hidden md:block text-xl font-extrabold text-white">Genesis-AI</h1>
+        <div class="mb-8 flex items-center justify-between px-2">
+            <div class="flex items-center space-x-2">
+                <svg class="w-8 h-8 text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 22H22L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 10L17 20H7L12 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h1 class="text-xl font-extrabold text-white">Genesis-AI</h1>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
 
         <nav class="flex flex-col space-y-2 mt-6">
@@ -179,59 +204,65 @@
             <!-- Dashboard Link -->
             <a href="#" onclick="switchView('view-dashboard', this)" data-view="view-dashboard" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                <span class="ml-3 hidden md:block">Dashboard</span>
+                <span class="ml-3">Dashboard</span>
             </a>
 
             <a href="https://xpdevs.github.io/Genesis-AI" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                <span class="ml-3 hidden md:block">Back to Genesis-AI</span>
+                <span class="ml-3">Back to Genesis-AI</span>
             </a>
 
             <a href="#" onclick="switchView('view-api', this)" data-view="view-api" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM15 7V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v3m0 6h.01M10 12h.01M13 15h.01"></path></svg>
-                <span class="ml-3 hidden md:block">API Keys</span>
+                <span class="ml-3">API Keys</span>
             </a>
             
             <!-- Playground Link -->
             <a href="#" onclick="switchView('view-playground', this)" data-view="view-playground" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span class="ml-3 hidden md:block">Playground</span>
+                <span class="ml-3">Playground</span>
             </a>
 
             <!-- Library Link -->
             <a href="#" onclick="switchView('view-library', this)" data-view="view-library" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
-                <span class="ml-3 hidden md:block">Prompt Library</span>
+                <span class="ml-3">Prompt Library</span>
             </a>
 
             <!-- Models Link -->
             <a href="#" onclick="switchView('view-models', this)" data-view="view-models" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                <span class="ml-3 hidden md:block">Available Models</span>
+                <span class="ml-3">Available Models</span>
             </a>
 
             <!-- Tuned Models -->
             <a href="#" onclick="switchView('view-tuning', this)" data-view="view-tuning" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                <span class="ml-3 hidden md:block">Tuned Models</span>
+                <span class="ml-3">Tuned Models</span>
             </a>
 
             <!-- Batch Testing -->
             <a href="#" onclick="switchView('view-batch', this)" data-view="view-batch" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                <span class="ml-3 hidden md:block">Batch Testing</span>
+                <span class="ml-3">Batch Testing</span>
             </a>
 
             <!-- Settings -->
             <a href="#" onclick="switchView('view-settings', this)" data-view="view-settings" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <span class="ml-3 hidden md:block">Settings</span>
+                <span class="ml-3">Settings</span>
             </a>
 
             <!-- API Key Usage Guide -->
             <a href="#" onclick="switchView('view-usage', this)" data-view="view-usage" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"></path></svg>
-                <span class="ml-3 hidden md:block">Usage Guide</span>
+                <span class="ml-3">Usage Guide</span>
+            </a>
+
+            <!-- AI Guide Link -->
+            <a href="#" onclick="switchView('view-guide', this)" data-view="view-guide" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="ml-3">AI Guide</span>
             </a>
 
         </nav>
@@ -240,7 +271,12 @@
     <main class="flex-1 flex flex-col overflow-hidden">
         
         <header class="p-4 md:p-6 border-b border-gray-800/50 flex justify-between items-center flex-shrink-0">
-            <h2 id="current-view-title" class="text-2xl font-semibold text-white">Console</h2>
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="md:hidden mr-4 text-gray-400 hover:text-white focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h2 id="current-view-title" class="text-2xl font-semibold text-white">Console</h2>
+            </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm font-medium text-gray-400">User: Guest</span>
                 </div>
@@ -311,6 +347,16 @@
                         <label for="key-name" class="block text-sm font-medium text-gray-300">Key Name (e.g., "Dev Server API")</label>
                         <input type="text" id="key-name" placeholder="Enter a descriptive name for the key"
                             class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 text-gray-100 placeholder-gray-500 text-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="key-limit" class="block text-sm font-medium text-gray-300">Token Limit (Words)</label>
+                        <select id="key-limit" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 text-gray-100 text-sm">
+                            <option value="128" selected>128 Words (Default)</option>
+                            <option value="256">256 Words</option>
+                            <option value="512">512 Words</option>
+                            <option value="1024">1024 Words</option>
+                            <option value="UNL1M">No Limit</option>
+                        </select>
                     </div>
 
                     <button id="generate-key-btn" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-md">
@@ -603,11 +649,14 @@
                     <div class="code-block text-xs">
                         <pre>async function generateContent(apiKey, prompt) {
     // Validate API Key Structure
-    const keyRegex = /^gs_sk_[0-9a-f]{8}_[0-9a-f]{8}_[0-9a-f]{8}$/i;
-    if (!keyRegex.test(apiKey)) {
-        throw new Error("Invalid API Key: Must match format gs_sk_xxxxxxxx_xxxxxxxx_xxxxxxxx");
+    const keyRegex = /^gs_sk_[0-9a-f]{8}_[0-9a-f]{8}_[0-9a-f]{8}TO(\d+|UNL1M)$/i;
+    const match = apiKey.match(keyRegex);
+    if (!match) {
+        throw new Error("Invalid API Key: Must match format gs_sk_...TO<limit>");
     }
+    const tokenLimit = match[1] === 'UNL1M' ? Infinity : parseInt(match[1]);
 
+    // Call this endpoint for full AI generation
     const response = await fetch('https://xpdevs.github.io/Genesis-AI/developers/api/generate', {
         method: 'POST',
         headers: {
@@ -626,6 +675,13 @@
     }
 
     const data = await response.json();
+
+    // Enforce Token Limit (Word Count)
+    if (tokenLimit !== Infinity && data.text) {
+        const words = data.text.split(/\s+/);
+        if (words.length > tokenLimit) data.text = words.slice(0, tokenLimit).join(" ");
+    }
+
     return data;
 }
 
@@ -780,6 +836,17 @@ function violatesRules(text) {
                 </div>
             </section>
             
+            <!-- AI GUIDE VIEW -->
+            <section id="view-guide" class="studio-content space-y-8 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-3xl font-bold text-white">AI Guide</h3>
+                    <a href="../docs/ai-guide-2.html" target="_blank" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition-colors text-white">Open in New Tab</a>
+                </div>
+                <div class="w-full h-[calc(100vh-200px)] bg-white rounded-xl overflow-hidden border border-gray-700">
+                    <iframe src="../docs/ai-guide-2.html" class="w-full h-full border-none"></iframe>
+                </div>
+            </section>
+
         </div>
     </main>
 
@@ -802,6 +869,25 @@ function violatesRules(text) {
                 titleEl.classList.add('text-indigo-400');
             }
 
+            modal.classList.add('open');
+        };
+
+        // Confirmation Modal Logic
+        window.showConfirmationModal = (title, message, onConfirm) => {
+            const modal = document.getElementById('confirmation-modal');
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            
+            const btn = document.getElementById('confirm-action-btn');
+            // Clone to remove old listeners
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.onclick = () => {
+                onConfirm();
+                modal.classList.remove('open');
+            };
+            
             modal.classList.add('open');
         };
 
@@ -847,11 +933,15 @@ function violatesRules(text) {
 
         document.getElementById('generate-key-btn').addEventListener('click', () => {
             const nameInput = document.getElementById('key-name');
+            const limitInput = document.getElementById('key-limit');
             let keyName = nameInput.value.trim() || 'Unnamed Key';
             
-            const newKey = generateUniqueKey();
+            const randomHex = () => Math.random().toString(16).substring(2, 10);
+            const limitVal = limitInput.value;
+            const suffix = limitVal === 'UNL1M' ? 'TOUNL1M' : `TO${limitVal}`;
+            const newKey = `gs_sk_${randomHex()}_${randomHex()}_${randomHex()}${suffix}`;
             const timestamp = new Date().toISOString();
-            const partialKey = `gs_sk_...${newKey.slice(-8)}`;
+            const partialKey = `gs_sk_...${newKey.slice(-13)}`;
             
             const newKeyObject = {
                 // fullKey is TEMPORARILY stored for display/copy upon generation
@@ -964,12 +1054,16 @@ function violatesRules(text) {
         };
 
         function deleteKey(keyId) {
-            if (confirm("Are you sure you want to delete this API Key? This action cannot be undone.")) {
-                apiKeys = apiKeys.filter(key => key.id !== keyId);
-                saveKeys();
-                renderKeys();
-                showModal('Deleted', 'API Key has been permanently deleted.', false);
-            }
+            showConfirmationModal(
+                "Delete API Key?", 
+                "Are you sure you want to delete this API Key? This action cannot be undone.",
+                () => {
+                    apiKeys = apiKeys.filter(key => key.id !== keyId);
+                    saveKeys();
+                    renderKeys();
+                    showModal('Deleted', 'API Key has been permanently deleted.', false);
+                }
+            );
         }
 
         function renderKeys() {
@@ -1258,6 +1352,7 @@ function violatesRules(text) {
             const sys = document.getElementById('system-prompt').value;
             const topp = document.getElementById('topp-slider').value;
             const topk = document.getElementById('topk-slider').value;
+            const modelName = model === 'spt-4.5-bin' ? 'genesis-spt-4.5' : 'genesis-spt-1.0';
             
             // Collect Examples
             const examples = [];
@@ -1270,6 +1365,7 @@ function violatesRules(text) {
 // Includes: Binary Decoding, Safety System, Calculator, and Response Logic
 
 const config = {
+    apiUrl: "https://xpdevs.github.io/Genesis-AI/developers/api/generate",
     modelUrl: "${model === 'spt-4.5-bin' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
@@ -1305,6 +1401,36 @@ function calc(expression) {
 // Binary Decoder (See Usage Guide for full implementation)
 function decodeBinary(buffer) { /* ... implementation ... */ return {}; }
 
+// API Generation Function
+async function generateWithAPI(apiKey, userQuery) {
+    // Detect Token Limit
+    const match = apiKey.match(/TO(\d+|UNL1M)$/);
+    let maxWords = 128;
+    if (match) maxWords = match[1] === 'UNL1M' ? Infinity : parseInt(match[1]);
+
+    const response = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: "${modelName}",
+            prompt: userQuery,
+            system: config.systemPrompt,
+            temperature: config.temperature
+        })
+    });
+    const data = await response.json();
+    
+    // Enforce Limit
+    if (maxWords !== Infinity && data.text) {
+        const words = data.text.split(/\\s+/);
+        if (words.length > maxWords) data.text = words.slice(0, maxWords).join(" ");
+    }
+    return data;
+}
+
 async function runGenesis(userQuery) {
     // 1. Load Resources
     if (!bannedWords.length) await loadSafety();
@@ -1331,6 +1457,12 @@ async function runGenesis(userQuery) {
         knowledgeBase = await response.json();
     }
     console.log("Model Ready. Keys:", Object.keys(knowledgeBase).length);
+
+    // 6. API Fallback / Full Generation
+    // Call the generate endpoint for complete AI usage
+    console.log("Calling API...");
+    const apiResponse = await generateWithAPI("YOUR_API_KEY", userQuery);
+    console.log("API Result:", apiResponse);
 }`;
             document.getElementById('code-display').textContent = code;
             document.getElementById('code-modal').classList.add('open');
@@ -1410,9 +1542,18 @@ async function runGenesis(userQuery) {
                 'view-models': 'Available Models',
                 'view-tuning': 'Tuned Models',
                 'view-settings': 'Settings',
-                'view-batch': 'Batch Testing'
+                'view-batch': 'Batch Testing',
+                'view-guide': 'AI Guide'
             };
             document.getElementById('current-view-title').textContent = titleMap[viewId] || 'Console';
+
+            // Auto-close sidebar on mobile when a link is clicked
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('main-sidebar');
+                if (!sidebar.classList.contains('-translate-x-full')) {
+                    toggleSidebar();
+                }
+            }
         };
 
         // Initial load
@@ -1470,10 +1611,14 @@ async function runGenesis(userQuery) {
         };
 
         window.clearAllData = () => {
-            if(confirm("Are you sure? This will wipe all Studio data from this browser.")) {
-                localStorage.clear();
-                window.location.reload();
-            }
+            showConfirmationModal(
+                "Clear All Data?",
+                "This will wipe all Studio data from this browser (API keys, prompts, tuned models). This cannot be undone.",
+                () => {
+                    localStorage.clear();
+                    window.location.reload();
+                }
+            );
         };
 
         // --- Dashboard Logic ---
@@ -1532,6 +1677,22 @@ async function runGenesis(userQuery) {
                 row.querySelector('.status-badge').textContent = "Done";
             }
             btn.disabled = false; btn.classList.remove('opacity-50');
+        };
+
+        // --- Mobile Sidebar Logic ---
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('main-sidebar');
+            const backdrop = document.getElementById('mobile-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
         };
     </script>
 </body>
