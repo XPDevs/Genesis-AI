@@ -230,7 +230,7 @@ function showBanModal() {
 
 // Updated Dictionary: Aurex removed to match your latest requirement.
 // Ensure your C code DICT[] matches this exact order and size.
-const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "input", "output"];
+const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
 const SIG_ULTRA = 0x58504456; // "XPDV" in Little Endian
@@ -258,7 +258,12 @@ function decodeBinary(buffer) {
         // Dictionary Expansion (ch >= DICT_OFFSET && ch < DICT_OFFSET + DICT_SIZE)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
-            jsonString += '"' + key + '"';
+            // Fix for C compiler bug: Merge split strings caused by escaped quotes
+            if (jsonString.endsWith('"')) {
+                jsonString = jsonString.slice(0, -1) + key + '"';
+            } else {
+                jsonString += '"' + key + '"';
+            }
             i++;
             continue;
         }
@@ -297,7 +302,12 @@ function decodeBinary(buffer) {
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
-                jsonString += '"' + sanitized + '"';
+                // Fix for C compiler bug: Merge split strings caused by escaped quotes
+                if (jsonString.endsWith('"')) {
+                    jsonString = jsonString.slice(0, -1) + sanitized + '"';
+                } else {
+                    jsonString += '"' + sanitized + '"';
+                }
                 i++; // Skip the 0x00 null terminator
                 break;
             default:
