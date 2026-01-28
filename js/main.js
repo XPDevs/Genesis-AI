@@ -259,8 +259,10 @@ function decodeBinary(buffer) {
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             // Fix for C compiler bug: Merge split strings caused by escaped quotes
-            if (jsonString.endsWith('"')) {
+            if (jsonString.endsWith('\\""')) {
                 jsonString = jsonString.slice(0, -1) + key + '"';
+            } else if (jsonString.endsWith('"')) {
+                jsonString += ':"' + key + '"';
             } else {
                 jsonString += '"' + key + '"';
             }
@@ -303,8 +305,10 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 // Fix for C compiler bug: Merge split strings caused by escaped quotes
-                if (jsonString.endsWith('"')) {
+                if (jsonString.endsWith('\\""')) {
                     jsonString = jsonString.slice(0, -1) + sanitized + '"';
+                } else if (jsonString.endsWith('"')) {
+                    jsonString += ':"' + sanitized + '"';
                 } else {
                     jsonString += '"' + sanitized + '"';
                 }
