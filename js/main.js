@@ -53,7 +53,7 @@ const CHAR_SEPARATOR = '000';
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
 
-// --- COMPILER COMPATIBILITY DECODER (V2.4) ---
+// --- COMPILER COMPATIBILITY DECODER (V2.5) ---
 const XOR_KEY = 0xAA;
 const SIG_ULTRA = 0x58504456; // "XPDV"
 const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
@@ -63,53 +63,54 @@ const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
 /**
- * State-Aware Binary Decoder
- * Tracks structural position to prevent missing delimiters.
+ * Strict structural decoder
+ * Ensures no duplicate commas and correct colon placement.
  */
 function decodeBinaryStream(bytes) {
     const decoder = new TextDecoder('utf-8');
     let jsonResult = "";
     let i = 4; // Skip signature
     
-    // State machine to track the structure
-    let expectation = "START"; // START, KEY, VALUE, NEXT
-    let firstInObject = true;
+    let state = "KEY"; // KEY, COLON, VALUE, COMMA
+    let depth = 0;
 
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Handle Dictionary Tokens (Always Strings)
+        // Handle Dictionary Tokens (Keys/Strings)
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-            if (expectation === "KEY" && !firstInObject) jsonResult += ",";
+            if (state === "COMMA") { jsonResult += ","; state = "KEY"; }
             jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
-            firstInObject = false;
-            expectation = "COLON";
+            state = "COLON";
         } else {
             switch(b) {
                 case 0x01: // {
                     jsonResult += "{"; 
-                    expectation = "KEY";
-                    firstInObject = true;
+                    state = "KEY";
+                    depth++;
                     break; 
                 case 0x02: // }
                     jsonResult += "}"; 
-                    expectation = "NEXT";
+                    state = "COMMA";
+                    depth--;
                     break; 
                 case 0x03: // :
                     jsonResult += ":"; 
-                    expectation = "VALUE";
+                    state = "VALUE";
                     break; 
                 case 0x04: // ,
-                    jsonResult += ","; 
-                    expectation = "KEY";
+                    // If the compiler explicitly sends a comma, we use it and reset state
+                    if (state !== "COMMA") jsonResult += ",";
+                    state = "KEY";
                     break; 
                 case 0x05: // [
                     jsonResult += "["; 
                     break; 
                 case 0x06: // ]
                     jsonResult += "]"; 
+                    state = "COMMA";
                     break; 
-                case 0x07: // Unique String Start
+                case 0x07: // String Start
                     i++;
                     let strArr = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
@@ -118,17 +119,12 @@ function decodeBinaryStream(bytes) {
                     }
                     let decodedStr = decoder.decode(new Uint8Array(strArr));
                     
-                    // Logic to ensure correct delimiters are present
-                    if (expectation === "KEY" && !firstInObject) jsonResult += ",";
+                    if (state === "COMMA") { jsonResult += ","; state = "KEY"; }
                     
                     jsonResult += JSON.stringify(decodedStr);
                     
-                    if (expectation === "KEY") {
-                        expectation = "COLON";
-                    } else {
-                        expectation = "NEXT";
-                    }
-                    firstInObject = false;
+                    if (state === "KEY") state = "COLON";
+                    else state = "COMMA";
                     break;
             }
         }
@@ -136,10 +132,7 @@ function decodeBinaryStream(bytes) {
     }
     
     try {
-        // Final sanity check: if the compiler emitted colons as tokens, 
-        // the state machine handles them. If it didn't, we patch.
-        let finalized = jsonResult.replace(/"([^"]+)""/g, '"$1":"'); 
-        return JSON.parse(finalized);
+        return JSON.parse(jsonResult);
     } catch (e) {
         console.error("Data Reconstruction Error at Byte:", i);
         console.error("Buffer Context:", jsonResult.slice(-100));
@@ -172,7 +165,7 @@ async function loadAndDecodeModel() {
 
 loadAndDecodeModel();
 
-// --- UI & MESSAGING (Logic preserved) ---
+// UI and System interactions
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 function updateURL(chatTitle) {
   const url = new URL(window.location.origin + window.location.pathname);
@@ -317,15 +310,6 @@ function sendMessage() {
   saveChats();
   setTimeout(() => appendMessage(botMsg.text, botMsg.role, true), 1000);
 }
-
-// Event Listeners
-if (sendBtn) sendBtn.onclick = sendMessage;
-if (userInput) userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-if (newChatBtn) newChatBtn.onclick = () => {
-  const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-  chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-  saveChats(); renderChatList(); renderMessages(); updateURL("New Chat");
-};
 
 // Start logic
 window.addEventListener('load', () => {
