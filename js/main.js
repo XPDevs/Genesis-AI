@@ -225,8 +225,8 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.1) ---
-// 1:1 Parity with James Turner's json2bin.c logic
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.3) ---
+// 1:1 Parity with James Turner's json2bin.c logic (Aurex Removed)
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "input", "output"];
 const DICT_OFFSET = 0x10;
@@ -253,7 +253,8 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Expansion (0x10 - 0x19)
+        // Dictionary Expansion (0x10 and above)
+        // Checks if the byte falls within the range of our keys
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
@@ -269,11 +270,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (Data Segment)
+            case 0x07: // T_STR (Encrypted Unique Data)
                 i++; 
                 let start = i;
                 
-                // Seek null terminator
+                // Seek the null termination marker (0x00)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -281,21 +282,21 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR Decryption
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Escape characters properly for JSON compliance
+                // Robust JSON escaping for clean parsing
                 let sanitized = decodedStr
-                    .replace(/\\/g, "\\\\")
-                    .replace(/"/g, '\\"')
+                    .replace(/\\/g, "\\\\") // Escape backslashes first
+                    .replace(/"/g, '\\"')   // Escape quotes
                     .replace(/\n/g, "\\n")
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip 0x00
+                i++; // Skip null termination
                 break;
             default:
                 i++; 
@@ -303,14 +304,14 @@ function decodeBinary(buffer) {
         }
     }
 
-    // Final cleanup: Remove trailing commas before closing braces/brackets
-    // and trim any leading/trailing whitespace.
+    // 3. Final Structural Validation
+    // Cleans up illegal trailing commas that cause "Unexpected token" errors
     return jsonString.trim()
         .replace(/,\s*}/g, '}')
         .replace(/,\s*\]/g, ']');
 }
 
-// 3. Ecosystem Loading & Integration
+// 4. Ecosystem Loading & Integration
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -320,24 +321,23 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       
-      // Locate the first '{' to ensure we aren't parsing header noise
+      // Locate the first valid structural root
       const rootIndex = decoded.indexOf("{");
       if (rootIndex === -1) throw new Error("Structural root missing");
       
       const cleanJson = decoded.substring(rootIndex);
-      
-      // The fix: Parse the cleaned string
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5.1 Sync).");
+      console.log("Genesis-AI: Binary System Online (V7.5.3 Sync).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
       
+      // Fallback for non-compiled modules
       if (jsonURL.endsWith(".json")) {
           const rawText = new TextDecoder().decode(buffer).trim();
           responses = JSON.parse(rawText);
       } else {
-          // Emergency Fallback to Core
+          // Emergency Fallback to Core SPT 1.0
           fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
             .then(res => res.json())
             .then(data => { responses = data; });
