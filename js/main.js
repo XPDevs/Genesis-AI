@@ -53,7 +53,7 @@ const CHAR_SEPARATOR = '000';
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
 
-// --- COMPILER COMPATIBILITY DECODER (V2.2) ---
+// --- COMPILER COMPATIBILITY DECODER (V2.3) ---
 const XOR_KEY = 0xAA;
 const SIG_ULTRA = 0x58504456; // "XPDV"
 const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
@@ -62,15 +62,19 @@ const DICT_OFFSET = 0x10;
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
+/**
+ * Enhanced Binary Decoder
+ * Handles structural tokens to rebuild a valid data object.
+ */
 function decodeBinaryStream(bytes) {
     const decoder = new TextDecoder('utf-8');
     let jsonResult = "";
-    let i = 4; // Skip "XPDV"
+    let i = 4; // Skip signature
 
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Check if byte is a Dictionary Token
+        // Dictionary lookup
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
             jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
         } else {
@@ -81,21 +85,16 @@ function decodeBinaryStream(bytes) {
                 case 0x04: jsonResult += ","; break; 
                 case 0x05: jsonResult += "["; break; 
                 case 0x06: jsonResult += "]"; break; 
-                case 0x07: // Unique String Start
+                case 0x07: // String start
                     i++;
                     let strArr = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         strArr.push(bytes[i] ^ XOR_KEY);
                         i++;
                     }
-                    // Handle encoding and JSON safety
-                    const decodedStr = decoder.decode(new Uint8Array(strArr))
-                        .replace(/\\/g, '\\\\')
-                        .replace(/"/g, '\\"')
-                        .replace(/\n/g, '\\n')
-                        .replace(/\r/g, '\\r')
-                        .replace(/\t/g, '\\t');
-                    jsonResult += `"${decodedStr}"`;
+                    let decodedStr = decoder.decode(new Uint8Array(strArr));
+                    // Ensure quotes and escapes for final parsing
+                    jsonResult += JSON.stringify(decodedStr);
                     break;
             }
         }
@@ -103,9 +102,12 @@ function decodeBinaryStream(bytes) {
     }
     
     try {
-        return JSON.parse(jsonResult);
+        // Clean up any trailing commas or double delimiters caused by byte misalignment
+        const sanitized = jsonResult.replace(/,}/g, "}").replace(/,]/g, "]");
+        return JSON.parse(sanitized);
     } catch (e) {
-        console.error("JSON Parse Error. Partial Data:", jsonResult.substring(Math.max(0, jsonResult.length - 100)));
+        console.error("Data Reconstruction Error at Byte:", i);
+        console.error("Snapshot around error:", jsonResult.slice(-50));
         throw e;
     }
 }
@@ -113,22 +115,22 @@ function decodeBinaryStream(bytes) {
 async function loadAndDecodeModel() {
     try {
         const response = await fetch(modelURL + "?v=" + Date.now());
-        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        if (!response.ok) throw new Error(`Status: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        
         const view = new DataView(buffer);
+
         if (bytes.length < 4 || view.getUint32(0, true) !== SIG_ULTRA) {
-            throw new Error("Invalid Binary Signature.");
+            throw new Error("Invalid format signature.");
         }
 
         responses = decodeBinaryStream(bytes);
-        console.log("Genesis-AI: Logic Loaded Successfully.");
+        console.log("Genesis: Model active.");
         return responses;
 
     } catch (err) {
-        console.error("Critical System Error:", err);
+        console.error("System Loading Error:", err);
         return null;
     }
 }
@@ -231,11 +233,11 @@ function ensureBanModal() {
   modal.id = 'banModal';
   modal.className = 'modal ban-modal';
   modal.innerHTML = `
-    <div class="modal-content ban-modal-content">
-      <h2 id="banModalTitle">You have been banned</h2>
-      <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
-      <p id="banModalCountdown" class="ban-countdown">Time left: calculating...</p>
-      <p class="ban-footer">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+    <div class=\"modal-content ban-modal-content\">
+      <h2 id=\"banModalTitle\">You have been banned</h2>
+      <p id=\"banModalMessage\">Reason: multiple violations of terms of service.</p>
+      <p id=\"banModalCountdown\" class=\"ban-countdown\">Time left: calculating...</p>
+      <p class=\"ban-footer\">Read our <a id=\"banTosLink\" href=\"https://xpdevs.github.io/Genesis-AI/legal/terms-of-service\" target=\"_blank\" rel=\"noopener\">Terms of Service</a> for details.</p>
     </div>
   `;
   document.body.appendChild(modal);
@@ -547,7 +549,7 @@ function sendMessage() {
 
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message loading-container";
-  loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
+  loadingDiv.innerHTML = `<div class=\"typing-dots\"><span></span><span></span><span></span></div><span class=\"loading-text\">Thinking...</span>`;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
 
     setTimeout(() => {
@@ -591,10 +593,10 @@ function handleCustomModelUpload(event) {
             const bytes = new Uint8Array(buffer);
             const view = new DataView(buffer);
             const fileSig = view.getUint32(0, true);
-            if (fileSig !== SIG_ULTRA) throw new Error("Invalid Format.");
+            if (fileSig !== SIG_ULTRA) throw new Error("Format error.");
 
             responses = decodeBinaryStream(bytes);
-            uploadStatus.textContent = `Success! Loaded "${responses.ver || file.name}".`;
+            uploadStatus.textContent = `Loaded: \"${responses.ver || file.name}\"`;
             updateDevModalStatus();
         } catch (err) {
             uploadStatus.textContent = `Error: ${err.message}`;
