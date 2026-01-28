@@ -225,9 +225,9 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.5) ---
-// Optimized for James Turner (XPDevs) System Architecture
-// 1:1 Parity with json2bin.c logic
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.7) ---
+// Hardened Structural Reconstruction for Large Binary Modules
+// 1:1 Parity with James Turner (XPDevs) json2bin.c 
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
@@ -245,28 +245,27 @@ function decodeBinary(buffer) {
 
     // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.warn("Invalid Signature: Attempting legacy JSON parse.");
         return decoder.decode(bytes);
     }
     i = 4; 
 
     let stack = []; 
-    let expectingValue = false; // Critical for reconstructing object pairs
+    let expectingValue = false; 
+    let lastWasValue = false; 
 
-    // Reconstructs commas and colons based on context
     function insertStructuralJoin() {
         if (jsonString.length === 0) return;
         const context = stack[stack.length - 1];
-        const lastChar = jsonString[jsonString.length - 1];
         
-        if (context === 'arr') {
-            if (lastChar !== '[' && lastChar !== ',') jsonString += ',';
-        } else if (context === 'obj') {
-            if (lastChar === '{') return; 
+        if (context === 'obj') {
             if (expectingValue) {
                 jsonString += ':';
-            } else {
-                if (lastChar !== ',') jsonString += ',';
+            } else if (lastWasValue) {
+                jsonString += ',';
+            }
+        } else if (context === 'arr') {
+            if (lastWasValue) {
+                jsonString += ',';
             }
         }
     }
@@ -275,12 +274,12 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Expansion
+        // Dictionary Expansion (Always treated as Keys in Genesis logic)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             insertStructuralJoin();
-            const key = GENESIS_DICT[b - DICT_OFFSET];
-            jsonString += '"' + key + '"';
-            expectingValue = !expectingValue; 
+            jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
+            expectingValue = true; 
+            lastWasValue = false; 
             i++;
             continue;
         }
@@ -291,32 +290,32 @@ function decodeBinary(buffer) {
                 jsonString += "{"; 
                 stack.push('obj'); 
                 expectingValue = false; 
-                i++; 
-                break;
+                lastWasValue = false;
+                i++; break;
                 
             case 0x02: // END OBJECT }
-                if (expectingValue) jsonString += '""'; 
+                if (expectingValue) jsonString += '""'; // Repair dangling key
                 jsonString += "}"; 
                 stack.pop(); 
                 expectingValue = false; 
-                i++; 
-                break;
+                lastWasValue = true; 
+                i++; break;
 
             case 0x05: // START ARRAY [
                 insertStructuralJoin();
                 jsonString += "["; 
                 stack.push('arr'); 
-                i++; 
-                break;
+                lastWasValue = false;
+                i++; break;
 
             case 0x06: // END ARRAY ]
                 jsonString += "]"; 
                 stack.pop(); 
                 expectingValue = false; 
-                i++; 
-                break;
+                lastWasValue = true; 
+                i++; break;
 
-            case 0x07: // STRING DATA (XOR Decryption)
+            case 0x07: // STRING (XOR 0xAA)
                 i++; 
                 let start = i;
                 while (i < bytes.length && bytes[i] !== 0x00) i++;
@@ -337,23 +336,29 @@ function decodeBinary(buffer) {
                 insertStructuralJoin();
                 jsonString += '"' + sanitized + '"';
                 
+                // Logic to flip between key and value state
                 if (stack[stack.length - 1] === 'obj') {
-                    expectingValue = !expectingValue;
+                    if (expectingValue) {
+                        expectingValue = false;
+                        lastWasValue = true;
+                    } else {
+                        expectingValue = true;
+                        lastWasValue = false;
+                    }
+                } else {
+                    lastWasValue = true;
                 }
-                
-                i++; // Skip null terminator
-                break;
+                i++; break;
 
             default:
-                i++; 
-                break;
+                i++; break;
         }
     }
 
     return jsonString.trim();
 }
 
-// 3. Ecosystem Integration
+// 3. Automated Loader for XPDevs Ecosystem
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -363,15 +368,21 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       const rootIndex = decoded.indexOf("{");
-      if (rootIndex === -1) throw new Error("Structural root missing.");
+      if (rootIndex === -1) throw new Error("No structural root found.");
       
       const cleanJson = decoded.substring(rootIndex);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5.5).");
+      console.log("Genesis-AI: Binary System Online (V7.5.7).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
-      // Fallback logic remains unchanged
+      // Fallback to legacy text-based JSON if binary fails
+      fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+        .then(r => r.json())
+        .then(data => {
+            responses = data;
+            console.log("Genesis-AI: Fallback System Online.");
+        });
     }
   })
   .catch(err => console.error("Genesis-AI: Load failure.", err));
