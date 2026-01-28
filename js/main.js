@@ -225,15 +225,11 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI BINARY DECODER (V5.0 COMPATIBLE) ---
-// Matches XPDevs Genesis-AI Ultra-Compressor V2.1 (json2bin.c)
+// --- XPDevs Genesis-AI BINARY DECODER (V5.1 COMPATIBLE) ---
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
-/**
- * Loads the compiled .bin model and reconstructs the JSON ecosystem.
- */
 async function loadAndDecodeModel() {
     try {
         const response = await fetch(jsonURL + "?v=" + Date.now());
@@ -242,40 +238,27 @@ async function loadAndDecodeModel() {
         const buffer = await response.arrayBuffer();
         const jsonContent = decodeBinary(buffer);
         
-        // Safety: Remove trailing commas before closing braces/brackets to prevent JSON.parse errors
-        const sanitizedJSON = jsonContent.replace(/,+(?=\s*[\}\]])/g, "");
+        // Final sanitization of the reconstructed string
+        const sanitizedJSON = jsonContent
+            .replace(/,+(?=\s*[\}\]])/g, "") // Remove trailing commas
+            .replace(/}\s*{/g, "},{")        // Fix missing commas between objects
+            .replace(/]\s*\[/g, "],[")       // Fix missing commas between arrays
+            .trim();
 
         try {
-            // Attempt Binary Reconstruction
             responses = JSON.parse(sanitizedJSON);
-            console.log("Genesis-AI: SPT-4.5 Binary active.");
+            console.log("Genesis-AI: Binary active.");
             return responses;
         } catch (parseErr) {
-            console.warn("Binary reconstruction failed, attempting raw JSON fallback.");
-            
-            // Fallback: Check if the file was raw JSON
-            try {
-                const rawText = new TextDecoder().decode(buffer).trim();
-                responses = JSON.parse(rawText);
-                console.log("Genesis-AI: Raw JSON Fallback successful.");
-                return responses;
-            } catch (innerErr) {
-                throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
-            }
+            console.warn("Reconstruction Error: JSON structure mismatch.");
+            throw parseErr;
         }
     } catch (err) {
         console.error("Critical Reconstruction Error:", err);
-        // Legacy Safety Fallback
-        const legacyRes = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json");
-        responses = await legacyRes.json();
-        if (typeof showLegacyModal === "function") showLegacyModal();
-        return responses;
+        return null;
     }
 }
 
-/**
- * Core Decoder: Reconstructs XPDevs Binary into Logic Strings
- */
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
@@ -288,12 +271,10 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
+    // Header validation
     if (bytes.length >= 4) {
         const sig = view.getUint32(0, true); 
-        if (sig === 0x58504456) {
-            i = 4; 
-            console.log("Genesis-AI: Valid XPDV Signature detected.");
-        }
+        if (sig === 0x58504456) i = 4;
     }
 
     while (i < bytes.length) {
@@ -311,21 +292,21 @@ function decodeBinary(buffer) {
                 case 0x06: jsonString += "]"; break; 
                 case 0x07: 
                     i++; 
-                    let stringBytes = [];
+                    let str = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
-                        stringBytes.push(bytes[i] ^ XOR_KEY);
+                        str.push(bytes[i] ^ XOR_KEY);
                         i++;
                     }
-                    jsonString += '"' + decoder.decode(new Uint8Array(stringBytes)) + '"';
+                    jsonString += '"' + decoder.decode(new Uint8Array(str)) + '"';
                     break;
             }
         }
         i++;
     }
-    return jsonString.trim();
+    return jsonString;
 }
 
-// Execute Model Loading
+// Initiate loading immediately
 loadAndDecodeModel();
 
 // --- UI & MESSAGING ---
@@ -528,7 +509,6 @@ function typeChatTitle(newTitle, callback) {
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
 
-  // Calculator Integration
   if (typeof window.calc === 'function') {
       const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
       const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(input) && /[\d]/.test(input) && /[-+*/^x]/.test(input);
@@ -644,19 +624,16 @@ function handleCustomModelUpload(event) {
             if (file.name.endsWith('.json')) {
                 const rawText = new TextDecoder().decode(buffer).trim();
                 newResponses = JSON.parse(rawText);
-                console.log("Genesis-AI: Custom JSON modal loaded for session.");
             } else if (file.name.endsWith('.bin')) {
                 const decoded = decodeBinary(buffer);
-                // Apply same sanitization as main loader
-                const sanitized = decoded.replace(/,+(?=\s*[\}\]])/g, "");
+                const sanitized = decoded.replace(/,+(?=\s*[\}\]])/g, "").trim();
                 newResponses = JSON.parse(sanitized);
-                console.log("Genesis-AI: Custom Binary modal loaded for session.");
             } else {
                 throw new Error("Unsupported file type. Please use .json or .bin");
             }
 
             responses = newResponses; 
-            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
+            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}".`;
             updateDevModalStatus();
 
         } catch (err) {
