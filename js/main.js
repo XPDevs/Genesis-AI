@@ -225,18 +225,17 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.6.5) ---
-// Extreme Robustness Version for James Turner (XPDevs)
-// 1:1 Binary-to-Structure Mapping with json2bin.c Parity
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.6.9) ---
+// 1:1 Parity with James Turner (XPDevs) json2bin.c
+// Optimized for large modules on Samsung Galaxy A15 (Android 16)
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10;
-const XOR_KEY = 0xAA; 
-const SIG_ULTRA = 0x58504456; 
+const DICT_OFFSET = 0x10; //
+const XOR_KEY = 0xAA;     //
+const SIG_ULTRA = 0x58504456; // "XPDV"
 
 /**
- * High-performance, robust binary decoder.
- * COLLECTS chunks in an array to prevent memory fragmentation in 300KB+ files.
+ * Robust Decoder: Processes byte-stream into valid JSON string.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -244,56 +243,56 @@ function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const decoder = new TextDecoder('utf-8');
-    const outputParts = []; // Buffer-streaming for memory efficiency
+    const outputParts = []; // Memory-efficient buffer
     let i = 0;
 
     // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
+        console.warn("Invalid Signature: Assuming raw text.");
         return decoder.decode(bytes);
     }
     i = 4; 
 
-    // 2. Main Reconstruction Loop
+    // 2. Structural Reconstruction
     while (i < bytes.length) {
         const ch = bytes[i];
         
-        // Dictionary Expansion
+        // Dictionary Expansion:
         if (ch >= DICT_OFFSET && ch < DICT_OFFSET + GENESIS_DICT.length) {
             outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
             i++;
         } else {
             switch(ch) {
-                case 0x01: outputParts.push('{'); i++; break;
-                case 0x02: outputParts.push('}'); i++; break;
-                case 0x03: outputParts.push(':'); i++; break;
-                case 0x04: outputParts.push(','); i++; break;
-                case 0x05: outputParts.push('['); i++; break;
-                case 0x06: outputParts.push(']'); i++; break;
-                case 0x07: // Unique String
+                case 0x01: outputParts.push('{'); i++; break; // T_START
+                case 0x02: outputParts.push('}'); i++; break; // T_END
+                case 0x03: outputParts.push(':'); i++; break; // T_SEP
+                case 0x04: outputParts.push(','); i++; break; // T_NEXT
+                case 0x05: outputParts.push('['); i++; break; // T_ARR_S
+                case 0x06: outputParts.push(']'); i++; break; // T_ARR_E
+                case 0x07: // T_STR (Unique String follows)
                     i++; 
                     let start = i;
-                    while (i < bytes.length && bytes[i] !== 0x00) {
-                        i++;
-                    }
+                    // Seek null terminator
+                    while (i < bytes.length && bytes[i] !== 0x00) i++;
                     
                     const chunk = bytes.slice(start, i);
                     const decrypted = new Uint8Array(chunk.length);
                     for (let j = 0; j < chunk.length; j++) {
-                        decrypted[j] = chunk[j] ^ XOR_KEY;
+                        decrypted[j] = chunk[j] ^ XOR_KEY; // XOR Decryption
                     }
                     
-                    // Robust Sanitization: Handles all control characters
                     let rawStr = decoder.decode(decrypted);
+                    // Harden for JSON.parse compatibility
                     let sanitized = rawStr
-                        .replace(/\\/g, "\\\\") // Escape backslashes first
-                        .replace(/"/g, '\\"')   // Escape quotes
-                        .replace(/\n/g, "\\n")  // Newlines
-                        .replace(/\r/g, "\\r")  // Carriages
-                        .replace(/\t/g, "\\t")  // Tabs
-                        .replace(/[\x00-\x1F\x7F-\x9F]/g, ""); // Remove non-printable control chars
+                        .replace(/\\/g, "\\\\") 
+                        .replace(/"/g, '\\"')   
+                        .replace(/\n/g, "\\n")  
+                        .replace(/\r/g, "\\r")
+                        .replace(/\t/g, "\\t")
+                        .replace(/[\x00-\x1F\x7F-\x9F]/g, ""); // Strip illegal control chars
 
                     outputParts.push('"' + sanitized + '"');
-                    i++; // Skip null
+                    i++; // Skip 0x00
                     break;
                 default:
                     i++; 
@@ -302,47 +301,42 @@ function decodeBinary(buffer) {
         }
     }
 
-    // Join all parts at once for maximum speed and stability
     return outputParts.join('');
 }
 
-// 3. Robust Automated Loader
+// 3. Automated Loader & Diagnostic Suite
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
-console.log("Genesis-AI: Attempting Ecosystem Connection...");
-
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.arrayBuffer();
-  })
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Ecosystem connection failed"))
   .then(buffer => {
+    let finalStr = "";
     try {
-      const decodedString = decodeBinary(buffer);
-      
-      // Safety: Trim potential whitespace or trailing nulls
-      const cleanJson = decodedString.trim();
-      
-      // Final Parse
-      responses = JSON.parse(cleanJson);
-      
-      console.log("Genesis-AI: Binary System Online (V7.6.5 Robust).");
-      if (typeof updateDevModalStatus === 'function') updateDevModalStatus();
+      finalStr = decodeBinary(buffer);
+      responses = JSON.parse(finalStr);
+      console.log("Genesis-AI: Binary System Online (V7.6.9 Robust).");
     } catch (e) {
-      console.error("Module Reconstruction Failed at Runtime: ", e.message);
+      console.error("--- XPDevs DIAGNOSTIC REPORT ---");
+      console.error("Parse Error:", e.message);
       
-      // Fallback Strategy to legacy SPT-1.0
+      // Locate error context for debugging
+      const match = e.message.match(/column (\d+)/);
+      if (match && finalStr) {
+          const pos = parseInt(match[1]);
+          const start = Math.max(0, pos - 50);
+          const end = Math.min(finalStr.length, pos + 50);
+          console.log("Error Context (Red = Fail Point):");
+          console.log("%c" + finalStr.substring(start, pos) + "%c" + finalStr.substring(pos, end), "color:gray", "color:red; font-weight:bold; background:yellow");
+      }
+
+      // Fallback
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
         .then(res => res.json())
-        .then(data => {
-            responses = data;
-            console.log("Genesis-AI: Fallback System Online (SPT-1.0).");
-        })
-        .catch(err => console.error("Genesis-AI: Total System Failure. No Fallback Available."));
+        .then(data => { responses = data; console.log("Genesis-AI: Fallback Online."); });
     }
   })
-  .catch(err => console.error("Genesis-AI: Network/Load failure.", err));
+  .catch(err => console.error("Genesis-AI: Load failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
