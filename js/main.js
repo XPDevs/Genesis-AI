@@ -225,16 +225,15 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5) ---
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.1) ---
 // 1:1 Parity with James Turner's json2bin.c logic
 
-const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
+const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
 
 /**
  * Reconstructs the module data from the binary ecosystem format.
- * Matches the logic of json2bin.c for structural markers and dictionary expansion.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -246,7 +245,6 @@ function decodeBinary(buffer) {
     let i = 0;
 
     // 1. Signature Verification (SIG_ULTRA: 0x58504456)
-    // Synchronized with the compiler's signature write.
     if (view.getUint32(0, true) === 0x58504456) {
         i = 4; 
     }
@@ -256,13 +254,10 @@ function decodeBinary(buffer) {
         const b = bytes[i];
         
         // Dictionary Expansion (0x10 - 0x19)
-        // Re-inserts keys from the core dictionary.
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
             i++;
-            // MANUAL COLON REMOVED: The compiler already provides T_SEP (0x03).
-            // This fix prevents the "Unexpected character at column 8" error.
             continue;
         }
 
@@ -274,11 +269,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (Unique data segment)
-                i++; // Step past marker
+            case 0x07: // T_STR (Data Segment)
+                i++; 
                 let start = i;
                 
-                // Seek the null termination marker (0x00)
+                // Seek null terminator
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -286,12 +281,12 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY; // Apply XOR 0xAA logic
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Ensure structural integrity for complex ecosystem data
+                // Escape characters properly for JSON compliance
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -300,16 +295,19 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip termination marker
+                i++; // Skip 0x00
                 break;
             default:
-                i++; // Skip non-structural data
+                i++; 
                 break;
         }
     }
 
-    // Final alignment check: remove trailing markers before parsing
-    return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
+    // Final cleanup: Remove trailing commas before closing braces/brackets
+    // and trim any leading/trailing whitespace.
+    return jsonString.trim()
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*\]/g, ']');
 }
 
 // 3. Ecosystem Loading & Integration
@@ -322,23 +320,24 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       const decoded = decodeBinary(buffer);
       
-      // Sync-Seeker: Locate the first valid structural root
+      // Locate the first '{' to ensure we aren't parsing header noise
       const rootIndex = decoded.indexOf("{");
       if (rootIndex === -1) throw new Error("Structural root missing");
       
       const cleanJson = decoded.substring(rootIndex);
+      
+      // The fix: Parse the cleaned string
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5 Sync).");
+      console.log("Genesis-AI: Binary System Online (V7.5.1 Sync).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
       
-      // Fallback for non-compiled modules
       if (jsonURL.endsWith(".json")) {
           const rawText = new TextDecoder().decode(buffer).trim();
           responses = JSON.parse(rawText);
       } else {
-          // Emergency Fallback to Core SPT 1.0
+          // Emergency Fallback to Core
           fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
             .then(res => res.json())
             .then(data => { responses = data; });
