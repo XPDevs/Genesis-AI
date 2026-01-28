@@ -53,6 +53,76 @@ const CHAR_SEPARATOR = '000';
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
 
+// --- COMPILER COMPATIBILITY DECODER (V2.1) ---
+const XOR_KEY = 0xAA;
+const SIG_ULTRA = 0x58504456; // "XPDV" in hex
+const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
+const DICT_OFFSET = 0x10;
+
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const modelURL = localStorage.getItem("selectedModel") || defaultModel;
+
+async function loadAndDecodeModel() {
+    try {
+        const response = await fetch(modelURL + "?v=" + Date.now());
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        
+        const buffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        
+        // 1. Signature Verification (First 4 bytes)
+        const view = new DataView(buffer);
+        const fileSig = view.getUint32(0, true); // Little-endian
+        if (fileSig !== SIG_ULTRA) {
+            throw new Error("Invalid Binary Signature: System Rejected.");
+        }
+
+        // 2. Structural Reconstruction
+        const decoder = new TextDecoder('utf-8');
+        let jsonResult = "";
+        let i = 4; // Skip the "XPDV" header
+
+        while (i < bytes.length) {
+            const b = bytes[i];
+            
+            // Check for Dictionary Keys (0x10 - 0x19)
+            if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
+                jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
+            } else {
+                switch(b) {
+                    case 0x01: jsonResult += "{"; break; 
+                    case 0x02: jsonResult += "}"; break; 
+                    case 0x03: jsonResult += ":"; break; 
+                    case 0x04: jsonResult += ","; break; 
+                    case 0x05: jsonResult += "["; break; 
+                    case 0x06: jsonResult += "]"; break; 
+                    case 0x07: // Handle Unique String (Null Terminated + XOR)
+                        i++;
+                        let strArr = [];
+                        while (i < bytes.length && bytes[i] !== 0x00) {
+                            strArr.push(bytes[i] ^ XOR_KEY);
+                            i++;
+                        }
+                        jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
+                        break;
+                }
+            }
+            i++;
+        }
+
+        responses = JSON.parse(jsonResult);
+        console.log("Genesis-AI: Binary Logic Loaded Successfully.");
+        return responses;
+
+    } catch (err) {
+        console.error("Critical System Error:", err);
+        return null;
+    }
+}
+
+// Start Model Loading
+loadAndDecodeModel();
+
 // --- SHARED CHAT LOGIC ---
 function encodeChat(messages) {
     if (!messages || messages.length === 0) return '';
@@ -223,87 +293,6 @@ function showBanModal() {
   modal.style.display = 'flex';
   document.body.style.pointerEvents = 'none';
 }
-
-// --- BINARY SYSTEM DECODER (V5.4) ---
-
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
-const modelURL = localStorage.getItem("selectedModel") || defaultModel;
-
-async function loadAndDecodeModel() {
-    try {
-        const response = await fetch(modelURL + "?v=" + Date.now());
-        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
-        
-        const buffer = await response.arrayBuffer();
-        const jsonContent = decodeBinary(buffer);
-        
-        // Final structural check to ensure keys and values are correctly separated
-        // Specifically fix the column 60 error by ensuring dictionary keys are followed by colons
-        const sanitizedJSON = jsonContent
-            .replace(/"\s*"/g, '","')  
-            .replace(/}\s*"/g, '},"')  
-            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*"/g, '"$1":"')
-            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*{/g, '"$1":{')
-            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*\[/g, '"$1":[')
-            .replace(/,(\s*[}\]])/g, '$1') 
-            .trim();
-
-        try {
-            responses = JSON.parse(sanitizedJSON);
-            console.log("Genesis-AI: Active.");
-            return responses;
-        } catch (parseErr) {
-            console.warn("Structural Error: Logic mapping incomplete.", parseErr);
-            throw parseErr;
-        }
-    } catch (err) {
-        console.error("System Failure:", err);
-        return null;
-    }
-}
-
-function decodeBinary(buffer) {
-    const bytes = new Uint8Array(buffer);
-    const XOR_KEY = 0xAA; 
-    const decoder = new TextDecoder('utf-8');
-    
-    const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-    const DICT_OFFSET = 0x10;
-    
-    let result = "";
-    let i = 4; // Skip XPDV Header
-
-    while (i < bytes.length) {
-        const b = bytes[i];
-        
-        if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-            result += `"${DICT[b - DICT_OFFSET]}"`;
-        } else {
-            switch(b) {
-                case 0x01: result += "{"; break; 
-                case 0x02: result += "}"; break; 
-                case 0x03: result += ":"; break; 
-                case 0x04: result += ","; break; 
-                case 0x05: result += "["; break; 
-                case 0x06: result += "]"; break; 
-                case 0x07: 
-                    i++; 
-                    let strArr = [];
-                    while (i < bytes.length && bytes[i] !== 0x00) {
-                        strArr.push(bytes[i] ^ XOR_KEY);
-                        i++;
-                    }
-                    result += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                    break;
-            }
-        }
-        i++;
-    }
-    return result;
-}
-
-// Start sequence
-loadAndDecodeModel();
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
@@ -584,15 +573,42 @@ function handleCustomModelUpload(event) {
     reader.onload = function(e) {
         const buffer = e.target.result;
         try {
-            let newResponses;
-            if (file.name.endsWith('.json')) {
-                newResponses = JSON.parse(new TextDecoder().decode(buffer).trim());
-            } else if (file.name.endsWith('.bin')) {
-                const decoded = decodeBinary(buffer);
-                newResponses = JSON.parse(decoded.trim());
+            const bytes = new Uint8Array(buffer);
+            const view = new DataView(buffer);
+            const fileSig = view.getUint32(0, true);
+            if (fileSig !== SIG_ULTRA) throw new Error("Invalid Format.");
+
+            const decoder = new TextDecoder('utf-8');
+            let jsonResult = "";
+            let i = 4;
+
+            while (i < bytes.length) {
+                const b = bytes[i];
+                if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
+                    jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
+                } else {
+                    switch(b) {
+                        case 0x01: jsonResult += "{"; break; 
+                        case 0x02: jsonResult += "}"; break; 
+                        case 0x03: jsonResult += ":"; break; 
+                        case 0x04: jsonResult += ","; break; 
+                        case 0x05: jsonResult += "["; break; 
+                        case 0x06: jsonResult += "]"; break; 
+                        case 0x07: 
+                            i++;
+                            let strArr = [];
+                            while (i < bytes.length && bytes[i] !== 0x00) {
+                                strArr.push(bytes[i] ^ XOR_KEY);
+                                i++;
+                            }
+                            jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
+                            break;
+                    }
+                }
+                i++;
             }
-            responses = newResponses; 
-            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}".`;
+            responses = JSON.parse(jsonResult);
+            uploadStatus.textContent = `Success! Loaded "${responses.ver || file.name}".`;
             updateDevModalStatus();
         } catch (err) {
             uploadStatus.textContent = `Error: ${err.message}`;
