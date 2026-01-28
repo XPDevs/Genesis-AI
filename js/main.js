@@ -28,6 +28,7 @@ const shareLinkInput = document.getElementById("shareLinkInput");
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
 const inputArea = document.getElementById("inputArea");
+// Dev Modal Elements
 const devModal = document.getElementById("devModal");
 const devModalWaiting = document.getElementById("devModalWaiting");
 const devModalOptions = document.getElementById("devModalOptions");
@@ -52,79 +53,6 @@ const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 const CHAR_SEPARATOR = '000'; 
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
-
-// --- COMPILER COMPATIBILITY DECODER (V2.1) ---
-const XOR_KEY = 0xAA;
-const SIG_ULTRA = 0x58504456; // "XPDV" in hex
-const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10;
-
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6-270126P0947M.bin";
-const modelURL = localStorage.getItem("selectedModel") || defaultModel;
-
-async function loadAndDecodeModel() {
-    try {
-        const response = await fetch(modelURL + "?v=" + Date.now());
-        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
-        
-        const buffer = await response.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        const view = new DataView(buffer);
-
-        // 1. Signature Verification (GNIS)
-        // Matches SIG_SMALL 0x53494E47 in your C code
-        const SIG_GNIS = 0x53494E47; 
-        const fileSig = view.getUint32(0, true); 
-
-        if (fileSig !== SIG_GNIS) {
-            throw new Error("Invalid Genesis-AI Signature: GNIS Check Failed.");
-        }
-
-        // 2. Structural Reconstruction
-        const decoder = new TextDecoder('utf-8');
-        let jsonResult = "";
-        let i = 4; // Skip the 4-byte GNIS header
-        
-        // XOR Key from your C source
-        const XOR_KEY = 0xAA;
-
-        while (i < bytes.length) {
-            const b = bytes[i];
-            
-            // Logic synced with your C Structural Tokens
-            switch(b) {
-                case 0x01: jsonResult += "{"; break; // T_START
-                case 0x02: jsonResult += "}"; break; // T_END
-                case 0x03: jsonResult += ":"; break; // T_SEP
-                case 0x04: jsonResult += ","; break; // T_NEXT
-                case 0x05: jsonResult += "["; break; // T_ARR_S
-                case 0x06: jsonResult += "]"; break; // T_ARR_E
-                case 0x07: // T_STR (Handle XOR'd Null-Terminated String)
-                    i++;
-                    let strArr = [];
-                    while (i < bytes.length && bytes[i] !== 0x00) {
-                        strArr.push(bytes[i] ^ XOR_KEY);
-                        i++;
-                    }
-                    jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                    break;
-            }
-            i++;
-        }
-
-        // Parse reconstructed string into local logic
-        responses = JSON.parse(jsonResult);
-        console.log("Genesis-AI: Binary Logic Decoded Successfully.");
-        return responses;
-
-    } catch (err) {
-        console.error("Critical System Error:", err);
-        return null;
-    }
-}
-
-// Initialize loading
-loadAndDecodeModel();
 
 // --- SHARED CHAT LOGIC ---
 function encodeChat(messages) {
@@ -297,6 +225,121 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
+// --- BINARY DECODER (V4.5 OPTIMIZED) ---
+// Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+
+function decodeBinary(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    const XOR_KEY = 0xAA; 
+    const decoder = new TextDecoder('utf-8');
+    let jsonString = "";
+    
+    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
+    // We check the first 4 bytes for the "GNIS" signature
+    let i = 0;
+    try {
+        const sig = view.getUint32(0, true); // true = little-endian
+        if (sig === 0x53494E47) {
+            i = 4; // Skip "GNIS" header
+            console.log("Genesis-AI: Valid Binary Signature detected.");
+        } else {
+            console.warn("Genesis-AI: Signature mismatch, attempting skip-less parse.");
+            i = 0;
+        }
+    } catch (e) {
+        i = 0;
+    }
+
+    // 2. Token-based Reconstruction
+    while (i < bytes.length) {
+        const b = bytes[i];
+        
+        switch(b) {
+            case 0x01: jsonString += "{"; break; // T_START
+            case 0x02: jsonString += "}"; break; // T_END
+            case 0x03: jsonString += ":"; break; // T_SEP
+            case 0x04: // T_NEXT
+                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
+                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
+                    jsonString += ",";
+                }
+                break;
+            case 0x05: jsonString += "["; break; // T_ARR_S
+            case 0x06: jsonString += "]"; break; // T_ARR_E
+            case 0x07: // T_STR (String Start)
+                i++; 
+                let start = i;
+                
+                // Find the 0x00 null terminator used in json2bin.c
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
+                
+                const chunk = bytes.slice(start, i);
+                const decrypted = new Uint8Array(chunk.length);
+                for (let j = 0; j < chunk.length; j++) {
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                }
+                
+                // The C compiler preserves the string content as it appears in the JSON file,
+                // including escape characters like \". Using JSON.stringify would re-escape
+                // these, corrupting the data (e.g., \" becomes \\").
+                // The correct approach is to simply wrap the decoded string in quotes,
+                // mirroring the behavior of the nano_decompile function in json2bin.c.
+                const stringContent = decoder.decode(decrypted);
+                jsonString += '"' + stringContent + '"';
+                break;
+            default:
+                // Ignore unexpected bytes (like padding)
+                break;
+        }
+        i++;
+    }
+    
+    return jsonString.trim();
+}
+
+// 3. Model Loading Logic
+fetch(jsonURL + "?v=" + Date.now())
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
+  .then(buffer => {
+    try {
+      const decoded = decodeBinary(buffer);
+      
+      // Safety: Ensure the result is valid JSON before parsing
+      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
+          throw new Error("Reconstructed string is not valid JSON.");
+      }
+      
+      responses = JSON.parse(decoded);
+      console.log("Genesis-AI: SPT-4.5 Binary active.");
+    } catch (e) {
+      console.warn("Binary reconstruction failed: " + e.message);
+      
+      // Fallback: Check if the file was just raw JSON all along
+      try {
+          const rawText = new TextDecoder().decode(buffer).trim();
+          responses = JSON.parse(rawText);
+          console.log("Genesis-AI: Raw JSON Fallback successful.");
+      } catch (innerErr) {
+          throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
+      }
+    }
+  })
+  .catch(err => {
+    console.error("Critical Reconstruction Error:", err);
+    // Legacy Safety Fallback to 1.0 JSON
+    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+      .then(r => r.json())
+      .then(data => { 
+        responses = data; 
+        if (typeof showLegacyModal === "function") showLegacyModal(); 
+      });
+  });
+
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 function updateURL(chatTitle) {
@@ -313,6 +356,18 @@ function renderChatList() {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
     
+    let pressTimer;
+    li.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(() => {
+            document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+            document.querySelectorAll('.dots-btn').forEach(b => b.style.background = "");
+            dropdown.style.display = "flex";
+            dots.style.background = "var(--active-chat)";
+        }, 1500);
+    }, {passive: true});
+    li.addEventListener('touchend', () => clearTimeout(pressTimer));
+    li.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
     const span = document.createElement("span");
     span.textContent = chat.title;
     span.className = "chat-name";
@@ -409,9 +464,11 @@ function appendMessage(text, role, isNew = false) {
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
   const dayStr = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
   const yearStr = now.getFullYear().toString();
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString('en-GB');
 
   let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr)
-    .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr);
+    .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr).replace(/%TOMORROW%/g, tomorrowStr);
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -451,7 +508,7 @@ function appendMessage(text, role, isNew = false) {
   } else { textSpan.textContent = processedText; }
 }
 
-// --- LOGIC ---
+// --- LOGIC MODULES ---
 let bannedWords = [];
 async function loadBannedWords() {
   try {
@@ -482,6 +539,21 @@ function typeChatTitle(newTitle, callback) {
 
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
+
+
+  // Calculator Integration
+  if (typeof window.calc === 'function') {
+      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
+      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(input) && /[\d]/.test(input) && /[-+*/^x]/.test(input);
+      
+      if (isExplicit || isMathExpression) {
+          const result = window.calc(input);
+          if (result !== "Error" && result !== "Invalid input") {
+              return { role: "ai", text: `The answer is ${result}` };
+          }
+      }
+  }
+
   const foundMatches = [];
   const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
   let tempInput = lowerInput;
@@ -541,15 +613,17 @@ function sendMessage() {
     setTimeout(() => {
         loadingDiv.remove();
         const botMsg = findResponses(text, chat.messages);
+
         chat.messages.push(botMsg);
         saveChats();
         appendMessage(botMsg.text, botMsg.role, true); 
+
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
     }, 1500);
 }
 
-// --- DEVELOPER ACCESS ---
+// --- DEVELOPER MODE ---
 function updateDevModalStatus() {
     if (!devModal || !devModal.style.display || devModal.style.display === 'none') return;
     devCurrentModalName.textContent = responses.ver || "Unknown Version";
@@ -559,10 +633,13 @@ function updateDevModalStatus() {
 
 window.devAccess = function(password) {
     if (password === DEV_PASSWORD) {
+        console.log("Developer access granted.");
         isDevMode = true;
         devModalWaiting.style.display = 'none';
         devModalOptions.style.display = 'block';
         updateDevModalStatus();
+    } else {
+        console.error("Incorrect developer password.");
     }
 };
 
@@ -576,47 +653,40 @@ function handleCustomModelUpload(event) {
     reader.onload = function(e) {
         const buffer = e.target.result;
         try {
-            const bytes = new Uint8Array(buffer);
-            const view = new DataView(buffer);
-            const fileSig = view.getUint32(0, true);
-            if (fileSig !== SIG_ULTRA) throw new Error("Invalid Format.");
-
-            const decoder = new TextDecoder('utf-8');
-            let jsonResult = "";
-            let i = 4;
-
-            while (i < bytes.length) {
-                const b = bytes[i];
-                if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-                    jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
-                } else {
-                    switch(b) {
-                        case 0x01: jsonResult += "{"; break; 
-                        case 0x02: jsonResult += "}"; break; 
-                        case 0x03: jsonResult += ":"; break; 
-                        case 0x04: jsonResult += ","; break; 
-                        case 0x05: jsonResult += "["; break; 
-                        case 0x06: jsonResult += "]"; break; 
-                        case 0x07: 
-                            i++;
-                            let strArr = [];
-                            while (i < bytes.length && bytes[i] !== 0x00) {
-                                strArr.push(bytes[i] ^ XOR_KEY);
-                                i++;
-                            }
-                            jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                            break;
-                    }
+            let newResponses;
+            if (file.name.endsWith('.json')) {
+                const rawText = new TextDecoder().decode(buffer).trim();
+                newResponses = JSON.parse(rawText);
+                console.log("Genesis-AI: Custom JSON modal loaded for session.");
+            } else if (file.name.endsWith('.bin')) {
+                const decoded = decodeBinary(buffer);
+                if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
+                    throw new Error("Reconstructed string from .bin is not valid JSON.");
                 }
-                i++;
+                newResponses = JSON.parse(decoded);
+                console.log("Genesis-AI: Custom Binary modal loaded for session.");
+            } else {
+                throw new Error("Unsupported file type. Please use .json or .bin");
             }
-            responses = JSON.parse(jsonResult);
-            uploadStatus.textContent = `Success! Loaded "${responses.ver || file.name}".`;
+
+            if (typeof newResponses !== 'object' || newResponses === null) {
+                throw new Error("Parsed modal is not a valid object.");
+            }
+
+            responses = newResponses; // Override for session
+            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
             updateDevModalStatus();
+
         } catch (err) {
+            console.error("Custom modal load failed:", err);
             uploadStatus.textContent = `Error: ${err.message}`;
         }
     };
+
+    reader.onerror = function() {
+        uploadStatus.textContent = "Error reading file.";
+    };
+
     reader.readAsArrayBuffer(file);
 }
 
@@ -664,6 +734,7 @@ if (deleteConfirm) deleteConfirm.onclick = () => {
         activeChatId = null;
         localStorage.removeItem("activeChatId");
         chatBox.innerHTML = "";
+        // After deleting, go to a new chat screen
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -698,10 +769,10 @@ settingsBtn.onclick = () => {
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
 if (modelSelect) {
-    modelSelect.value = modelURL;
+    modelSelect.value = jsonURL;
     modelSelect.onchange = () => {
         const selectedValue = modelSelect.value;
-        if (selectedValue !== modelURL) {
+        if (selectedValue !== jsonURL) {
             document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
@@ -713,19 +784,23 @@ document.getElementById("refreshConfirm").onclick = () => {
 };
 document.getElementById("refreshCancel").onclick = () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    modelSelect.value = modelURL;
+    modelSelect.value = jsonURL;
 };
 
 function applyTheme() {
+    // Default to auto if not set, unless legacy theme exists
     if (localStorage.getItem("autoTheme") === null) {
         localStorage.setItem("autoTheme", localStorage.getItem("theme") === null ? "true" : "false");
     }
+    
     const isAuto = localStorage.getItem("autoTheme") === "true";
     if (autoThemeToggle) autoThemeToggle.checked = isAuto;
+    
     if (themeToggle) {
         themeToggle.disabled = isAuto;
         themeToggle.parentElement.style.opacity = isAuto ? "0.5" : "1";
     }
+
     let isDark;
     if (isAuto) {
         const hour = new Date().getHours();
@@ -733,6 +808,7 @@ function applyTheme() {
     } else {
         isDark = localStorage.getItem("theme") === "dark";
     }
+    
     if (themeToggle) themeToggle.checked = isDark;
     document.body.classList.toggle("dark", isDark);
 }
@@ -764,16 +840,18 @@ if (deleteAccountBtn) {
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
 document.getElementById("deleteAccountConfirm").onclick = () => { localStorage.clear(); window.location.reload(); };
-
 function startApp() {
     if (isCurrentlyBanned()) {
         showBanModal();
         return;
     }
+    
     if (loadSharedChat()) return;
 
     const isMobile = window.innerWidth <= 768;
+
     if (!isMobile) {
+        // Desktop: Always start with a New Chat
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -783,7 +861,9 @@ function startApp() {
         activeChatId = newChat.id;
         localStorage.setItem("activeChatId", activeChatId);
     } else {
+        // Mobile: Load last active chat or create new if none exists
         if (activeChatId && !chats.find(c => c.id === activeChatId)) activeChatId = null;
+        
         if (!activeChatId && chats.length > 0) {
             activeChatId = chats[0].id;
             localStorage.setItem("activeChatId", activeChatId);

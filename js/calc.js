@@ -1,7 +1,7 @@
 window.calc = function(expression) {
     try {
         // Replace 'x' with '*' for multiplication
-        let sanitized = expression.replace(/x/g, '*');
+        let sanitized = expression.replace(/x/gi, '*');
         // Remove any characters that are not numbers or math operators
         sanitized = sanitized.replace(/[^0-9+\-*/().\s^]/g, '');
         
