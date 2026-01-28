@@ -252,7 +252,37 @@ function decodeBinary(buffer) {
     }
     i = 4; 
 
-    let lastSeparator = ''; // Track the last structural separator to infer missing tokens
+    let lastSeparator = ''; 
+    let stack = []; // Track context: 'obj' or 'arr'
+
+    // Helper to insert missing separators
+    function ensureSeparator() {
+        if (jsonString.length === 0) return;
+        const lastChar = jsonString[jsonString.length - 1];
+        // Check if we need a separator (after a string, object end, or array end)
+        if (lastChar === '"' || lastChar === '}' || lastChar === ']') {
+            const context = stack.length > 0 ? stack[stack.length - 1] : null;
+            
+            if (context === 'arr') {
+                jsonString += ',';
+                lastSeparator = ',';
+            } else if (context === 'obj') {
+                // In an object, if we just had a key (indicated by { or ,), we need :
+                // If we just had a value (indicated by :), we need ,
+                if (lastSeparator === ':') {
+                    jsonString += ',';
+                    lastSeparator = ',';
+                } else {
+                    jsonString += ':';
+                    lastSeparator = ':';
+                }
+            } else {
+                // Fallback for root or weird states
+                jsonString += ',';
+                lastSeparator = ',';
+            }
+        }
+    }
 
     // 2. Structural Reconstruction Loop
     while (i < bytes.length) {
@@ -261,18 +291,7 @@ function decodeBinary(buffer) {
         // Dictionary Expansion (ch >= DICT_OFFSET && ch < DICT_OFFSET + DICT_SIZE)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
-            
-            // Auto-repair missing separators
-            if (jsonString.endsWith('"')) {
-                if (lastSeparator === ':') {
-                    jsonString += ',';
-                    lastSeparator = ',';
-                } else {
-                    jsonString += ':';
-                    lastSeparator = ':';
-                }
-            }
-            
+            ensureSeparator();
             jsonString += '"' + key + '"';
             i++;
             continue;
@@ -281,25 +300,19 @@ function decodeBinary(buffer) {
         // Structural Markers (Matches switch(ch) in ultra_decompile)
         switch(b) {
             case 0x01: // T_START {
-                if (jsonString.endsWith('"')) {
-                    if (lastSeparator === ':') { jsonString += ','; lastSeparator = ','; }
-                    else { jsonString += ':'; lastSeparator = ':'; }
-                }
-                jsonString += "{"; lastSeparator = '{'; i++; break;
+                ensureSeparator();
+                jsonString += "{"; lastSeparator = '{'; stack.push('obj'); i++; break;
             case 0x02: // T_END }
-                jsonString += "}"; lastSeparator = '}'; i++; break;
+                jsonString += "}"; lastSeparator = '}'; stack.pop(); i++; break;
             case 0x03: // T_SEP :
                 jsonString += ":"; lastSeparator = ':'; i++; break;
             case 0x04: // T_NEXT ,
                 jsonString += ","; lastSeparator = ','; i++; break;
             case 0x05: // T_ARR_S [
-                if (jsonString.endsWith('"')) {
-                    if (lastSeparator === ':') { jsonString += ','; lastSeparator = ','; }
-                    else { jsonString += ':'; lastSeparator = ':'; }
-                }
-                jsonString += "["; lastSeparator = '['; i++; break;
+                ensureSeparator();
+                jsonString += "["; lastSeparator = '['; stack.push('arr'); i++; break;
             case 0x06: // T_ARR_E ]
-                jsonString += "]"; lastSeparator = ']'; i++; break;
+                jsonString += "]"; lastSeparator = ']'; stack.pop(); i++; break;
             case 0x07: // T_STR (Matches: while ((ch = fgetc(src)) != 0x00))
                 i++; // Skip the 0x07 marker
                 let start = i;
@@ -327,19 +340,10 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 // Fix for C compiler bug: Merge split strings caused by escaped quotes
-                if (jsonString.endsWith('\\""')) {
+                if (jsonString.endsWith('\\"')) {
                     jsonString = jsonString.slice(0, -1) + sanitized + '"';
                 } else {
-                    // Auto-repair missing separators
-                    if (jsonString.endsWith('"')) {
-                        if (lastSeparator === ':') {
-                            jsonString += ',';
-                            lastSeparator = ',';
-                        } else {
-                            jsonString += ':';
-                            lastSeparator = ':';
-                        }
-                    }
+                    ensureSeparator();
                     jsonString += '"' + sanitized + '"';
                 }
                 i++; // Skip the 0x00 null terminator
