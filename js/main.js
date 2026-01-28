@@ -225,8 +225,8 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.7) ---
-// Hardened Structural Reconstruction for Large Binary Modules
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.9) ---
+// Hardened Structural Reconstruction for Massive Binary Modules
 // 1:1 Parity with James Turner (XPDevs) json2bin.c 
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
@@ -245,6 +245,7 @@ function decodeBinary(buffer) {
 
     // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
+        console.warn("Invalid Signature: Attempting legacy JSON parse.");
         return decoder.decode(bytes);
     }
     i = 4; 
@@ -253,10 +254,15 @@ function decodeBinary(buffer) {
     let expectingValue = false; 
     let lastWasValue = false; 
 
-    function insertStructuralJoin() {
+    // Enhanced Separator Logic for V7.5.9
+    function insertSeparator() {
         if (jsonString.length === 0) return;
         const context = stack[stack.length - 1];
-        
+        const lastChar = jsonString[jsonString.length - 1];
+
+        // Never add a separator after another separator
+        if (lastChar === ',' || lastChar === ':' || lastChar === '{' || lastChar === '[') return;
+
         if (context === 'obj') {
             if (expectingValue) {
                 jsonString += ':';
@@ -274,9 +280,9 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Expansion (Always treated as Keys in Genesis logic)
+        // Dictionary Keys
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
-            insertStructuralJoin();
+            insertSeparator();
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
             expectingValue = true; 
             lastWasValue = false; 
@@ -285,46 +291,44 @@ function decodeBinary(buffer) {
         }
 
         switch(b) {
-            case 0x01: // START OBJECT {
-                insertStructuralJoin();
+            case 0x01: // {
+                insertSeparator();
                 jsonString += "{"; 
                 stack.push('obj'); 
                 expectingValue = false; 
                 lastWasValue = false;
                 i++; break;
                 
-            case 0x02: // END OBJECT }
-                if (expectingValue) jsonString += '""'; // Repair dangling key
+            case 0x02: // }
+                if (expectingValue) jsonString += '""'; 
                 jsonString += "}"; 
                 stack.pop(); 
                 expectingValue = false; 
                 lastWasValue = true; 
                 i++; break;
 
-            case 0x05: // START ARRAY [
-                insertStructuralJoin();
+            case 0x05: // [
+                insertSeparator();
                 jsonString += "["; 
                 stack.push('arr'); 
                 lastWasValue = false;
                 i++; break;
 
-            case 0x06: // END ARRAY ]
+            case 0x06: // ]
                 jsonString += "]"; 
                 stack.pop(); 
                 expectingValue = false; 
                 lastWasValue = true; 
                 i++; break;
 
-            case 0x07: // STRING (XOR 0xAA)
+            case 0x07: // String (XOR Decrypted)
                 i++; 
                 let start = i;
                 while (i < bytes.length && bytes[i] !== 0x00) i++;
                 
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
+                for (let j = 0; j < chunk.length; j++) decrypted[j] = chunk[j] ^ XOR_KEY;
                 
                 let sanitized = decoder.decode(decrypted)
                     .replace(/\\/g, "\\\\")
@@ -333,11 +337,11 @@ function decodeBinary(buffer) {
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
                 
-                insertStructuralJoin();
+                insertSeparator();
                 jsonString += '"' + sanitized + '"';
                 
-                // Logic to flip between key and value state
-                if (stack[stack.length - 1] === 'obj') {
+                const currentCtx = stack[stack.length - 1];
+                if (currentCtx === 'obj') {
                     if (expectingValue) {
                         expectingValue = false;
                         lastWasValue = true;
@@ -358,7 +362,7 @@ function decodeBinary(buffer) {
     return jsonString.trim();
 }
 
-// 3. Automated Loader for XPDevs Ecosystem
+// 3. Integration Logic
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -373,10 +377,10 @@ fetch(jsonURL + "?v=" + Date.now())
       const cleanJson = decoded.substring(rootIndex);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5.7).");
+      console.log("Genesis-AI: Binary System Online (V7.5.9).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
-      // Fallback to legacy text-based JSON if binary fails
+      // Fallback
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
         .then(r => r.json())
         .then(data => {
