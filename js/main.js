@@ -225,13 +225,17 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.4) ---
-// 1:1 Parity with json2bin.c logic for James Turner (XPDevs)
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.5) ---
+// 1:1 Parity with James Turner's json2bin.c logic
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
 
+/**
+ * Reconstructs the module data from the binary ecosystem format.
+ * Matches the logic of json2bin.c for structural markers and dictionary expansion.
+ */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
 
@@ -241,29 +245,28 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Skip Signature (SIG_ULTRA: 0x58504456)
+    // 1. Signature Verification (SIG_ULTRA: 0x58504456)
+    // Synchronized with the compiler's signature write.
     if (view.getUint32(0, true) === 0x58504456) {
         i = 4; 
     }
 
-    // 2. Main Reconstruction Loop
+    // 2. Structural Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Check (0x10 - 0x19)
+        // Dictionary Expansion (0x10 - 0x19)
+        // Re-inserts keys from the core dictionary.
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
             jsonString += '"' + key + '"';
             i++;
-
-            // Manual Colon Injection for 'ver' key logic in json2bin.c
-            // The compiler skips the colon and original value for 'ver'.
-            if (key === "ver") {
-                jsonString += ":";
-            }
+            // MANUAL COLON REMOVED: The compiler already provides T_SEP (0x03).
+            // This fix prevents the "Unexpected character at column 8" error.
             continue;
         }
 
+        // Handle System Markers (0x01 - 0x07)
         switch(b) {
             case 0x01: jsonString += "{"; i++; break; // T_START
             case 0x02: jsonString += "}"; i++; break; // T_END
@@ -271,10 +274,11 @@ function decodeBinary(buffer) {
             case 0x04: jsonString += ","; i++; break; // T_NEXT
             case 0x05: jsonString += "["; i++; break; // T_ARR_S
             case 0x06: jsonString += "]"; i++; break; // T_ARR_E
-            case 0x07: // T_STR (XOR String Segment)
-                i++; 
+            case 0x07: // T_STR (Unique data segment)
+                i++; // Step past marker
                 let start = i;
-                // Seek 0x00 null terminator
+                
+                // Seek the null termination marker (0x00)
                 while (i < bytes.length && bytes[i] !== 0x00) {
                     i++;
                 }
@@ -282,12 +286,12 @@ function decodeBinary(buffer) {
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR 0xAA
+                    decrypted[j] = chunk[j] ^ XOR_KEY; // Apply XOR 0xAA logic
                 }
                 
                 let decodedStr = decoder.decode(decrypted);
                 
-                // Escape characters for valid JSON
+                // Ensure structural integrity for complex ecosystem data
                 let sanitized = decodedStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
@@ -296,52 +300,52 @@ function decodeBinary(buffer) {
                     .replace(/\t/g, "\\t");
                 
                 jsonString += '"' + sanitized + '"';
-                i++; // Skip null terminator
+                i++; // Skip termination marker
                 break;
             default:
-                i++; // Skip padding
+                i++; // Skip non-structural data
                 break;
         }
     }
 
-    // Clean up trailing commas before parsing
+    // Final alignment check: remove trailing markers before parsing
     return jsonString.trim().replace(/,\s*([}\]])/g, '$1');
 }
 
-// 3. System Loading Logic
+// 3. Ecosystem Loading & Integration
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File missing"))
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("Ecosystem connection failed"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
-      // Sync-Seeker: Ensure parsing starts only at the root JSON object
-      const startIdx = decoded.indexOf("{");
-      if (startIdx === -1) throw new Error("No JSON root found");
+      // Sync-Seeker: Locate the first valid structural root
+      const rootIndex = decoded.indexOf("{");
+      if (rootIndex === -1) throw new Error("Structural root missing");
       
-      const cleanJson = decoded.substring(startIdx);
+      const cleanJson = decoded.substring(rootIndex);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: System Online (1:1 V7.4 Sync).");
+      console.log("Genesis-AI: Binary System Online (V7.5 Sync).");
     } catch (e) {
-      console.warn("Binary Error: " + e.message);
+      console.warn("Module Reconstruction Failed: " + e.message);
       
-      // Fallback for .json files
+      // Fallback for non-compiled modules
       if (jsonURL.endsWith(".json")) {
           const rawText = new TextDecoder().decode(buffer).trim();
           responses = JSON.parse(rawText);
       } else {
-          // Emergency Fallback
+          // Emergency Fallback to Core SPT 1.0
           fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
             .then(res => res.json())
             .then(data => { responses = data; });
       }
     }
   })
-  .catch(err => console.error("Genesis-AI Load Failure.", err));
+  .catch(err => console.error("Genesis-AI: Load failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
