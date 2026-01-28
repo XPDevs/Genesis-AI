@@ -225,29 +225,44 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY DECODER (V4.5 OPTIMIZED) ---
-// Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+// --- XPDevs Genesis-AI BINARY DECODER (V5.0 COMPATIBLE) ---
+// Matches XPDevs Genesis-AI Ultra-Compressor V2.1 (json2bin.c)
+
+async function loadAndDecodeModel() {
+    const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+    const binURL = localStorage.getItem("selectedModel") || defaultModel;
+
+    try {
+        const response = await fetch(binURL);
+        const buffer = await response.arrayBuffer();
+        const jsonContent = decodeBinary(buffer);
+        return JSON.parse(jsonContent);
+    } catch (err) {
+        console.error("Failed to load Genesis-AI binary:", err);
+    }
+}
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
     
-    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
-    // We check the first 4 bytes for the "GNIS" signature
+    // Dictionary mapping from json2bin.c (DICT_OFFSET 0x10)
+    const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
+    const DICT_OFFSET = 0x10;
+    
+    let jsonString = "";
     let i = 0;
+
+    // 1. Signature Check (SIG_ULTRA: 0x58504456 "XPDV")
     try {
-        const sig = view.getUint32(0, true); // true = little-endian
-        if (sig === 0x53494E47) {
-            i = 4; // Skip "GNIS" header
-            console.log("Genesis-AI: Valid Binary Signature detected.");
+        const sig = view.getUint32(0, true); 
+        if (sig === 0x58504456) {
+            i = 4; // Skip "XPDV" header
+            console.log("Genesis-AI: Valid XPDV Signature detected.");
         } else {
-            console.warn("Genesis-AI: Signature mismatch, attempting skip-less parse.");
-            i = 0;
+            console.warn("Genesis-AI: Signature mismatch. Ensure file is a compiled .bin.");
         }
     } catch (e) {
         i = 0;
@@ -257,44 +272,36 @@ function decodeBinary(buffer) {
     while (i < bytes.length) {
         const b = bytes[i];
         
-        switch(b) {
-            case 0x01: jsonString += "{"; break; // T_START
-            case 0x02: jsonString += "}"; break; // T_END
-            case 0x03: jsonString += ":"; break; // T_SEP
-            case 0x04: // T_NEXT
-                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
-                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
-                    jsonString += ",";
-                }
-                break;
-            case 0x05: jsonString += "["; break; // T_ARR_S
-            case 0x06: jsonString += "]"; break; // T_ARR_E
-            case 0x07: // T_STR (String Start)
-                i++; 
-                let start = i;
-                
-                // Find the 0x00 null terminator used in json2bin.c
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
-                
-                const chunk = bytes.slice(start, i);
-                const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
-                
-                // The C compiler preserves the string content as it appears in the JSON file,
-                // including escape characters like \". Using JSON.stringify would re-escape
-                // these, corrupting the data (e.g., \" becomes \\").
-                // The correct approach is to simply wrap the decoded string in quotes,
-                // mirroring the behavior of the nano_decompile function in json2bin.c.
-                const stringContent = decoder.decode(decrypted);
-                jsonString += '"' + stringContent + '"';
-                break;
-            default:
-                // Ignore unexpected bytes (like padding)
-                break;
+        // Handle Dictionary Keys (0x10 to 0x19)
+        if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
+            const dictIndex = b - DICT_OFFSET;
+            jsonString += '"' + DICT[dictIndex] + '"';
+        } else {
+            switch(b) {
+                case 0x01: jsonString += "{"; break; // T_START
+                case 0x02: jsonString += "}"; break; // T_END
+                case 0x03: jsonString += ":"; break; // T_SEP
+                case 0x04: // T_NEXT
+                    if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
+                        jsonString += ",";
+                    }
+                    break;
+                case 0x05: jsonString += "["; break; // T_ARR_S
+                case 0x06: jsonString += "]"; break; // T_ARR_E
+                case 0x07: // T_STR (Encrypted String)
+                    i++; 
+                    let start = i;
+                    while (i < bytes.length && bytes[i] !== 0x00) {
+                        i++;
+                    }
+                    const chunk = bytes.slice(start, i);
+                    const decrypted = new Uint8Array(chunk.length);
+                    for (let j = 0; j < chunk.length; j++) {
+                        decrypted[j] = chunk[j] ^ XOR_KEY;
+                    }
+                    jsonString += '"' + decoder.decode(decrypted) + '"';
+                    break;
+            }
         }
         i++;
     }
