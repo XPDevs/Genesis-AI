@@ -225,17 +225,18 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.7.2) ---
-// 1:1 Parity with James Turner (XPDevs) json2bin.c Logic
-// Developed for James Turner (XPDevs) Architecture
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.8.0) ---
+// 1:1 Parity with XPDevs json2bin.c V2.1
+// Optimized for James Turner (XPDevs) Binary Standards
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
-const DICT_OFFSET = 0x10; //
-const XOR_KEY = 0xAA;     //
-const SIG_ULTRA = 0x58504456; // "XPDV" signature
+const DICT_OFFSET = 0x10; 
+const XOR_KEY = 0xAA;     
+const SIG_ULTRA = 0x58504456; // "XPDV"
 
 /**
- * Robust Decoder: Reconstructs JSON while self-healing missing colons.
+ * High-Efficiency Decoder
+ * Uses Null-Terminator seeking for maximum stability.
  */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
@@ -243,30 +244,24 @@ function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
     const decoder = new TextDecoder('utf-8');
-    const outputParts = []; // Array-joining for memory safety on Galaxy A15
+    const outputParts = []; 
     let i = 0;
 
     // 1. Signature Verification
     if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.warn("XPDevs: Signature Mismatch. Attempting raw text fallback.");
+        console.warn("XPDevs: Signature mismatch. Falling back to raw text.");
         return decoder.decode(bytes);
     }
     i = 4; 
 
-    // 2. Structural Reconstruction Loop
+    // 2. Main Reconstruction Loop
     while (i < bytes.length) {
         const ch = bytes[i];
         
-        // Dictionary Expansion
+        // Dictionary Expansion (Matches V2.1 Dictionary Logic)
         if (ch >= DICT_OFFSET && ch < DICT_OFFSET + GENESIS_DICT.length) {
             outputParts.push('"' + GENESIS_DICT[ch - DICT_OFFSET] + '"');
             i++;
-            
-            // SELF-HEALING: If the compiler desynced and missed T_SEP (0x03),
-            // we force the colon here to prevent the "expected ':'" error.
-            if (i < bytes.length && bytes[i] !== 0x03) {
-                outputParts.push(':');
-            }
             continue;
         }
 
@@ -277,30 +272,32 @@ function decodeBinary(buffer) {
             case 0x04: outputParts.push(','); i++; break; // T_NEXT
             case 0x05: outputParts.push('['); i++; break; // T_ARR_S
             case 0x06: outputParts.push(']'); i++; break; // T_ARR_E
-            case 0x07: // T_STR (XOR Encrypted String)
+            case 0x07: // T_STR (XOR Encrypted + Null Terminated)
                 i++; 
                 let start = i;
-                // Seek 0x00 Null Terminator
-                while (i < bytes.length && bytes[i] !== 0x00) i++;
+                
+                // Seek the 0x00 byte written by V2.1 Compiler
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
                 
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
                 for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY; // XOR
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
                 }
                 
                 let rawStr = decoder.decode(decrypted);
-                // JSON-Safe Sanitization to handle quotes within strings
+                // Sanitize to prevent broken JSON structures
                 let sanitized = rawStr
                     .replace(/\\/g, "\\\\") 
                     .replace(/"/g, '\\"')   
                     .replace(/\n/g, "\\n")  
                     .replace(/\r/g, "\\r")
-                    .replace(/\t/g, "\\t")
-                    .replace(/[\x00-\x1F\x7F-\x9F]/g, ""); 
+                    .replace(/\t/g, "\\t");
 
                 outputParts.push('"' + sanitized + '"');
-                i++; // Skip null byte
+                i++; // Skip the 0x00 terminator
                 break;
             default:
                 i++; 
@@ -322,28 +319,26 @@ fetch(jsonURL + "?v=" + Date.now())
     try {
       finalStr = decodeBinary(buffer);
       responses = JSON.parse(finalStr);
-      console.log("Genesis-AI: Binary System Online (V7.7.2 Robust).");
+      console.log("Genesis-AI: Ecosystem Online (V7.8.0 Binary).");
     } catch (e) {
       console.error("--- XPDevs DIAGNOSTIC REPORT ---");
-      console.error("Parse Error:", e.message);
+      console.error("Structure Error:", e.message);
       
+      // Detailed Debugging for James
       const match = e.message.match(/column (\d+)/);
       if (match && finalStr) {
           const pos = parseInt(match[1]);
-          const start = Math.max(0, pos - 40);
-          const end = Math.min(finalStr.length, pos + 40);
-          console.log("Error Snippet (Highlight = Fail Point):");
-          console.log("%c" + finalStr.substring(start, pos) + "%c" + finalStr.substring(pos, end), "color:gray", "color:red; font-weight:bold; background:yellow");
+          console.log("Fail Point Context:");
+          console.log(finalStr.substring(pos - 30, pos) + " [!!] " + finalStr.substring(pos, pos + 30));
       }
 
-      // Safe Fallback to Text-Based SPT-1.0
-      console.log("Reverting to Fallback...");
+      // Revert to stable fallback
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
         .then(res => res.json())
         .then(data => { responses = data; });
     }
   })
-  .catch(err => console.error("Genesis-AI: Load failure.", err));
+  .catch(err => console.error("Genesis-AI: Network failure.", err));
 
 // --- UI & MESSAGING ---
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
