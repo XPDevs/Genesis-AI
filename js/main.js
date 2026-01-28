@@ -64,68 +64,66 @@ const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
 async function loadAndDecodeModel() {
     try {
-        // Fetching the binary file with a cache-buster
         const response = await fetch(modelURL + "?v=" + Date.now());
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        
-        // 1. Signature Verification
-        // Updated to GNIS (0x53494E47 in Little-endian for 'GNIS')
-        const SIG_GNIS = 0x53494E47; 
         const view = new DataView(buffer);
+
+        // 1. Signature Verification (GNIS)
+        // Matches SIG_SMALL 0x53494E47 in your C code
+        const SIG_GNIS = 0x53494E47; 
         const fileSig = view.getUint32(0, true); 
 
         if (fileSig !== SIG_GNIS) {
-            throw new Error("Invalid Genesis-AI Signature: System Rejected.");
+            throw new Error("Invalid Genesis-AI Signature: GNIS Check Failed.");
         }
 
         // 2. Structural Reconstruction
         const decoder = new TextDecoder('utf-8');
         let jsonResult = "";
-        let i = 4; // Skip the "GNIS" header
+        let i = 4; // Skip the 4-byte GNIS header
+        
+        // XOR Key from your C source
+        const XOR_KEY = 0xAA;
 
         while (i < bytes.length) {
             const b = bytes[i];
             
-            // Check for Dictionary Keys (using your DICT_OFFSET range)
-            if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-                jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
-            } else {
-                switch(b) {
-                    case 0x01: jsonResult += "{"; break; 
-                    case 0x02: jsonResult += "}"; break; 
-                    case 0x03: jsonResult += ":"; break; 
-                    case 0x04: jsonResult += ","; break; 
-                    case 0x05: jsonResult += "["; break; 
-                    case 0x06: jsonResult += "]"; break; 
-                    case 0x07: // Handle Unique String (Null Terminated + XOR)
+            // Logic synced with your C Structural Tokens
+            switch(b) {
+                case 0x01: jsonResult += "{"; break; // T_START
+                case 0x02: jsonResult += "}"; break; // T_END
+                case 0x03: jsonResult += ":"; break; // T_SEP
+                case 0x04: jsonResult += ","; break; // T_NEXT
+                case 0x05: jsonResult += "["; break; // T_ARR_S
+                case 0x06: jsonResult += "]"; break; // T_ARR_E
+                case 0x07: // T_STR (Handle XOR'd Null-Terminated String)
+                    i++;
+                    let strArr = [];
+                    while (i < bytes.length && bytes[i] !== 0x00) {
+                        strArr.push(bytes[i] ^ XOR_KEY);
                         i++;
-                        let strArr = [];
-                        while (i < bytes.length && bytes[i] !== 0x00) {
-                            // Apply your XOR decryption key
-                            strArr.push(bytes[i] ^ XOR_KEY);
-                            i++;
-                        }
-                        jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
-                        break;
-                }
+                    }
+                    jsonResult += `"${decoder.decode(new Uint8Array(strArr))}"`;
+                    break;
             }
             i++;
         }
 
-        // Finalize the logic into the local responses object
+        // Parse reconstructed string into local logic
         responses = JSON.parse(jsonResult);
-        console.log("Genesis-AI: GNIS Binary Logic Loaded Successfully.");
+        console.log("Genesis-AI: Binary Logic Decoded Successfully.");
         return responses;
 
     } catch (err) {
-        console.error("Critical Genesis-AI Error:", err);
+        console.error("Critical System Error:", err);
         return null;
     }
 }
 
+// Initialize loading
 loadAndDecodeModel();
 
 // --- SHARED CHAT LOGIC ---
