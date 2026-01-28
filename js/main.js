@@ -303,6 +303,12 @@ function decodeBinary(buffer) {
                 ensureSeparator();
                 jsonString += "{"; lastSeparator = '{'; stack.push('obj'); i++; break;
             case 0x02: // T_END }
+                // Auto-repair: Remove trailing comma or add missing value
+                if (lastSeparator === ',') {
+                    jsonString = jsonString.slice(0, -1); 
+                } else if (stack[stack.length-1] === 'obj' && lastSeparator === ':') {
+                    jsonString += '""'; // Close dangling key with empty string
+                }
                 jsonString += "}"; lastSeparator = '}'; stack.pop(); i++; break;
             case 0x03: // T_SEP :
                 jsonString += ":"; lastSeparator = ':'; i++; break;
@@ -312,6 +318,9 @@ function decodeBinary(buffer) {
                 ensureSeparator();
                 jsonString += "["; lastSeparator = '['; stack.push('arr'); i++; break;
             case 0x06: // T_ARR_E ]
+                if (lastSeparator === ',') {
+                    jsonString = jsonString.slice(0, -1);
+                }
                 jsonString += "]"; lastSeparator = ']'; stack.pop(); i++; break;
             case 0x07: // T_STR (Matches: while ((ch = fgetc(src)) != 0x00))
                 i++; // Skip the 0x07 marker
@@ -377,7 +386,15 @@ fetch(jsonURL + "?v=" + Date.now())
       console.log("Genesis-AI: Binary System Online (V7.5.4 Parity).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
-      // Fallback logic for .json or SPT-1.0
+      console.log("Attempting Fallback to SPT-1.0...");
+      fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+        .then(r => r.json())
+        .then(data => {
+            responses = data;
+            console.log("Genesis-AI: Fallback System Online (SPT-1.0).");
+            if (typeof updateDevModalStatus === 'function') updateDevModalStatus();
+        })
+        .catch(err => console.error("Genesis-AI: Critical Failure.", err));
     }
   })
   .catch(err => console.error("Genesis-AI: Load failure.", err));
