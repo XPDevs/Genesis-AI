@@ -252,6 +252,8 @@ function decodeBinary(buffer) {
     }
     i = 4; 
 
+    let lastSeparator = ''; // Track the last structural separator to infer missing tokens
+
     // 2. Structural Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
@@ -259,28 +261,45 @@ function decodeBinary(buffer) {
         // Dictionary Expansion (ch >= DICT_OFFSET && ch < DICT_OFFSET + DICT_SIZE)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
             const key = GENESIS_DICT[b - DICT_OFFSET];
-            // Fix for C compiler bug: Merge split strings caused by escaped quotes
-            if (jsonString.endsWith('\\""')) {
-                jsonString = jsonString.slice(0, -1) + key + '"';
-            } else if (jsonString.endsWith('"')) {
-                jsonString += ':"' + key + '"';
-            } else if (jsonString.endsWith('}') || jsonString.endsWith(']')) {
-                jsonString += ',"' + key + '"';
-            } else {
-                jsonString += '"' + key + '"';
+            
+            // Auto-repair missing separators
+            if (jsonString.endsWith('"')) {
+                if (lastSeparator === ':') {
+                    jsonString += ',';
+                    lastSeparator = ',';
+                } else {
+                    jsonString += ':';
+                    lastSeparator = ':';
+                }
             }
+            
+            jsonString += '"' + key + '"';
             i++;
             continue;
         }
 
         // Structural Markers (Matches switch(ch) in ultra_decompile)
         switch(b) {
-            case 0x01: jsonString += "{"; i++; break; // T_START
-            case 0x02: jsonString += "}"; i++; break; // T_END
-            case 0x03: jsonString += ":"; i++; break; // T_SEP
-            case 0x04: jsonString += ","; i++; break; // T_NEXT
-            case 0x05: jsonString += "["; i++; break; // T_ARR_S
-            case 0x06: jsonString += "]"; i++; break; // T_ARR_E
+            case 0x01: // T_START {
+                if (jsonString.endsWith('"')) {
+                    if (lastSeparator === ':') { jsonString += ','; lastSeparator = ','; }
+                    else { jsonString += ':'; lastSeparator = ':'; }
+                }
+                jsonString += "{"; lastSeparator = '{'; i++; break;
+            case 0x02: // T_END }
+                jsonString += "}"; lastSeparator = '}'; i++; break;
+            case 0x03: // T_SEP :
+                jsonString += ":"; lastSeparator = ':'; i++; break;
+            case 0x04: // T_NEXT ,
+                jsonString += ","; lastSeparator = ','; i++; break;
+            case 0x05: // T_ARR_S [
+                if (jsonString.endsWith('"')) {
+                    if (lastSeparator === ':') { jsonString += ','; lastSeparator = ','; }
+                    else { jsonString += ':'; lastSeparator = ':'; }
+                }
+                jsonString += "["; lastSeparator = '['; i++; break;
+            case 0x06: // T_ARR_E ]
+                jsonString += "]"; lastSeparator = ']'; i++; break;
             case 0x07: // T_STR (Matches: while ((ch = fgetc(src)) != 0x00))
                 i++; // Skip the 0x07 marker
                 let start = i;
@@ -310,11 +329,17 @@ function decodeBinary(buffer) {
                 // Fix for C compiler bug: Merge split strings caused by escaped quotes
                 if (jsonString.endsWith('\\""')) {
                     jsonString = jsonString.slice(0, -1) + sanitized + '"';
-                } else if (jsonString.endsWith('"')) {
-                    jsonString += ':"' + sanitized + '"';
-                } else if (jsonString.endsWith('}') || jsonString.endsWith(']')) {
-                    jsonString += ',"' + sanitized + '"';
                 } else {
+                    // Auto-repair missing separators
+                    if (jsonString.endsWith('"')) {
+                        if (lastSeparator === ':') {
+                            jsonString += ',';
+                            lastSeparator = ',';
+                        } else {
+                            jsonString += ':';
+                            lastSeparator = ':';
+                        }
+                    }
                     jsonString += '"' + sanitized + '"';
                 }
                 i++; // Skip the 0x00 null terminator
