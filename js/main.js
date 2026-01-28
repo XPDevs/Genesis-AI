@@ -224,7 +224,7 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY SYSTEM DECODER (V5.3) ---
+// --- BINARY SYSTEM DECODER (V5.4) ---
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
@@ -238,11 +238,14 @@ async function loadAndDecodeModel() {
         const jsonContent = decodeBinary(buffer);
         
         // Final structural check to ensure keys and values are correctly separated
+        // Specifically fix the column 60 error by ensuring dictionary keys are followed by colons
         const sanitizedJSON = jsonContent
-            .replace(/"\s*"/g, '","')  // Insert missing commas between quotes
-            .replace(/}\s*"/g, '},"')  // Insert missing commas between objects and keys
-            .replace(/"\s*{/g, '":{')  // Fix keys followed by objects
-            .replace(/,(\s*[}\]])/g, '$1') // Clean trailing commas
+            .replace(/"\s*"/g, '","')  
+            .replace(/}\s*"/g, '},"')  
+            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*"/g, '"$1":"')
+            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*{/g, '"$1":{')
+            .replace(/"(ver|name|logic|action|value|type|genesis|Aurex|input|output)"\s*\[/g, '"$1":[')
+            .replace(/,(\s*[}\]])/g, '$1') 
             .trim();
 
         try {
