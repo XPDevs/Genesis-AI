@@ -228,6 +228,9 @@ function showBanModal() {
 // --- XPDevs Genesis-AI BINARY DECODER (V5.0 COMPATIBLE) ---
 // Matches XPDevs Genesis-AI Ultra-Compressor V2.1 (json2bin.c)
 
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+
 async function loadAndDecodeModel() {
     const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
     const binURL = localStorage.getItem("selectedModel") || defaultModel;
