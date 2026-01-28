@@ -28,7 +28,6 @@ const shareLinkInput = document.getElementById("shareLinkInput");
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
 const inputArea = document.getElementById("inputArea");
-// Dev Modal Elements
 const devModal = document.getElementById("devModal");
 const devModalWaiting = document.getElementById("devModalWaiting");
 const devModalOptions = document.getElementById("devModalOptions");
@@ -225,36 +224,37 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI BINARY DECODER (V5.1 COMPATIBLE) ---
+// --- XPDevs Genesis-AI BINARY DECODER (V5.2) ---
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
 async function loadAndDecodeModel() {
     try {
-        const response = await fetch(jsonURL + "?v=" + Date.now());
+        const response = await fetch(modelURL + "?v=" + Date.now());
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
         const jsonContent = decodeBinary(buffer);
         
-        // Final sanitization of the reconstructed string
+        // Detailed sanitation: clean up structural errors before parsing
         const sanitizedJSON = jsonContent
-            .replace(/,+(?=\s*[\}\]])/g, "") // Remove trailing commas
-            .replace(/}\s*{/g, "},{")        // Fix missing commas between objects
-            .replace(/]\s*\[/g, "],[")       // Fix missing commas between arrays
+            .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+            .replace(/}\s*{/g, '},{')      // Fix missing commas between objects
+            .replace(/]\s*\[/g, '],[')      // Fix missing commas between arrays
             .trim();
 
         try {
             responses = JSON.parse(sanitizedJSON);
-            console.log("Genesis-AI: Binary active.");
+            console.log("Genesis-AI: System active.");
             return responses;
         } catch (parseErr) {
-            console.warn("Reconstruction Error: JSON structure mismatch.");
+            console.warn("Structural Error: Logic mapping incomplete.", parseErr);
+            // Fallback: If parsing fails, try to wrap the string or log the raw output for debugging
             throw parseErr;
         }
     } catch (err) {
-        console.error("Critical Reconstruction Error:", err);
+        console.error("System Failure:", err);
         return null;
     }
 }
@@ -265,48 +265,52 @@ function decodeBinary(buffer) {
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
     
+    // Core dictionary for Genesis-AI keys
     const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
     const DICT_OFFSET = 0x10;
     
-    let jsonString = "";
+    let result = "";
     let i = 0;
 
-    // Header validation
-    if (bytes.length >= 4) {
-        const sig = view.getUint32(0, true); 
-        if (sig === 0x58504456) i = 4;
+    // Skip XPDV Header
+    if (bytes.length >= 4 && view.getUint32(0, true) === 0x58504456) {
+        i = 4;
     }
 
     while (i < bytes.length) {
         const b = bytes[i];
+        
+        // Dictionary Mapping (0x10 - 0x19)
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
-            const dictIndex = b - DICT_OFFSET;
-            jsonString += '"' + DICT[dictIndex] + '"';
+            result += `"${DICT[b - DICT_OFFSET]}"`;
         } else {
             switch(b) {
-                case 0x01: jsonString += "{"; break; 
-                case 0x02: jsonString += "}"; break; 
-                case 0x03: jsonString += ":"; break; 
-                case 0x04: jsonString += ","; break; 
-                case 0x05: jsonString += "["; break; 
-                case 0x06: jsonString += "]"; break; 
-                case 0x07: 
+                case 0x01: result += "{"; break; 
+                case 0x02: result += "}"; break; 
+                case 0x03: result += ":"; break; 
+                case 0x04: result += ","; break; 
+                case 0x05: result += "["; break; 
+                case 0x06: result += "]"; break; 
+                case 0x07: // Manual String Start
                     i++; 
-                    let str = [];
+                    let strArr = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
-                        str.push(bytes[i] ^ XOR_KEY);
+                        strArr.push(bytes[i] ^ XOR_KEY);
                         i++;
                     }
-                    jsonString += '"' + decoder.decode(new Uint8Array(str)) + '"';
+                    result += `"${decoder.decode(new Uint8Array(strArr))}"`;
+                    break;
+                default:
+                    // Ignore padding or unknown bytes
                     break;
             }
         }
         i++;
     }
-    return jsonString;
+    return result;
 }
 
-// Initiate loading immediately
+// Initial load
 loadAndDecodeModel();
 
 // --- UI & MESSAGING ---
@@ -433,11 +437,9 @@ function appendMessage(text, role, isNew = false) {
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); 
   const dayStr = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
   const yearStr = now.getFullYear().toString();
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toLocaleDateString('en-GB');
 
   let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr)
-    .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr).replace(/%TOMORROW%/g, tomorrowStr);
+    .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr);
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -509,18 +511,6 @@ function typeChatTitle(newTitle, callback) {
 function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
 
-  if (typeof window.calc === 'function') {
-      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
-      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(input) && /[\d]/.test(input) && /[-+*/^x]/.test(input);
-      
-      if (isExplicit || isMathExpression) {
-          const result = window.calc(input);
-          if (result !== "Error" && result !== "Invalid input") {
-              return { role: "ai", text: `The answer is ${result}` };
-          }
-      }
-  }
-
   const foundMatches = [];
   const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
   let tempInput = lowerInput;
@@ -580,11 +570,9 @@ function sendMessage() {
     setTimeout(() => {
         loadingDiv.remove();
         const botMsg = findResponses(text, chat.messages);
-
         chat.messages.push(botMsg);
         saveChats();
         appendMessage(botMsg.text, botMsg.role, true); 
-
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
     }, 1500);
@@ -600,13 +588,10 @@ function updateDevModalStatus() {
 
 window.devAccess = function(password) {
     if (password === DEV_PASSWORD) {
-        console.log("Developer access granted.");
         isDevMode = true;
         devModalWaiting.style.display = 'none';
         devModalOptions.style.display = 'block';
         updateDevModalStatus();
-    } else {
-        console.error("Incorrect developer password.");
     }
 };
 
@@ -622,22 +607,15 @@ function handleCustomModelUpload(event) {
         try {
             let newResponses;
             if (file.name.endsWith('.json')) {
-                const rawText = new TextDecoder().decode(buffer).trim();
-                newResponses = JSON.parse(rawText);
+                newResponses = JSON.parse(new TextDecoder().decode(buffer).trim());
             } else if (file.name.endsWith('.bin')) {
                 const decoded = decodeBinary(buffer);
-                const sanitized = decoded.replace(/,+(?=\s*[\}\]])/g, "").trim();
-                newResponses = JSON.parse(sanitized);
-            } else {
-                throw new Error("Unsupported file type. Please use .json or .bin");
+                newResponses = JSON.parse(decoded.trim());
             }
-
             responses = newResponses; 
             uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}".`;
             updateDevModalStatus();
-
         } catch (err) {
-            console.error("Custom modal load failed:", err);
             uploadStatus.textContent = `Error: ${err.message}`;
         }
     };
@@ -722,10 +700,10 @@ settingsBtn.onclick = () => {
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 
 if (modelSelect) {
-    modelSelect.value = jsonURL;
+    modelSelect.value = modelURL;
     modelSelect.onchange = () => {
         const selectedValue = modelSelect.value;
-        if (selectedValue !== jsonURL) {
+        if (selectedValue !== modelURL) {
             document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
@@ -737,7 +715,7 @@ document.getElementById("refreshConfirm").onclick = () => {
 };
 document.getElementById("refreshCancel").onclick = () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    modelSelect.value = jsonURL;
+    modelSelect.value = modelURL;
 };
 
 function applyTheme() {
