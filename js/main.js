@@ -53,24 +53,24 @@ const CHAR_SEPARATOR = '000';
 const ROLE_SEPARATOR = '555'; 
 const MSG_SEPARATOR = '9999'; 
 
-// --- COMPILER COMPATIBILITY DECODER (V2.1) ---
+// --- COMPILER COMPATIBILITY DECODER (V2.2) ---
 const XOR_KEY = 0xAA;
-const SIG_ULTRA = 0x58504456; // "XPDV" in hex
+const SIG_ULTRA = 0x58504456; // "XPDV"
 const DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const modelURL = localStorage.getItem("selectedModel") || defaultModel;
 
-// Helper function to process the binary stream into a valid logic object
 function decodeBinaryStream(bytes) {
     const decoder = new TextDecoder('utf-8');
     let jsonResult = "";
-    let i = 4; // Skip "XPDV" header
+    let i = 4; // Skip "XPDV"
 
     while (i < bytes.length) {
         const b = bytes[i];
         
+        // Check if byte is a Dictionary Token
         if (b >= DICT_OFFSET && b < (DICT_OFFSET + DICT.length)) {
             jsonResult += `"${DICT[b - DICT_OFFSET]}"`;
         } else {
@@ -81,24 +81,33 @@ function decodeBinaryStream(bytes) {
                 case 0x04: jsonResult += ","; break; 
                 case 0x05: jsonResult += "["; break; 
                 case 0x06: jsonResult += "]"; break; 
-                case 0x07: // Unique String Handler
+                case 0x07: // Unique String Start
                     i++;
                     let strArr = [];
                     while (i < bytes.length && bytes[i] !== 0x00) {
                         strArr.push(bytes[i] ^ XOR_KEY);
                         i++;
                     }
-                    // Escape quotes and backslashes for valid JSON
+                    // Handle encoding and JSON safety
                     const decodedStr = decoder.decode(new Uint8Array(strArr))
                         .replace(/\\/g, '\\\\')
-                        .replace(/"/g, '\\"');
+                        .replace(/"/g, '\\"')
+                        .replace(/\n/g, '\\n')
+                        .replace(/\r/g, '\\r')
+                        .replace(/\t/g, '\\t');
                     jsonResult += `"${decodedStr}"`;
                     break;
             }
         }
         i++;
     }
-    return JSON.parse(jsonResult);
+    
+    try {
+        return JSON.parse(jsonResult);
+    } catch (e) {
+        console.error("JSON Parse Error. Partial Data:", jsonResult.substring(Math.max(0, jsonResult.length - 100)));
+        throw e;
+    }
 }
 
 async function loadAndDecodeModel() {
@@ -110,8 +119,7 @@ async function loadAndDecodeModel() {
         const bytes = new Uint8Array(buffer);
         
         const view = new DataView(buffer);
-        const fileSig = view.getUint32(0, true); 
-        if (fileSig !== SIG_ULTRA) {
+        if (bytes.length < 4 || view.getUint32(0, true) !== SIG_ULTRA) {
             throw new Error("Invalid Binary Signature.");
         }
 
@@ -125,7 +133,6 @@ async function loadAndDecodeModel() {
     }
 }
 
-// Start Loading
 loadAndDecodeModel();
 
 // --- SHARED CHAT LOGIC ---
@@ -446,9 +453,12 @@ function appendMessage(text, role, isNew = false) {
   if (role === "ai" && isNew) {
     let i = 0;
     const interval = setInterval(() => {
-      textSpan.textContent += processedText[i]; i++;
-      chatBox.scrollTop = chatBox.scrollHeight;
-      if (i === processedText.length) clearInterval(interval);
+      if (i < processedText.length) {
+        textSpan.textContent += processedText[i]; i++;
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } else {
+        clearInterval(interval);
+      }
     }, 30);
   } else { textSpan.textContent = processedText; }
 }
