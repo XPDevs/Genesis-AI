@@ -229,29 +229,27 @@ function showBanModal() {
 // Matches XPDevs Genesis-AI Ultra-Compressor V2.1 (json2bin.c)
 
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 /**
  * Loads the compiled .bin model and reconstructs the JSON ecosystem.
  */
 async function loadAndDecodeModel() {
-    const binURL = localStorage.getItem("selectedModel") || defaultModel;
-
     try {
-        const response = await fetch(binURL);
+        const response = await fetch(jsonURL);
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         
         const buffer = await response.arrayBuffer();
         const jsonContent = decodeBinary(buffer);
         
-        // Final sanitization: Remove trailing commas before closing braces/brackets
-        // This prevents the "expected ':'" and "unexpected token" errors
+        // Safety: Remove trailing commas before closing braces/brackets to prevent JSON.parse errors
         const sanitizedJSON = jsonContent.replace(/,+(?=\s*[\}\]])/g, "");
 
         try {
             return JSON.parse(sanitizedJSON);
         } catch (parseErr) {
             console.error("Critical Reconstruction Error: Result is not valid JSON.");
-            console.log("Raw Output for Debugging:", sanitizedJSON);
+            console.log("Faulty Data String:", sanitizedJSON);
             throw parseErr;
         }
     } catch (err) {
@@ -261,7 +259,7 @@ async function loadAndDecodeModel() {
 }
 
 /**
- * Core Decoder: Reconstructs XPDV Binary into Logic Strings
+ * Core Decoder: Reconstructs XPDevs Binary into Logic Strings
  */
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -287,7 +285,7 @@ function decodeBinary(buffer) {
         }
     }
 
-    // 2. Token-based Reconstruction
+    // 2. Token-based Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
@@ -300,7 +298,7 @@ function decodeBinary(buffer) {
                 case 0x01: jsonString += "{"; break; // T_START
                 case 0x02: jsonString += "}"; break; // T_END
                 case 0x03: jsonString += ":"; break; // T_SEP
-                case 0x04: jsonString += ","; break; // T_NEXT (Fixed: Treat as literal comma)
+                case 0x04: jsonString += ","; break; // T_NEXT (Fixed: Literal comma)
                 case 0x05: jsonString += "["; break; // T_ARR_S
                 case 0x06: jsonString += "]"; break; // T_ARR_E
                 case 0x07: // T_STR (XOR Encrypted String)
