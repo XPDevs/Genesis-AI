@@ -225,15 +225,19 @@ function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- XPDevs Genesis-AI Ultra-Decoder (V7.5.9) ---
-// Hardened Structural Reconstruction for Massive Binary Modules
-// 1:1 Parity with James Turner (XPDevs) json2bin.c 
+// --- XPDevs Genesis-AI Ultra-Decoder (V7.6.1) ---
+// 1:1 Structural Parity with XPDevs json2bin.c 
+// Optimized for James Turner (XPDevs) System Architecture
 
 const GENESIS_DICT = ["ver", "name", "logic", "action", "value", "type", "genesis", "Aurex", "input", "output"];
 const DICT_OFFSET = 0x10;
 const XOR_KEY = 0xAA; 
 const SIG_ULTRA = 0x58504456; // "XPDV"
 
+/**
+ * Decodes XPDevs Binary format back into a JSON String
+ * Follows T_SEP (0x03) and T_NEXT (0x04) strictly from source
+ */
 function decodeBinary(buffer) {
     if (!buffer || buffer.byteLength < 4) return "";
 
@@ -243,126 +247,74 @@ function decodeBinary(buffer) {
     let jsonString = "";
     let i = 0;
 
-    // 1. Signature Verification
+    // 1. Signature Verification (fwrite(&sig, 4, 1, dest))
     if (view.getUint32(0, true) !== SIG_ULTRA) {
-        console.warn("Invalid Signature: Attempting legacy JSON parse.");
         return decoder.decode(bytes);
     }
     i = 4; 
-
-    let stack = []; 
-    let expectingValue = false; 
-    let lastWasValue = false; 
-
-    // Enhanced Separator Logic for V7.5.9
-    function insertSeparator() {
-        if (jsonString.length === 0) return;
-        const context = stack[stack.length - 1];
-        const lastChar = jsonString[jsonString.length - 1];
-
-        // Never add a separator after another separator
-        if (lastChar === ',' || lastChar === ':' || lastChar === '{' || lastChar === '[') return;
-
-        if (context === 'obj') {
-            if (expectingValue) {
-                jsonString += ':';
-            } else if (lastWasValue) {
-                jsonString += ',';
-            }
-        } else if (context === 'arr') {
-            if (lastWasValue) {
-                jsonString += ',';
-            }
-        }
-    }
 
     // 2. Main Reconstruction Loop
     while (i < bytes.length) {
         const b = bytes[i];
         
-        // Dictionary Keys
+        // Dictionary Expansion (DICT_OFFSET + i)
         if (b >= DICT_OFFSET && b < DICT_OFFSET + GENESIS_DICT.length) {
-            insertSeparator();
             jsonString += '"' + GENESIS_DICT[b - DICT_OFFSET] + '"';
-            expectingValue = true; 
-            lastWasValue = false; 
             i++;
             continue;
         }
 
         switch(b) {
-            case 0x01: // {
-                insertSeparator();
-                jsonString += "{"; 
-                stack.push('obj'); 
-                expectingValue = false; 
-                lastWasValue = false;
-                i++; break;
-                
-            case 0x02: // }
-                if (expectingValue) jsonString += '""'; 
-                jsonString += "}"; 
-                stack.pop(); 
-                expectingValue = false; 
-                lastWasValue = true; 
-                i++; break;
-
-            case 0x05: // [
-                insertSeparator();
-                jsonString += "["; 
-                stack.push('arr'); 
-                lastWasValue = false;
-                i++; break;
-
-            case 0x06: // ]
-                jsonString += "]"; 
-                stack.pop(); 
-                expectingValue = false; 
-                lastWasValue = true; 
-                i++; break;
-
-            case 0x07: // String (XOR Decrypted)
-                i++; 
+            case 0x01: // T_START {
+                jsonString += "{"; i++; break;
+            case 0x02: // T_END }
+                jsonString += "}"; i++; break;
+            case 0x03: // T_SEP :
+                jsonString += ":"; i++; break;
+            case 0x04: // T_NEXT ,
+                jsonString += ","; i++; break;
+            case 0x05: // T_ARR_S [
+                jsonString += "["; i++; break;
+            case 0x06: // T_ARR_E ]
+                jsonString += "]"; i++; break;
+            case 0x07: // T_STR (XOR Encrypted String)
+                i++; // Move past T_STR marker
                 let start = i;
-                while (i < bytes.length && bytes[i] !== 0x00) i++;
+                // Seek null terminator (0x00)
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
                 
                 const chunk = bytes.slice(start, i);
                 const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) decrypted[j] = chunk[j] ^ XOR_KEY;
+                for (let j = 0; j < chunk.length; j++) {
+                    // Apply XOR_KEY (0xAA)
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                }
                 
-                let sanitized = decoder.decode(decrypted)
+                // Escape characters for valid JSON parsing
+                let rawStr = decoder.decode(decrypted);
+                let sanitized = rawStr
                     .replace(/\\/g, "\\\\")
                     .replace(/"/g, '\\"')
                     .replace(/\n/g, "\\n")
                     .replace(/\r/g, "\\r")
                     .replace(/\t/g, "\\t");
-                
-                insertSeparator();
+
                 jsonString += '"' + sanitized + '"';
-                
-                const currentCtx = stack[stack.length - 1];
-                if (currentCtx === 'obj') {
-                    if (expectingValue) {
-                        expectingValue = false;
-                        lastWasValue = true;
-                    } else {
-                        expectingValue = true;
-                        lastWasValue = false;
-                    }
-                } else {
-                    lastWasValue = true;
-                }
-                i++; break;
+                i++; // Skip the 0x00 terminator
+                break;
 
             default:
-                i++; break;
+                i++; // Advance on unknown byte
+                break;
         }
     }
 
     return jsonString.trim();
 }
 
-// 3. Integration Logic
+// 3. Automated Loader for Genesis-AI
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
@@ -371,16 +323,18 @@ fetch(jsonURL + "?v=" + Date.now())
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
+      
+      // Ensure we start at the first JSON object
       const rootIndex = decoded.indexOf("{");
       if (rootIndex === -1) throw new Error("No structural root found.");
       
       const cleanJson = decoded.substring(rootIndex);
       responses = JSON.parse(cleanJson);
       
-      console.log("Genesis-AI: Binary System Online (V7.5.9).");
+      console.log("Genesis-AI: Binary System Online (V7.6.1 Parity).");
     } catch (e) {
       console.warn("Module Reconstruction Failed: " + e.message);
-      // Fallback
+      // Fallback for legacy compatibility
       fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
         .then(r => r.json())
         .then(data => {
