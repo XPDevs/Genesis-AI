@@ -239,68 +239,94 @@ function decodeBinary(buffer) {
     const view = new DataView(buffer);
     const XOR_KEY = 0xAA; 
     const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
     
-    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
-    // We check the first 4 bytes for the "GNIS" signature
     let i = 0;
+    const dictionary = [];
+    let jsonString = "";
+
+    // 1. Signature Check (GNIS)
     try {
-        const sig = view.getUint32(0, true); // true = little-endian
+        const sig = view.getUint32(0, true); 
         if (sig === 0x53494E47) {
-            i = 4; // Skip "GNIS" header
-            console.log("Genesis-AI: Valid Binary Signature detected.");
+            i = 4;
+            console.log("Genesis-AI: Valid Numerical Binary Signature detected.");
         } else {
-            console.warn("Genesis-AI: Signature mismatch, attempting skip-less parse.");
-            i = 0;
+            throw new Error("Invalid Signature");
         }
     } catch (e) {
-        i = 0;
+        console.error("Genesis-AI: Header Mismatch.");
+        return null;
     }
 
-    // 2. Token-based Reconstruction
+    // 2. Read Metadata (Version & Dictionary Size)
+    const logicVersion = bytes[i++]; // Skip version byte
+    const dictSize = bytes[i++];
+
+    // 3. Load XOR Dictionary
+    for (let d = 0; d < dictSize; d++) {
+        const len = bytes[i++];
+        const entryBytes = new Uint8Array(len);
+        for (let j = 0; j < len; j++) {
+            entryBytes[j] = bytes[i++] ^ XOR_KEY;
+        }
+        dictionary.push(decoder.decode(entryBytes));
+    }
+
+    // 4. Token-based Reconstruction
     while (i < bytes.length) {
         const b = bytes[i];
         
+        // Handle Dictionary Tokens (0x80 and above)
+        if (b >= 0x80) {
+            const dictIdx = b - 0x80;
+            if (dictionary[dictIdx]) {
+                jsonString += '"' + dictionary[dictIdx] + '"';
+            }
+            i++;
+            continue;
+        }
+
         switch(b) {
-            case 0x01: jsonString += "{"; break; // T_START
-            case 0x02: jsonString += "}"; break; // T_END
-            case 0x03: jsonString += ":"; break; // T_SEP
+            case 0x01: jsonString += "{"; i++; break; // T_START
+            case 0x02: jsonString += "}"; i++; break; // T_END
+            case 0x03: jsonString += ":"; i++; break; // T_SEP
             case 0x04: // T_NEXT
-                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
                 if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
                     jsonString += ",";
                 }
+                i++;
                 break;
-            case 0x05: jsonString += "["; break; // T_ARR_S
-            case 0x06: jsonString += "]"; break; // T_ARR_E
-            case 0x07: // T_STR (String Start)
+            case 0x05: jsonString += "["; i++; break; // T_ARR_S
+            case 0x06: jsonString += "]"; i++; break; // T_ARR_E
+            
+            case 0x07: // T_STR (Literal)
                 i++; 
                 let start = i;
-                
-                // Find the 0x00 null terminator used in json2bin.c
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
-                
+                while (i < bytes.length && bytes[i] !== 0x00) i++;
                 const chunk = bytes.slice(start, i);
-                const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
-                
-                // The C compiler preserves the string content as it appears in the JSON file,
-                // including escape characters like \". Using JSON.stringify would re-escape
-                // these, corrupting the data (e.g., \" becomes \\").
-                // The correct approach is to simply wrap the decoded string in quotes,
-                // mirroring the behavior of the nano_decompile function in json2bin.c.
-                const stringContent = decoder.decode(decrypted);
-                jsonString += '"' + stringContent + '"';
+                const decrypted = new Uint8Array(chunk.length).map((val, idx) => chunk[idx] ^ XOR_KEY);
+                jsonString += '"' + decoder.decode(decrypted) + '"';
+                i++; // Skip null terminator
                 break;
+
+            case 0x0A: // T_VAL_F (4-Byte Float)
+                i++;
+                const fval = view.getFloat32(i, true);
+                jsonString += fval.toString();
+                i += 4;
+                break;
+
+            case 0x0B: // T_VAL_I (4-Byte Integer)
+                i++;
+                const ival = view.getInt32(i, true);
+                jsonString += ival.toString();
+                i += 4;
+                break;
+
             default:
-                // Ignore unexpected bytes (like padding)
+                i++;
                 break;
         }
-        i++;
     }
     
     return jsonString.trim();
