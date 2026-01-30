@@ -27,6 +27,7 @@ const shareModal = document.getElementById("shareModal");
 const shareLinkInput = document.getElementById("shareLinkInput"); 
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
+const suggestionBox = document.getElementById("suggestionBox");
 const uploadBtn = document.getElementById("uploadBtn");
 const imgUploadInput = document.getElementById("imgUploadInput");
 const inputArea = document.getElementById("inputArea");
@@ -454,13 +455,13 @@ function renderMessages() {
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) { updateChatView(); return; }
-  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false));
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) updateURL(chat.title);
   updateChatView();
 }
 
-function appendMessage(text, role, isNew = false) {
+function appendMessage(text, role, isNew = false, imageUrl = null) {
   let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
@@ -476,6 +477,16 @@ function appendMessage(text, role, isNew = false) {
   const div = document.createElement("div");
   div.className = "message " + role;
   const textSpan = document.createElement("span");
+  
+  if (imageUrl) {
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.style.maxWidth = "200px";
+      img.style.borderRadius = "12px";
+      img.style.marginBottom = "10px";
+      img.style.display = "block";
+      div.appendChild(img);
+  }
   div.appendChild(textSpan);
 
   const actionsDiv = document.createElement("div");
@@ -502,13 +513,17 @@ function appendMessage(text, role, isNew = false) {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
+    if (finalString.includes('<')) {
+        textSpan.innerHTML = processedText;
+    } else {
     let i = 0;
     const interval = setInterval(() => {
       textSpan.textContent += processedText[i]; i++;
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === processedText.length) clearInterval(interval);
     }, 30);
-  } else { textSpan.textContent = processedText; }
+    }
+  } else { textSpan[finalString.includes('<') ? 'innerHTML' : 'textContent'] = processedText; }
 }
 
 // --- LOGIC MODULES ---
@@ -581,14 +596,15 @@ function sendMessage() {
   if (isReadOnlyMode) return;
   if (isCurrentlyBanned()) { showBanModal(); return; }
   const text = userInput.value.trim();
-  if (!text) return;
+  if (!text && !currentUploadFile) return;
   userInput.value = "";
 
+  const continueSend = (imgSrc) => {
   // Image Authentication Command
   if (text.includes("@ImAuth")) {
       if (currentUploadFile && window.authenticateImage) {
-          appendMessage(text, "user");
-          appendMessage("Scanning image for AI signatures...", "ai", true);
+          appendMessage(text, "user", false, imgSrc);
+          appendMessage("Scanning image...", "ai", true);
           
           window.authenticateImage(currentUploadFile).then(result => {
               // Remove the "Scanning..." message or just append result
@@ -619,7 +635,10 @@ function sendMessage() {
   }
 
   const chat = chats.find(c => c.id === activeChatId);
-  chat.messages.push({ role: "user", text: text });
+  const userMsg = { role: "user", text: text };
+  if (imgSrc) userMsg.imageUrl = imgSrc;
+  
+  chat.messages.push(userMsg);
   renderMessages(); saveChats();
 
   if (chat.messages.filter(m => m.role === "user").length === 1) {
@@ -643,6 +662,15 @@ function sendMessage() {
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
     }, 1500);
+    
+    if (currentUploadFile) { currentUploadFile = null; if(uploadBtn) uploadBtn.style.color = ""; }
+  };
+
+  if (currentUploadFile) {
+      const reader = new FileReader();
+      reader.onload = (e) => continueSend(e.target.result);
+      reader.readAsDataURL(currentUploadFile);
+  } else { continueSend(null); }
 }
 
 // --- DEVELOPER MODE ---
@@ -790,6 +818,20 @@ if (uploadBtn && imgUploadInput) {
             userInput.focus();
         }
     };
+}
+
+if (userInput && suggestionBox) {
+    userInput.addEventListener('input', () => {
+        const val = userInput.value;
+        if (val.endsWith('@')) {
+            suggestionBox.innerHTML = `<div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>🔒</span> ImgAuth</div>`;
+            suggestionBox.style.display = 'block';
+        } else {
+            suggestionBox.style.display = 'none';
+        }
+    });
+    // Hide suggestion box if clicked outside
+    document.addEventListener('click', (e) => { if (e.target !== userInput && e.target !== suggestionBox) suggestionBox.style.display = 'none'; });
 }
 
 sendBtn.onclick = sendMessage;
