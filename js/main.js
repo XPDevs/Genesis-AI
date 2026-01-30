@@ -602,19 +602,30 @@ function sendMessage() {
   const continueSend = (imgSrc) => {
   // Image Authentication Command
   if (text.includes("@ImAuth")) {
-      if (currentUploadFile && window.authenticateImage) {
+      if (!currentUploadFile) {
+          appendMessage("Please upload an image first to use @ImAuth.", "error");
+          return;
+      }
+
+      const runAuth = () => {
           appendMessage(text, "user", false, imgSrc);
           appendMessage("Scanning image...", "ai", true);
           
           window.authenticateImage(currentUploadFile).then(result => {
-              // Remove the "Scanning..." message or just append result
               appendMessage(result, "ai");
-              // Reset upload
               currentUploadFile = null;
               if(uploadBtn) uploadBtn.style.color = "";
           });
+      };
+
+      if (window.authenticateImage) {
+          runAuth();
       } else {
-          appendMessage("Please upload an image first to use @ImAuth.", "error");
+          const script = document.createElement('script');
+          script.src = "https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js?v=" + Date.now();
+          script.onload = runAuth;
+          script.onerror = () => appendMessage("Error loading authentication module.", "error");
+          document.head.appendChild(script);
       }
       return;
   }
