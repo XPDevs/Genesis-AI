@@ -601,9 +601,10 @@ function sendMessage() {
 
   const continueSend = (imgSrc) => {
   // Image Authentication Command
-  if (text.includes("@ImAuth")) {
+  const lowerText = text.toLowerCase();
+  if (text.includes("@ImgAuth") || text.includes("@ImAuth") || (currentUploadFile && /\bis this ai\b/.test(lowerText))) {
       if (!currentUploadFile) {
-          appendMessage("Please upload an image first to use @ImAuth.", "error");
+          appendMessage("Please upload an image first to use @ImgAuth.", "error");
           return;
       }
 
