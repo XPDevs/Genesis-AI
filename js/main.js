@@ -304,7 +304,7 @@ function decodeBinary(buffer) {
     }
     
     return jsonString.trim();
-}  now update this js to have compatability with how the bin files are now encdoded and compressed
+}  
 
 // 3. Model Loading Logic
 fetch(jsonURL + "?v=" + Date.now())
