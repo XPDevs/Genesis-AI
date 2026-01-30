@@ -608,12 +608,39 @@ function sendMessage() {
           return;
       }
 
+      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+
+      if (!activeChatId) {
+        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
+        saveChats(); renderChatList();
+      }
+
+      const chat = chats.find(c => c.id === activeChatId);
+      const userMsg = { role: "user", text: text };
+      if (imgSrc) userMsg.imageUrl = imgSrc;
+      chat.messages.push(userMsg);
+      renderMessages(); saveChats();
+
+      if (chat.messages.filter(m => m.role === "user").length === 1) {
+        const newTitle = summariseTitle(text);
+        typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
+      }
+
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "message loading-container";
+      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Scanning image...</span>`;
+      chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+
       const runAuth = () => {
-          appendMessage(text, "user", false, imgSrc);
-          appendMessage("Scanning image...", "ai", true);
-          
           window.authenticateImage(currentUploadFile).then(result => {
-              appendMessage(result, "ai");
+              loadingDiv.remove();
+              const botMsg = { role: "ai", text: result };
+              chat.messages.push(botMsg);
+              saveChats();
+              appendMessage(botMsg.text, botMsg.role, true);
+              
+              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               currentUploadFile = null;
               if(uploadBtn) uploadBtn.style.color = "";
           });
@@ -625,7 +652,11 @@ function sendMessage() {
           const script = document.createElement('script');
           script.src = "https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js?v=" + Date.now();
           script.onload = runAuth;
-          script.onerror = () => appendMessage("Error loading authentication module.", "error");
+          script.onerror = () => {
+              loadingDiv.remove();
+              appendMessage("Error loading authentication module.", "error");
+              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
+          };
           document.head.appendChild(script);
       }
       return;
