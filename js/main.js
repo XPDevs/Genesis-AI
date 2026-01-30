@@ -633,16 +633,21 @@ function sendMessage() {
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
 
       const runAuth = () => {
+          const startTime = Date.now();
           window.authenticateImage(currentUploadFile).then(result => {
-              loadingDiv.remove();
-              const botMsg = { role: "ai", text: result };
-              chat.messages.push(botMsg);
-              saveChats();
-              appendMessage(botMsg.text, botMsg.role, true);
-              
-              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
-              currentUploadFile = null;
-              if(uploadBtn) uploadBtn.style.color = "";
+              const elapsedTime = Date.now() - startTime;
+              const delay = Math.max(0, 3000 - elapsedTime);
+              setTimeout(() => {
+                  loadingDiv.remove();
+                  const botMsg = { role: "ai", text: result };
+                  chat.messages.push(botMsg);
+                  saveChats();
+                  appendMessage(botMsg.text, botMsg.role, true);
+                  
+                  userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+                  currentUploadFile = null;
+                  if(uploadBtn) uploadBtn.style.color = "";
+              }, delay);
           });
       };
 
