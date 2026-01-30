@@ -142,9 +142,9 @@
                 
                 let resultText = "";
                 if (detected) {
-                    resultText = `⚠️ AI GENERATED IMAGE DETECTED\nAnalysis: Synthetic patterns found in pixel structure.\nSignature Match: ${detected.code}\nLikely Source: ${detected.name}`;
+                    resultText = `Image detected as AI-generated.\nAnalysis: Synthetic patterns found in pixel structure.\nSignature Match: ${detected.code}\nLikely Source: ${detected.name}`;
                 } else {
-                    resultText = `✅ AUTHENTIC IMAGE VERIFIED\nAnalysis: Natural sensor noise and compression artifacts detected.\nResult: No AI signatures found in database of ${aiSignatures.length} generators.`;
+                    resultText = `Image not detected as AI-generated.\nAnalysis: Natural sensor noise and compression artifacts detected.\nResult: No AI signatures found in database of ${aiSignatures.length} generators.`;
                 }
                 resolve(resultText);
             };
