@@ -27,6 +27,8 @@ const shareModal = document.getElementById("shareModal");
 const shareLinkInput = document.getElementById("shareLinkInput"); 
 const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const shareCancel = document.getElementById("shareCancel");
+const uploadBtn = document.getElementById("uploadBtn");
+const imgUploadInput = document.getElementById("imgUploadInput");
 const inputArea = document.getElementById("inputArea");
 // Dev Modal Elements
 const devModal = document.getElementById("devModal");
@@ -46,6 +48,7 @@ let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
 let isReadOnlyMode = false;
+let currentUploadFile = null;
 let isDevMode = false;
 const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 
@@ -581,6 +584,25 @@ function sendMessage() {
   if (!text) return;
   userInput.value = "";
 
+  // Image Authentication Command
+  if (text.includes("@ImAuth")) {
+      if (currentUploadFile && window.authenticateImage) {
+          appendMessage(text, "user");
+          appendMessage("Scanning image for AI signatures...", "ai", true);
+          
+          window.authenticateImage(currentUploadFile).then(result => {
+              // Remove the "Scanning..." message or just append result
+              appendMessage(result, "ai");
+              // Reset upload
+              currentUploadFile = null;
+              if(uploadBtn) uploadBtn.style.color = "";
+          });
+      } else {
+          appendMessage("Please upload an image first to use @ImAuth.", "error");
+      }
+      return;
+  }
+
   if (violatesRules(text)) {
     const info = loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; saveBanInfo(info);
     if (info.consecutiveViolations >= 5) { applyBan(); return; }
@@ -758,6 +780,17 @@ newChatBtn.onclick = () => {
   localStorage.setItem("activeChatId", activeChatId);
   saveChats(); renderChatList(); renderMessages(); updateURL("New Chat");
 };
+
+if (uploadBtn && imgUploadInput) {
+    uploadBtn.onclick = () => imgUploadInput.click();
+    imgUploadInput.onchange = (e) => {
+        if(e.target.files.length > 0) {
+            currentUploadFile = e.target.files[0];
+            uploadBtn.style.color = "#00C851"; // Green to indicate file selected
+            userInput.focus();
+        }
+    };
+}
 
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
