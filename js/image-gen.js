@@ -13,8 +13,7 @@ window.generateImage = async function(prompt) {
         const text = await response.text();
 
         // Extract the URL from the response
-        const srcMatch = text.match(/src=["']([^"']+\.(?:png|jpg|jpeg|gif|webp)[^"']*)["']/i) || 
-                         text.match(/(https?:\/\/[^\s"'<>]+\.(?:png|jpg|jpeg|gif|webp)[^\s"'<>]*)/i);
+        const srcMatch = text.match(/src=["'](https:\/\/image\.pollinations\.ai\/[^"']+)["']/i);
         
         if (srcMatch) {
             let imageUrl = srcMatch[1] || srcMatch[0];
