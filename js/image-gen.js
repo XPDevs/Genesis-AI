@@ -7,10 +7,18 @@ window.generateImage = async function(prompt) {
         // Directly construct the URL for the Pollinations.ai image generation service.
         // This is much faster and more reliable than using a proxy to parse a Perchance generator.
         const encodedPrompt = encodeURIComponent(prompt);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+        // Add a random seed to ensure uniqueness and prevent caching collisions
+        const seed = Math.floor(Math.random() * 1000000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}`;
 
-        // The function is async to maintain compatibility with main.js, which expects a Promise.
-        // We can directly return the URL.
+        // Pre-fetch the image to ensure the service is responding correctly (avoids 502 errors in the UI)
+        const response = await fetch(imageUrl);
+        
+        if (!response.ok) {
+            throw new Error(`Pollinations API returned status: ${response.status}`);
+        }
+
+        // Return the URL only if the fetch was successful
         return imageUrl;
 
     } catch (error) {
