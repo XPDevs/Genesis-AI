@@ -2,25 +2,36 @@ window.generateImage = async function(prompt) {
     try {
         if (!prompt || !prompt.trim()) return null;
 
-        // 1. Clean and encode the prompt
-        const encodedPrompt = encodeURIComponent(prompt.trim());
-        const seed = Math.floor(Math.random() * 1000000000);
-        
-        // 2. Original Pollinations URL
-        const originalUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024&model=flux`;
+        // Ensure library is ready
+        if (typeof puter === 'undefined') {
+            console.error("Genesis-AI: Puter.js missing from HTML.");
+            return null;
+        }
 
-        // 3. Use a free CORS proxy to bypass OpaqueResponseBlocking
-        // This proxy adds the 'Access-Control-Allow-Origin' header to the response
-        const proxiedUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`;
+        // Silent Auth: Creates a temporary guest session to avoid the login popup
+        if (!puter.auth.isSignedIn()) {
+            await puter.auth.signIn({ attempt_temp_user_creation: true });
+        }
 
-        console.log(`Genesis-AI: Requesting proxied image...`);
+        console.log(`Genesis-AI: Generating image...`);
 
-        // 4. Return the proxied URL directly. 
-        // This ensures the browser treats it as a 'safe' local-domain resource.
-        return proxiedUrl;
+        // Generate a real image using the high-speed Flux model
+        // We extract the .src directly to avoid browser security blocks
+        const imageElement = await puter.ai.txt2img(prompt.trim(), { 
+            model: 'black-forest-labs/FLUX.1-schnell' 
+        });
+
+        if (imageElement && imageElement.src) {
+            console.log("Genesis-AI: Image generated.");
+            return imageElement.src;
+        }
+
+        return null;
 
     } catch (error) {
-        console.error("Genesis-AI Image Error:", error);
-        return null;
+        // Fallback to a direct link if the session is restricted
+        console.warn("Genesis-AI: Session restricted, using direct fallback.");
+        const seed = Math.floor(Math.random() * 1000000);
+        return `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?nologo=true&seed=${seed}&model=flux`;
     }
 };
