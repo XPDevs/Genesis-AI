@@ -1,25 +1,44 @@
 window.generateImage = async function(prompt) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1500; // ms
+
     try {
         if (!prompt || !prompt.trim()) {
             throw new Error("Image generation prompt cannot be empty.");
         }
 
-        // Directly construct the URL for the Pollinations.ai image generation service.
-        // This is much faster and more reliable than using a proxy to parse a Perchance generator.
         const encodedPrompt = encodeURIComponent(prompt);
-        // Add a random seed to ensure uniqueness and prevent caching collisions
-        const seed = Math.floor(Math.random() * 1000000);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}`;
 
-        // Pre-fetch the image to ensure the service is responding correctly (avoids 502 errors in the UI)
-        const response = await fetch(imageUrl);
-        
-        if (!response.ok) {
-            throw new Error(`Pollinations API returned status: ${response.status}`);
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            const seed = Math.floor(Math.random() * 1000000);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}`;
+
+            try {
+                const response = await fetch(imageUrl);
+                if (response.ok) {
+                    return imageUrl; // Success!
+                }
+                
+                if (response.status >= 500) {
+                    console.warn(`Genesis-AI Image: Attempt ${attempt} failed with status ${response.status}.`);
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                        continue; // try again
+                    }
+                }
+                
+                throw new Error(`Pollinations API returned status: ${response.status}`);
+
+            } catch (error) {
+                console.warn(`Genesis-AI Image: Attempt ${attempt} failed with a network error.`);
+                if (attempt < MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                } else {
+                    throw error; // Re-throw the last error
+                }
+            }
         }
-
-        // Return the URL only if the fetch was successful
-        return imageUrl;
+        throw new Error("Image generation failed after all retries.");
 
     } catch (error) {
         console.error("Genesis-AI Image Error:", error);
