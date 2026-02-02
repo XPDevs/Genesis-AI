@@ -9,14 +9,13 @@ window.generateImage = async function(prompt) {
         const encodedPrompt = encodeURIComponent(prompt);
         const perchanceUrl = `https://perchance.org/${generatorName}?output=text&prompt=${encodedPrompt}&t=${Date.now()}`;
         
-        // Use the JSON wrapper to bypass CORS blocks
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(perchanceUrl)}`;
+        // Use a more reliable CORS proxy that returns the raw response
+        const proxyUrl = `https://corsproxy.io/?${perchanceUrl}`;
 
         const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error('Proxy error');
 
-        const data = await response.json();
-        const text = data.contents;
+        const text = await response.text();
 
         // Extract the URL from the response
         const srcMatch = text.match(/src=["']([^"']+)["']/i) || text.match(/(https?:\/\/[^\s"'<>]+)/i);
