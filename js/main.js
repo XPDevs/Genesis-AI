@@ -693,7 +693,7 @@ function sendMessage() {
       const runGen = () => {
           window.generateImage(prompt).then(imgUrl => {
               loadingDiv.remove();
-              if (imgUrl) {
+              if (imgUrl && imgUrl.trim()) {
                   const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl };
                   chat.messages.push(botMsg);
                   saveChats();
