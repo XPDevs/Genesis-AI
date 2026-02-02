@@ -2,8 +2,11 @@ window.generateImage = async function(prompt) {
     try {
         const generatorName = 'z154dxbfko';
         const encodedPrompt = encodeURIComponent(prompt);
-        // Change: Fetch output directly from the generator URL with ?output=text, which typically supports CORS.
-        const url = `https://perchance.org/${generatorName}?output=text&prompt=${encodedPrompt}&t=${Date.now()}`;
+        // The Perchance endpoint is unreliable with CORS headers.
+        // We will use a public CORS proxy to ensure the request is not blocked by the browser's Same-Origin Policy.
+        const perchanceUrl = `https://perchance.org/${generatorName}?output=text&prompt=${encodedPrompt}&t=${Date.now()}`;
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const url = proxyUrl + encodeURIComponent(perchanceUrl);
 
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
