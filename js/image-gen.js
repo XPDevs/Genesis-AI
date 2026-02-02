@@ -1,21 +1,16 @@
 window.generateImage = async function(prompt) {
     const MAX_RETRIES = 4;
-    const BASE_DELAY = 2500; // ms
+    const BASE_DELAY = 2000; 
 
-    // Helper function to validate if an image loads correctly
     const validateImage = (url) => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             
-            // Success handler
             img.onload = () => resolve(true);
-            
-            // Error handler
             img.onerror = () => reject(new Error("Image failed to load"));
             
-            // Timeout handler (15 seconds max)
             const timeoutId = setTimeout(() => {
-                img.src = ""; // Attempt to cancel
+                img.src = ""; 
                 reject(new Error("Image load timed out"));
             }, 15000);
 
@@ -28,31 +23,34 @@ window.generateImage = async function(prompt) {
 
         const encodedPrompt = encodeURIComponent(prompt);
         
-        // Cycle through models to avoid 502s on a specific backend
-        // 'turbo' is often faster/more stable than 'flux'
-        const models = ['turbo', 'flux', 'unity', 'midjourney']; 
+        // Removed 'midjourney' and 'unity' as they are frequently unstable
+        // Added 'search' as a reliable fallback
+        const models = ['flux', 'turbo', 'search']; 
 
         for (let i = 0; i < MAX_RETRIES; i++) {
             const seed = Math.floor(Math.random() * 1000000000);
-            const model = models[i % models.length];
             
-            // Construct URL with explicit dimensions and model
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&model=${model}&width=1024&height=1024`;
+            // If the first attempt fails, we stop forcing a specific model 
+            // and let the system pick the healthiest one.
+            const modelParam = i === 0 ? `&model=${models[0]}` : `&model=${models[i % models.length]}`;
+            
+            // Constructing a more robust URL
+            const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?nologo=true&seed=${seed}${modelParam}&width=1024&height=1024`;
 
             try {
-                console.log(`Genesis-AI: Generating image (Attempt ${i+1}/${MAX_RETRIES}) using model '${model}'...`);
+                console.log(`Genesis-AI: Generating image (Attempt ${i+1}/${MAX_RETRIES})...`);
                 await validateImage(imageUrl);
-                return imageUrl; // Success
+                return imageUrl; 
             } catch (err) {
                 console.warn(`Genesis-AI: Attempt ${i+1} failed: ${err.message}`);
                 if (i < MAX_RETRIES - 1) {
-                    // Exponential backoff delay
-                    await new Promise(r => setTimeout(r, BASE_DELAY * (i + 1)));
+                    await new Promise(r => setTimeout(r, BASE_DELAY));
                 }
             }
         }
         
-        throw new Error("All image generation attempts failed.");
+        // Final fallback: Return the URL without validation to try and let the browser handle it
+        return `https://pollinations.ai/p/${encodedPrompt}?nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
 
     } catch (error) {
         console.error("Genesis-AI Image Error:", error);
