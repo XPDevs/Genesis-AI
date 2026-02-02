@@ -40,3 +40,4 @@ window.generateImage = async function(prompt) {
         return null;
     }
 };
+console.log("Image Generator Loaded");
