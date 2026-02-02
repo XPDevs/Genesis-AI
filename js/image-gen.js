@@ -4,40 +4,14 @@ window.generateImage = async function(prompt) {
             throw new Error("Image generation prompt cannot be empty.");
         }
 
-        const generatorName = 'z154dxbfko';
+        // Directly construct the URL for the Pollinations.ai image generation service.
+        // This is much faster and more reliable than using a proxy to parse a Perchance generator.
         const encodedPrompt = encodeURIComponent(prompt);
-        const perchanceUrl = `https://perchance.org/${generatorName}?output=text&prompt=${encodedPrompt}&t=${Date.now()}`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
 
-        // Use a CORS proxy to access the Perchance generator.
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(perchanceUrl)}`;
-
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Proxy error');
-
-        const data = await response.json();
-        const text = data.contents;
-
-        if (!text) throw new Error("Proxy returned empty content.");
-
-        // Broad search strategy for the image URL to ensure we catch it
-        // 1. Look for the specific Pollinations URL pattern (most common for this generator)
-        let srcMatch = text.match(/(https?:\/\/image\.pollinations\.ai\/[^\s"'<>]+)/i);
-
-        // 2. If not found, look for any standard image tag src attribute
-        if (!srcMatch) {
-            srcMatch = text.match(/src=["'](https?:\/\/[^"']+)["']/i);
-        }
-
-        // 3. Fallback: Look for any URL that looks like an image file
-        if (!srcMatch) {
-            srcMatch = text.match(/(https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|gif|webp))/i);
-        }
-        
-        if (srcMatch && srcMatch[1]) {
-            return srcMatch[1].replace(/&amp;/g, '&');
-        }
-
-        throw new Error("Image URL not found in generator response.");
+        // The function is async to maintain compatibility with main.js, which expects a Promise.
+        // We can directly return the URL.
+        return imageUrl;
 
     } catch (error) {
         console.error("Genesis-AI Image Error:", error);
