@@ -2,40 +2,24 @@ window.generateImage = async function(prompt) {
     try {
         if (!prompt || !prompt.trim()) return null;
 
-        if (typeof puter === 'undefined') {
-            console.error("Genesis-AI: Puter.js is missing.");
-            return null;
-        }
+        // 1. Clean and encode the prompt to prevent URL errors
+        const encodedPrompt = encodeURIComponent(prompt.trim());
+        
+        // 2. Generate a random seed for unique results every time
+        const seed = Math.floor(Math.random() * 1000000000);
+        
+        // 3. Use the high-performance 'flux' model for the best quality
+        // Adding 'nologo=true' ensures a clean professional look for Genesis-AI
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024&model=flux`;
 
-        // 1. Silent Authentication: Create a temporary user session.
-        // This stops the "Login" popup from appearing for the user.
-        if (!puter.auth.isSignedIn()) {
-            console.log("Genesis-AI: Establishing secure temporary session...");
-            await puter.auth.signIn({ attempt_temp_user_creation: true });
-        }
-
-        console.log(`Genesis-AI: Generating real image...`);
-
-        // 2. Generate the real image.
-        // We set test_mode to false to get a unique, real image.
-        // Specifying the provider directly prevents the 'reading 0' error.
-        const image = await puter.ai.txt2img(prompt, { 
-            provider: 'openai-image-generation',
-            model: 'dall-e-3',
-            test_mode: false 
-        });
-
-        if (image && image.src) {
-            console.log("Genesis-AI: Real image successfully generated.");
-            return image.src;
-        }
-
-        return null;
+        console.log(`Genesis-AI: Generating image...`);
+        
+        // 4. Return the URL directly. 
+        // This avoids OpaqueResponseBlocking and NS_BINDING_ABORTED errors.
+        return imageUrl;
 
     } catch (error) {
-        // Fallback to a stable public route if Puter session fails
-        console.warn("Genesis-AI: Puter session restricted, using fallback engine.");
-        const seed = Math.floor(Math.random() * 1000000);
-        return `https://pollinations.ai/p/${encodeURIComponent(prompt)}?nologo=true&seed=${seed}&model=flux`;
+        console.error("Genesis-AI Image Error:", error);
+        return null;
     }
 };
