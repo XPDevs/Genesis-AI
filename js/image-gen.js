@@ -19,9 +19,9 @@ window.generateImage = async function(prompt) {
 
         if (!text) throw new Error("Proxy returned empty content.");
 
-        // The perchance generator returns HTML containing an image from pollinations.ai.
-        // We extract that specific URL to ensure we get the correct generated image.
-        const srcMatch = text.match(/src=["'](https:\/\/image\.pollinations\.ai\/[^"']+)["']/i);
+        // The perchance generator might return HTML or plain text.
+        // We look for the Pollinations.ai URL specifically, handling both src attributes and raw text.
+        const srcMatch = text.match(/(https:\/\/image\.pollinations\.ai\/[^\s"'<>]+)/);
         
         if (srcMatch && srcMatch[1]) {
             return srcMatch[1];
