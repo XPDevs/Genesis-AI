@@ -319,7 +319,7 @@ fetch(jsonURL + "?v=" + Date.now())
       }
       
       responses = JSON.parse(decoded);
-      console.log("Genesis-AI: SPT-4.5 Binary active.");
+      console.log("Binary modal loaded.");
     } catch (e) {
       console.warn("Binary reconstruction failed: " + e.message);
       
