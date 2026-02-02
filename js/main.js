@@ -248,9 +248,9 @@ function decodeBinary(buffer) {
         const sig = view.getUint32(0, true); // true = little-endian
         if (sig === 0x53494E47) {
             i = 4; // Skip "GNIS" header
-            console.log("Genesis-AI: Valid Binary Signature detected.");
+            console.log("Valid Signature.");
         } else {
-            console.warn("Genesis-AI: Signature mismatch, attempting skip-less parse.");
+            console.warn("Signature mismatch, attempting skip-less parse.");
             i = 0;
         }
     } catch (e) {
@@ -308,14 +308,14 @@ function decodeBinary(buffer) {
 
 // 3. Model Loading Logic
 fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found"))
+  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found!"))
   .then(buffer => {
     try {
       const decoded = decodeBinary(buffer);
       
       // Safety: Ensure the result is valid JSON before parsing
       if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-          throw new Error("Reconstructed string is not valid JSON.");
+          throw new Error("Reconstructed string is invalid!");
       }
       
       responses = JSON.parse(decoded);
@@ -327,14 +327,14 @@ fetch(jsonURL + "?v=" + Date.now())
       try {
           const rawText = new TextDecoder().decode(buffer).trim();
           responses = JSON.parse(rawText);
-          console.log("Genesis-AI: Raw JSON Fallback successful.");
+          console.log("Fallback successful.");
       } catch (innerErr) {
-          throw new Error("Critical: File is neither valid Genesis-AI Binary nor JSON.");
+          throw new Error("File is not in either supported format.");
       }
     }
   })
   .catch(err => {
-    console.error("Critical Reconstruction Error:", err);
+    console.error("Reconstruction Error:", err);
     // Legacy Safety Fallback to 1.0 JSON
     fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
       .then(r => r.json())
