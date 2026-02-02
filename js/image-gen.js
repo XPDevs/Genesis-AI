@@ -2,20 +2,23 @@ window.generateImage = async function(prompt) {
     try {
         if (!prompt || !prompt.trim()) return null;
 
-        // 1. Clean and encode the prompt to prevent URL errors
+        // 1. Use the new unified stable endpoint
+        const baseUrl = "https://gen.pollinations.ai/image/";
+        
+        // 2. Clean and encode the prompt
         const encodedPrompt = encodeURIComponent(prompt.trim());
         
-        // 2. Generate a random seed for unique results every time
+        // 3. Generate a unique seed for this specific request
         const seed = Math.floor(Math.random() * 1000000000);
         
-        // 3. Use the high-performance 'flux' model for the best quality
-        // Adding 'nologo=true' ensures a clean professional look for Genesis-AI
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024&model=flux`;
+        // 4. Construct the URL using the robust 'flux' model
+        // We remove the manual validation loop to stop the OpaqueResponseBlocking error.
+        const imageUrl = `${baseUrl}${encodedPrompt}?nologo=true&seed=${seed}&width=1024&height=1024&model=flux`;
 
-        console.log(`Genesis-AI: Generating image...`);
+        console.log(`Genesis-AI: Generating image via stable unified endpoint...`);
         
-        // 4. Return the URL directly. 
-        // This avoids OpaqueResponseBlocking and NS_BINDING_ABORTED errors.
+        // Return the URL directly. The browser's native <img> tag will handle 
+        // the loading securely without triggering security blocks.
         return imageUrl;
 
     } catch (error) {
