@@ -1,5 +1,5 @@
 function initializeApp() {
-    console.log("Genesis Core: Environment Ready.");
+    console.log("Website loaded successfully");
     window.dispatchEvent(new Event('app-ready'));
 }
 
