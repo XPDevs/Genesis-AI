@@ -667,6 +667,60 @@ function sendMessage() {
       return;
   }
 
+  // Image Generation Command
+  if (lowerText.startsWith("@img") || lowerText.startsWith("@generate")) {
+      const prompt = text.replace(/^@\w+\s*/, '').trim();
+      if (!prompt) { appendMessage("Please provide a prompt.", "error"); return; }
+
+      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+
+      if (!activeChatId) {
+        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
+        saveChats(); renderChatList();
+      }
+
+      const chat = chats.find(c => c.id === activeChatId);
+      const userMsg = { role: "user", text: text };
+      chat.messages.push(userMsg);
+      renderMessages(); saveChats();
+
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "message loading-container";
+      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Generating image...</span>`;
+      chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+
+      const runGen = () => {
+          window.generateImage(prompt).then(imgUrl => {
+              loadingDiv.remove();
+              if (imgUrl) {
+                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl };
+                  chat.messages.push(botMsg);
+                  saveChats();
+                  appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl);
+              } else {
+                  appendMessage("Failed to generate image. Please try again.", "error");
+              }
+              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+          });
+      };
+
+      if (window.generateImage) {
+          runGen();
+      } else {
+          const script = document.createElement('script');
+          script.src = "js/image-gen.js";
+          script.onload = runGen;
+          script.onerror = () => {
+              loadingDiv.remove();
+              appendMessage("Error loading image generation module.", "error");
+              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
+          };
+          document.head.appendChild(script);
+      }
+      return;
+  }
+
   if (violatesRules(text)) {
     const info = loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; saveBanInfo(info);
     if (info.consecutiveViolations >= 5) { applyBan(); return; }
@@ -872,7 +926,10 @@ if (userInput && suggestionBox) {
     userInput.addEventListener('input', () => {
         const val = userInput.value;
         if (val.endsWith('@')) {
-            suggestionBox.innerHTML = `<div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>🔒</span> ImgAuth</div>`;
+            suggestionBox.innerHTML = `
+                <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>🔒</span> ImgAuth</div>
+                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus();"><span>🎨</span> Generate Image</div>
+            `;
             suggestionBox.style.display = 'block';
         } else {
             suggestionBox.style.display = 'none';
