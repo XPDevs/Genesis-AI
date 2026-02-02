@@ -2,25 +2,23 @@ window.generateImage = async function(prompt) {
     try {
         if (!prompt || !prompt.trim()) return null;
 
-        // Ensure Puter.js is loaded
+        // Check if the library is loaded to prevent ReferenceErrors
         if (typeof puter === 'undefined') {
-            console.error("Genesis-AI: Puter.js is not loaded. Ensure <script src='https://js.puter.com/v2/'></script> is in your HTML.");
+            console.error("Genesis-AI: Puter.js library missing. Ensure <script src='https://js.puter.com/v2/'></script> is in your HTML.");
             return null;
         }
 
-        console.log(`Genesis-AI: Generating image via Puter.js...`);
+        console.log(`Genesis-AI: Generating image...`);
 
-        // Use Puter's built-in text-to-image generation
-        // Setting testMode to true allows for free testing without consuming credits
-        const imageElement = await puter.ai.txt2img(prompt, { 
-            model: 'black-forest-labs/FLUX.1-schnell',
-            test_mode: false 
-        });
+        // Generate the image using Puter.js
+        // Setting testMode to false for actual generation. Set to true for free testing.
+        const image = await puter.ai.txt2img(prompt, false);
 
-        // Puter returns an HTMLImageElement; we extract the 'src' for your dashboard
-        if (imageElement && imageElement.src) {
+        // Puter.js returns an HTMLImageElement directly
+        // We return the .src so your dashboard can use the URL
+        if (image && image.src) {
             console.log("Genesis-AI: Image generation successful.");
-            return imageElement.src;
+            return image.src;
         }
 
         return null;
