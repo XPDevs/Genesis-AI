@@ -19,3 +19,4 @@ window.calc = function(expression) {
         return "Error";
     }
 };
+console.log("Calculator Module Loaded");
