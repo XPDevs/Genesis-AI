@@ -1,28 +1,17 @@
 window.generateImage = async function(prompt) {
     try {
-        const generatorName = 'z154dxbfko';
-        const encodedPrompt = encodeURIComponent(prompt);
-        const perchanceUrl = `https://perchance.org/${generatorName}?output=text&prompt=${encodedPrompt}&t=${Date.now()}`;
-        
-        // Use a more reliable CORS proxy that returns the raw response
-        const proxyUrl = `https://corsproxy.io/?${perchanceUrl}`;
-
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Proxy error');
-
-        const text = await response.text();
-
-        // Extract the URL from the response
-        const srcMatch = text.match(/src=["'](https:\/\/image\.pollinations\.ai\/[^"']+)["']/i);
-        
-        if (srcMatch) {
-            let imageUrl = srcMatch[1] || srcMatch[0];
-            if (imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
-
-            return imageUrl;
+        if (!prompt || !prompt.trim()) {
+            throw new Error("Image generation prompt cannot be empty.");
         }
 
-        throw new Error("Link not found in response");
+        // Directly construct the URL for the image generation service (Pollinations.ai).
+        // This is faster and more reliable than using a proxy to parse a Perchance generator.
+        // It ensures the user's exact prompt is used to generate the image.
+        const encodedPrompt = encodeURIComponent(prompt);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+
+        // The function is async to maintain compatibility with main.js, which expects a Promise.
+        return imageUrl;
     } catch (error) {
         console.error("Genesis-AI Image Error:", error);
         return null;
