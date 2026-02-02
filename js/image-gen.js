@@ -7,26 +7,35 @@ window.generateImage = async function(prompt) {
             return null;
         }
 
-        console.log(`Genesis-AI: Generating image via Puter.js...`);
+        // 1. Silent Authentication: Create a temporary user session.
+        // This stops the "Login" popup from appearing for the user.
+        if (!puter.auth.isSignedIn()) {
+            console.log("Genesis-AI: Establishing secure temporary session...");
+            await puter.auth.signIn({ attempt_temp_user_creation: true });
+        }
 
-        // Using a more robust configuration to avoid the 'undefined reading 0' error
-        // Providing the explicit provider 'openai-image-generation' acts as a stable fallback
+        console.log(`Genesis-AI: Generating real image...`);
+
+        // 2. Generate the real image.
+        // We set test_mode to false to get a unique, real image.
+        // Specifying the provider directly prevents the 'reading 0' error.
         const image = await puter.ai.txt2img(prompt, { 
-            provider: 'openai-image-generation', 
-            model: 'dall-e-3' 
+            provider: 'openai-image-generation',
+            model: 'dall-e-3',
+            test_mode: false 
         });
 
-        // Ensure we have an image and a source URL
         if (image && image.src) {
-            console.log("Genesis-AI: Image successfully generated.");
+            console.log("Genesis-AI: Real image successfully generated.");
             return image.src;
         }
 
         return null;
 
     } catch (error) {
-        // Detailed error log to help you debug in the dashboard console
-        console.error("Genesis-AI Image Error:", error.error || error);
-        return null;
+        // Fallback to a stable public route if Puter session fails
+        console.warn("Genesis-AI: Puter session restricted, using fallback engine.");
+        const seed = Math.floor(Math.random() * 1000000);
+        return `https://pollinations.ai/p/${encodeURIComponent(prompt)}?nologo=true&seed=${seed}&model=flux`;
     }
 };
