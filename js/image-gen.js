@@ -13,27 +13,19 @@ window.generateImage = async function(prompt) {
             const seed = Math.floor(Math.random() * 1000000);
             const targetImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}`;
 
-            // Use a different proxy that forwards headers correctly to avoid CORS issues.
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetImageUrl)}`;
-
             try {
-                // This proxy forwards the response directly. A successful fetch means the image is available.
-                const response = await fetch(proxyUrl);
+                // Validate using the Image object to avoid CORS/Proxy issues with fetch
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => reject(new Error("Image failed to load"));
+                    img.src = targetImageUrl;
+                });
 
-                if (response.ok) {
-                    return targetImageUrl; // Success!
-                }
-
-                // If not ok, it's a server error (e.g., 502) from Pollinations.
-                console.warn(`Genesis-AI Image: Attempt ${attempt} failed with status ${response.status}.`);
-                if (attempt < MAX_RETRIES) {
-                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                    continue; // Go to the next attempt
-                }
-                throw new Error(`Image generation failed with status: ${response.status}`);
+                return targetImageUrl; // Success!
 
             } catch (error) {
-                console.warn(`Genesis-AI Image: Attempt ${attempt} failed with a network error: ${error.message}`);
+                console.warn(`Genesis-AI Image: Attempt ${attempt} failed: ${error.message}`);
                 if (attempt < MAX_RETRIES) {
                     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
                 } else {
