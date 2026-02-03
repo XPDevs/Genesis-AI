@@ -27,8 +27,8 @@
                     const logo = new Image();
                     logo.crossOrigin = "Anonymous";
                     logo.onload = () => {
-                        const logoSize = 40;
-                        const padding = 10;
+                        const logoSize = 20;
+                        const padding = 5;
                         ctx.drawImage(logo, canvas.width - logoSize - padding, canvas.height - logoSize - padding, logoSize, logoSize);
 
                         // Convert to JPEG and inject "GNIS" signature into comment segment
