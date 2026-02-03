@@ -455,13 +455,13 @@ function renderMessages() {
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) { updateChatView(); return; }
-  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl));
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) updateURL(chat.title);
   updateChatView();
 }
 
-function appendMessage(text, role, isNew = false, imageUrl = null) {
+function appendMessage(text, role, isNew = false, imageUrl = null, footerText = null) {
   let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
@@ -478,16 +478,26 @@ function appendMessage(text, role, isNew = false, imageUrl = null) {
   div.className = "message " + role;
   const textSpan = document.createElement("span");
   
+  div.appendChild(textSpan);
+
   if (imageUrl) {
       const img = document.createElement("img");
       img.src = imageUrl;
       img.style.maxWidth = "200px";
       img.style.borderRadius = "12px";
+      img.style.marginTop = "10px";
       img.style.marginBottom = "10px";
       img.style.display = "block";
       div.appendChild(img);
   }
-  div.appendChild(textSpan);
+
+  if (footerText) {
+      const footer = document.createElement("div");
+      footer.textContent = footerText;
+      footer.style.fontSize = "0.85em";
+      footer.style.opacity = "0.8";
+      div.appendChild(footer);
+  }
 
   const actionsDiv = document.createElement("div");
   actionsDiv.className = "msg-actions";
@@ -694,10 +704,10 @@ function sendMessage() {
           window.generateImage(prompt).then(imgUrl => {
               loadingDiv.remove();
               if (imgUrl && imgUrl.trim()) {
-                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl };
+                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: prompt };
                   chat.messages.push(botMsg);
                   saveChats();
-                  appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl);
+                  appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer);
               } else {
                   appendMessage("Failed to generate image. Please try again.", "error");
               }
