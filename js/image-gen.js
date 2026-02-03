@@ -6,14 +6,13 @@
                 return;
             }
 
-            // We use a unique seed so every image is a brand new creation
-            const seed = Math.floor(Math.random() * 999999);
+            const seed = Math.floor(Math.random() * 9999999);
+            const encodedPrompt = encodeURIComponent(prompt.trim());
             
-            // By using the direct image endpoint, we avoid the security errors
-            // This URL can be dropped directly into any <img> tag's src
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&seed=${seed}&nologo=true`;
+            // This connects Genesis-AI directly to the Perchance generation engine
+            const imageUrl = `https://image-generation.perchance.org/api/generate?prompt=${encodedPrompt}&seed=${seed}&resolution=1024x1024&nologo=true`;
 
-            // We resolve immediately. Your main.js should set this as the src of an image element.
+            // We resolve the URL so your dashboard can display the result in an image tag
             resolve(imageUrl);
         });
     };
