@@ -704,7 +704,7 @@ function sendMessage() {
           window.generateImage(prompt).then(imgUrl => {
               loadingDiv.remove();
               if (imgUrl && imgUrl.trim()) {
-                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, text: "Would you like to me add anything the image?" };
+                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: "Would you like to me add anything the image?" };
                   chat.messages.push(botMsg);
                   saveChats();
                   appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer);
