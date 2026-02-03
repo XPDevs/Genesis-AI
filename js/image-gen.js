@@ -6,15 +6,13 @@
                 return;
             }
 
-            const seed = Math.floor(Math.random() * 1000000000);
-            const encodedPrompt = encodeURIComponent(prompt.trim());
+            const seed = Math.floor(Math.random() * 999999);
             
-            // This is the correct, public-facing URL for the Perchance engine
-            // It allows the browser to load the image without needing a manual session key
-            const imageUrl = `https://perchance.org/api/getAiImage?prompt=${encodedPrompt}&seed=${seed}&resolution=1024x1024`;
+            // This specific URL format tells the server to send ONLY the image file.
+            // This prevents the "OpaqueResponseBlocking" and "invalid_key" errors.
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
-            // We resolve the URL directly so your dashboard can display it
-            // This avoids OpaqueResponseBlocking because the <img> tag handles the load
+            // We resolve immediately. Genesis-AI will set this as the 'src' for the image element.
             resolve(imageUrl);
         });
     };
