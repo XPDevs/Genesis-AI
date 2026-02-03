@@ -7,7 +7,10 @@
             }
 
             const seed = Math.floor(Math.random() * 999999);
-            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&seed=${seed}&nologo=true`;
+            const rawUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&seed=${seed}&nologo=true`;
+
+            // We use a public CORS proxy to bypass the browser's security blocks
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
 
             const img = new Image();
             img.crossOrigin = "anonymous";
@@ -18,14 +21,17 @@
                 canvas.height = img.height;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0);
+                
+                // Convert to a local data string to bypass ORB entirely
                 resolve(canvas.toDataURL("image/png"));
             };
 
             img.onerror = function() {
-                resolve(imageUrl); 
+                // If proxy fails, fallback to the direct URL
+                resolve(rawUrl); 
             };
 
-            img.src = imageUrl;
+            img.src = proxyUrl;
         });
     };
 
