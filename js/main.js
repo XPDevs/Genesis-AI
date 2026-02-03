@@ -756,6 +756,46 @@ function sendMessage() {
       return;
   }
 
+  // Text Authentication Command
+  if (lowerText.startsWith("@txtauth") || lowerText.startsWith("@checktext")) {
+      const textToCheck = text.replace(/^@\w+\s*/, '').trim();
+      if (!textToCheck) { appendMessage("Please provide text to analyze.", "error"); return; }
+
+      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+
+      if (!activeChatId) {
+        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
+        saveChats(); renderChatList();
+      }
+
+      const chat = chats.find(c => c.id === activeChatId);
+      const userMsg = { role: "user", text: text };
+      chat.messages.push(userMsg);
+      renderMessages(); saveChats();
+
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "message loading-container";
+      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Analyzing text...</span>`;
+      chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+
+      const runTxtAuth = () => {
+          window.authenticateText(textToCheck).then(result => {
+              loadingDiv.remove();
+              const botMsg = { role: "ai", text: result };
+              chat.messages.push(botMsg);
+              saveChats();
+              appendMessage(botMsg.text, botMsg.role, true);
+              
+              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+          });
+      };
+
+      if (window.authenticateText) { runTxtAuth(); } 
+      else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; }
+      return;
+  }
+
   if (violatesRules(text)) {
     const info = loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; saveBanInfo(info);
     if (info.consecutiveViolations >= 5) { applyBan(); return; }
@@ -964,6 +1004,7 @@ if (userInput && suggestionBox) {
             suggestionBox.innerHTML = `
                 <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>🔒</span> ImgAuth</div>
                 <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus();"><span>🎨</span> Generate Image</div>
+                <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>📝</span> Check Text</div>
             `;
             suggestionBox.style.display = 'block';
         } else {
