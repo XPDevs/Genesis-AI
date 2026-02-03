@@ -22,8 +22,8 @@
 
     // Verify connection to the cloud environment
     if (typeof puter !== 'undefined') {
-        console.log("Image Generation Module: Now powered by Puter cloud services.");
+        console.log("Image Generation Module loaded.");
     } else {
-        console.warn("Puter.js not detected. Please ensure the cloud library is loaded.");
+        console.warn("Error loading modal");
     }
 })();
