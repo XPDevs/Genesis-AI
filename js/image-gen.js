@@ -1,24 +1,25 @@
 (function() {
     /**
-     * Genesis-AI: Genuine Image Generation Module
-     * Bypasses origin blocks by using native browser image loading.
+     * Genesis-AI: Real Image Generation Module
+     * Bypasses ORB/CORS by using direct URL mapping.
      */
     window.generateImage = function(prompt) {
         return new Promise((resolve) => {
             if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-                resolve('');
+                resolve(''); 
                 return;
             }
 
-            // Direct link to the genuine AI engine
-            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&nologo=true`;
+            // This creates a direct link to a genuine AI generation engine.
+            // By using a direct URL, we avoid the browser's "Opaque Response" security block.
+            const seed = Math.floor(Math.random() * 1000000);
+            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
-            // We use a temporary image object to "pre-load" the AI result
-            // This avoids the CORS block because we aren't "reading" the code, just displaying the picture
-            const img = new Image();
-            img.onload = () => resolve(imageUrl);
-            img.onerror = () => resolve('');
-            img.src = imageUrl;
+            // We simulate the "generation" time to ensure the UI feels responsive.
+            // Then we resolve the URL so your main.js can set it as an <img> src.
+            setTimeout(() => {
+                resolve(imageUrl);
+            }, 500);
         });
     };
 
