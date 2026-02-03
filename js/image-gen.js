@@ -1,32 +1,25 @@
 (function() {
     /**
      * Genesis-AI: Genuine Image Generation Module
-     * Fetches real AI-generated visuals based on the text prompt.
+     * Bypasses origin blocks by using native browser image loading.
      */
-    window.generateImage = async function(prompt) {
-        if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-            // Returns an empty string if no prompt is provided
-            return ''; 
-        }
-
-        try {
-            // Connects to a live AI engine to process the prompt
-            // The 'nologo' parameter ensures a clean, professional look for Genesis-AI
-            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&nologo=true`;
-            
-            // We fetch the image to ensure it is fully generated before returning
-            const response = await fetch(imageUrl);
-            
-            if (response.ok) {
-                // Return the direct link to the genuine AI image
-                return imageUrl;
-            } else {
-                return '';
+    window.generateImage = function(prompt) {
+        return new Promise((resolve) => {
+            if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
+                resolve('');
+                return;
             }
-        } catch (error) {
-            // Silently fail to keep the console clean for the user
-            return '';
-        }
+
+            // Direct link to the genuine AI engine
+            const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt.trim())}?width=1024&height=1024&nologo=true`;
+
+            // We use a temporary image object to "pre-load" the AI result
+            // This avoids the CORS block because we aren't "reading" the code, just displaying the picture
+            const img = new Image();
+            img.onload = () => resolve(imageUrl);
+            img.onerror = () => resolve('');
+            img.src = imageUrl;
+        });
     };
 
     console.log("Image Generation Module loaded.");
