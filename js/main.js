@@ -1,5 +1,5 @@
 function initializeApp() {
-    console.log("Website loaded successfully");
+    console.log("Website loaded successfully V4.9");
     window.dispatchEvent(new Event('app-ready'));
 }
 
@@ -704,7 +704,7 @@ function sendMessage() {
           window.generateImage(prompt).then(imgUrl => {
               loadingDiv.remove();
               if (imgUrl && imgUrl.trim()) {
-                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: prompt };
+                  const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: "Would you like to me add anything the image?" };
                   chat.messages.push(botMsg);
                   saveChats();
                   appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer);
