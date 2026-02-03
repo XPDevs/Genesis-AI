@@ -507,6 +507,31 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   copyBtn.onclick = () => navigator.clipboard.writeText(processedText);
   actionsDiv.appendChild(copyBtn);
 
+  if (imageUrl) {
+      const downloadBtn = document.createElement("button");
+      downloadBtn.className = "action-btn download-btn";
+      downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+      downloadBtn.onclick = async () => {
+          try {
+              const response = await fetch(imageUrl);
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = url;
+              a.download = `genesis-image-${Date.now()}.png`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+          } catch (err) {
+              console.error("Download error:", err);
+              window.open(imageUrl, '_blank');
+          }
+      };
+      actionsDiv.appendChild(downloadBtn);
+  }
+
   if (role === "ai") {
     const speakBtn = document.createElement("button");
     speakBtn.className = "action-btn speak-btn";
