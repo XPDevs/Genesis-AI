@@ -6,6 +6,7 @@
 (function() {
     // Database of AI Generator Signatures (Real Metadata Patterns)
     const aiSignatures = [
+        { name: "Genesis-AI", code: "GNIS" },
         { name: "Midjourney", code: "Midjourney" },
         { name: "DALL-E 3 (C2PA)", code: "c2pa" },
         { name: "DALL-E (OpenAI)", code: "DALL-E" },
