@@ -6,13 +6,15 @@
                 return;
             }
 
-            const seed = Math.floor(Math.random() * 9999999);
+            const seed = Math.floor(Math.random() * 1000000000);
             const encodedPrompt = encodeURIComponent(prompt.trim());
             
-            // This connects Genesis-AI directly to the Perchance generation engine
-            const imageUrl = `https://image-generation.perchance.org/api/generate?prompt=${encodedPrompt}&seed=${seed}&resolution=1024x1024&nologo=true`;
+            // This is the correct, public-facing URL for the Perchance engine
+            // It allows the browser to load the image without needing a manual session key
+            const imageUrl = `https://perchance.org/api/getAiImage?prompt=${encodedPrompt}&seed=${seed}&resolution=1024x1024`;
 
-            // We resolve the URL so your dashboard can display the result in an image tag
+            // We resolve the URL directly so your dashboard can display it
+            // This avoids OpaqueResponseBlocking because the <img> tag handles the load
             resolve(imageUrl);
         });
     };
