@@ -590,7 +590,7 @@ function typeChatTitle(newTitle, callback) {
   }, 70);
 }
 
-function findResponses(input, history) {
+async function findResponses(input, history) {
   const lowerInput = input.toLowerCase();
 
 
@@ -620,7 +620,27 @@ function findResponses(input, history) {
     }
   });
 
-  if (foundMatches.length === 0) return { role: "ai", text: "I’m not quite sure I follow. Could you give me a bit more detail?" };
+  if (foundMatches.length === 0) {
+    try {
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+
+      if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
+        const topResult = searchData.query.search[0];
+        const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topResult.title)}`;
+        const summaryRes = await fetch(summaryUrl);
+        const summaryData = await summaryRes.json();
+
+        if (summaryData.extract) {
+          return { role: "ai", text: `I couldn't find that in my local database, but here is what I found on Wikipedia for "${topResult.title}":\n\n${summaryData.extract}\n\n(Source: ${summaryData.content_urls.desktop.page})` };
+        }
+      }
+    } catch (e) {
+      console.error("Wikipedia fetch failed:", e);
+    }
+    return { role: "ai", text: "I’m not quite sure I follow. Could you give me a bit more detail?" };
+  }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
   if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
   const last = orderedMessages.pop();
@@ -828,9 +848,9 @@ function sendMessage() {
   loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
 
-    setTimeout(() => {
+    setTimeout(async () => {
         loadingDiv.remove();
-        const botMsg = findResponses(text, chat.messages);
+        const botMsg = await findResponses(text, chat.messages);
 
         chat.messages.push(botMsg);
         saveChats();
