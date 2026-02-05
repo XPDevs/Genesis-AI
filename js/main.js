@@ -1,5 +1,5 @@
 function initializeApp() {
-    console.log("Website loaded successfully V4.9");
+    console.log("Website loaded successfully V6.4");
     window.dispatchEvent(new Event('app-ready'));
 }
 
@@ -684,33 +684,27 @@ async function findResponses(input, history) {
 
   if (foundMatches.length === 0) {
     try {
-      let searchInput = input;
-      // Strip common question prefixes to improve Wikipedia search relevance
       const prefixes = ["how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are"];
-      prefixes.sort((a, b) => b.length - a.length);
-      for (const prefix of prefixes) {
-        if (lowerInput.startsWith(prefix)) {
-          searchInput = input.substring(prefix.length).trim();
-          break;
-        }
-      }
+      const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
-      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchInput)}&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
+      if (isQuestion) {
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
 
-      if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
-        const topResult = searchData.query.search[0];
-        const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
-        const contentRes = await fetch(contentUrl);
-        const contentData = await contentRes.json();
-        const pages = contentData.query.pages;
-        const pageId = Object.keys(pages)[0];
+        if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
+          const topResult = searchData.query.search[0];
+          const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
+          const contentRes = await fetch(contentUrl);
+          const contentData = await contentRes.json();
+          const pages = contentData.query.pages;
+          const pageId = Object.keys(pages)[0];
 
-        if (pages[pageId] && pages[pageId].extract) {
-          const fullText = pages[pageId].extract;
-          const summary = window.summariseConversation(fullText, 20);
-          return { role: "ai", text: `Here is what I found: \n\n${summary}\n\n` };
+          if (pages[pageId] && pages[pageId].extract) {
+            const fullText = pages[pageId].extract;
+            const summary = window.summariseConversation(fullText, 5);
+            return { role: "ai", text: `\n\n${summary}\n\n` };
+          }
         }
       }
     } catch (e) {
