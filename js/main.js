@@ -622,7 +622,18 @@ async function findResponses(input, history) {
 
   if (foundMatches.length === 0) {
     try {
-      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
+      let searchInput = input;
+      // Strip common question prefixes to improve Wikipedia search relevance
+      const prefixes = ["how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are"];
+      prefixes.sort((a, b) => b.length - a.length);
+      for (const prefix of prefixes) {
+        if (lowerInput.startsWith(prefix)) {
+          searchInput = input.substring(prefix.length).trim();
+          break;
+        }
+      }
+
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchInput)}&format=json&origin=*`;
       const searchRes = await fetch(searchUrl);
       const searchData = await searchRes.json();
 
@@ -636,8 +647,8 @@ async function findResponses(input, history) {
 
         if (pages[pageId] && pages[pageId].extract) {
           const fullText = pages[pageId].extract;
-          const summary = window.summariseConversation(fullText);
-          return { role: "ai", text: `I couldn't find that in my local database, but here is what I found on Wikipedia for "${topResult.title}":\n\n${summary}\n\n(Source: https://en.wikipedia.org/wiki/${encodeURIComponent(topResult.title)})` };
+          const summary = window.summariseConversation(fullText, 20);
+          return { role: "ai", text: `Here is what I found: \n\n${summary}\n\n` };
         }
       }
     } catch (e) {
