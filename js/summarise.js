@@ -4,7 +4,7 @@
  * Elite Intelligence Engine for Genesis-AI.
  */
 
-window.summariseConversation = function(data) {
+window.summariseConversation = function(data, maxSentences = 5) {
     if (!data || data.trim().length < 50) return "Insufficient data density for intelligence extraction.";
 
     // 1. Structural Analysis
@@ -57,13 +57,13 @@ window.summariseConversation = function(data) {
     // 5. Narrative Reconstruction
     const finalSummary = candidates
         .sort((a, b) => b.score - a.score)
-        .slice(0, 5)
+        .slice(0, maxSentences)
         .sort((a, b) => a.index - b.index)
         .map(s => s.text)
         .join(" ");
 
     // Modified to return a direct string instead of an object
-    return `Sure, here is your summary: ${finalSummary}`;
+    return `${finalSummary}`;
 };
 
 console.log("Summary Module Loaded");
