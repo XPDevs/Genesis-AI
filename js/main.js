@@ -628,12 +628,16 @@ async function findResponses(input, history) {
 
       if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
         const topResult = searchData.query.search[0];
-        const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topResult.title)}`;
-        const summaryRes = await fetch(summaryUrl);
-        const summaryData = await summaryRes.json();
+        const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
+        const contentRes = await fetch(contentUrl);
+        const contentData = await contentRes.json();
+        const pages = contentData.query.pages;
+        const pageId = Object.keys(pages)[0];
 
-        if (summaryData.extract) {
-          return { role: "ai", text: `I couldn't find that in my local database, but here is what I found on Wikipedia for "${topResult.title}":\n\n${summaryData.extract}\n\n(Source: ${summaryData.content_urls.desktop.page})` };
+        if (pages[pageId] && pages[pageId].extract) {
+          const fullText = pages[pageId].extract;
+          const summary = window.summariseConversation(fullText);
+          return { role: "ai", text: `I couldn't find that in my local database, but here is what I found on Wikipedia for "${topResult.title}":\n\n${summary}\n\n(Source: https://en.wikipedia.org/wiki/${encodeURIComponent(topResult.title)})` };
         }
       }
     } catch (e) {
