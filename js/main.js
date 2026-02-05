@@ -53,6 +53,67 @@ let currentUploadFile = null;
 let isDevMode = false;
 const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 
+// AI Control State
+let aiState = {
+    isResponding: false,
+    currentRequestId: 0,
+    loadingDiv: null,
+    typingInterval: null,
+    thinkingTimeout: null,
+    resetTimeout: null,
+    originalSendIcon: null
+};
+
+function stopGeneration() {
+    if (!aiState.isResponding) return;
+    
+    aiState.isResponding = false;
+    aiState.currentRequestId++; // Invalidate pending operations
+    
+    if (aiState.typingInterval) {
+        clearInterval(aiState.typingInterval);
+        aiState.typingInterval = null;
+    }
+    
+    if (aiState.thinkingTimeout) {
+        clearTimeout(aiState.thinkingTimeout);
+        aiState.thinkingTimeout = null;
+    }
+
+    if (aiState.resetTimeout) {
+        clearTimeout(aiState.resetTimeout);
+        aiState.resetTimeout = null;
+    }
+    
+    if (aiState.loadingDiv) {
+        aiState.loadingDiv.remove();
+        aiState.loadingDiv = null;
+    }
+    
+    // Show stop message
+    const stopMsg = document.createElement("div");
+    stopMsg.style.color = "#888";
+    stopMsg.style.fontSize = "0.8em";
+    stopMsg.style.textAlign = "center";
+    stopMsg.style.marginTop = "5px";
+    stopMsg.style.marginBottom = "10px";
+    stopMsg.textContent = "You Stopped this message";
+    chatBox.appendChild(stopMsg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // Reset UI
+    userInput.disabled = false;
+    if (aiState.originalSendIcon) sendBtn.innerHTML = aiState.originalSendIcon;
+    sendBtn.disabled = false;
+    sendBtn.style.opacity = "1";
+    userInput.focus();
+    
+    if (currentUploadFile) { 
+        currentUploadFile = null; 
+        if(uploadBtn) uploadBtn.style.color = ""; 
+    }
+}
+
 // Shared Chat Constants
 const CHAR_SEPARATOR = '000'; 
 const ROLE_SEPARATOR = '555'; 
@@ -557,6 +618,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       chatBox.scrollTop = chatBox.scrollHeight;
       if (i === processedText.length) clearInterval(interval);
     }, 30);
+    aiState.typingInterval = interval;
     }
   } else { textSpan[finalString.includes('<') ? 'innerHTML' : 'textContent'] = processedText; }
 }
@@ -665,8 +727,19 @@ async function findResponses(input, history) {
 function sendMessage() {
   if (isReadOnlyMode) return;
   if (isCurrentlyBanned()) { showBanModal(); return; }
+
+  if (aiState.isResponding) {
+      stopGeneration();
+      return;
+  }
+
   const text = userInput.value.trim();
   if (!text && !currentUploadFile) return;
+  
+  if (!aiState.originalSendIcon) aiState.originalSendIcon = sendBtn.innerHTML;
+  aiState.isResponding = true;
+  const requestId = ++aiState.currentRequestId;
+  sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
   userInput.value = "";
 
   const continueSend = (imgSrc) => {
@@ -678,7 +751,7 @@ function sendMessage() {
           return;
       }
 
-      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+      userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -701,14 +774,18 @@ function sendMessage() {
       loadingDiv.className = "message loading-container";
       loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Scanning image...</span>`;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+      aiState.loadingDiv = loadingDiv;
 
       const runAuth = () => {
           const startTime = Date.now();
           window.authenticateImage(currentUploadFile).then(result => {
+              if (requestId !== aiState.currentRequestId) return;
               const elapsedTime = Date.now() - startTime;
               const delay = Math.max(0, 3000 - elapsedTime);
               setTimeout(() => {
+                  if (requestId !== aiState.currentRequestId) return;
                   loadingDiv.remove();
+                  aiState.loadingDiv = null;
                   const botMsg = { role: "ai", text: result };
                   chat.messages.push(botMsg);
                   saveChats();
@@ -717,6 +794,8 @@ function sendMessage() {
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                   currentUploadFile = null;
                   if(uploadBtn) uploadBtn.style.color = "";
+                  aiState.isResponding = false;
+                  sendBtn.innerHTML = aiState.originalSendIcon;
               }, delay);
           });
       };
@@ -728,9 +807,13 @@ function sendMessage() {
           script.src = "https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js?v=" + Date.now();
           script.onload = runAuth;
           script.onerror = () => {
+              if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
+              aiState.loadingDiv = null;
               appendMessage("Error loading authentication module.", "error");
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
+              aiState.isResponding = false;
+              sendBtn.innerHTML = aiState.originalSendIcon;
           };
           document.head.appendChild(script);
       }
@@ -742,7 +825,7 @@ function sendMessage() {
       const prompt = text.replace(/^@\w+\s*/, '').trim();
       if (!prompt) { appendMessage("Please provide a prompt.", "error"); return; }
 
-      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+      userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -759,10 +842,13 @@ function sendMessage() {
       loadingDiv.className = "message loading-container";
       loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Generating image...</span>`;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+      aiState.loadingDiv = loadingDiv;
 
       const runGen = () => {
           window.generateImage(prompt).then(imgUrl => {
+              if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
+              aiState.loadingDiv = null;
               if (imgUrl && imgUrl.trim()) {
                   const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: "Would you like to me add anything the image?" };
                   chat.messages.push(botMsg);
@@ -772,6 +858,8 @@ function sendMessage() {
                   appendMessage("Failed to generate image. Please try again.", "error");
               }
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+              aiState.isResponding = false;
+              sendBtn.innerHTML = aiState.originalSendIcon;
           });
       };
 
@@ -782,9 +870,13 @@ function sendMessage() {
           script.src = "js/image-gen.js";
           script.onload = runGen;
           script.onerror = () => {
+              if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
+              aiState.loadingDiv = null;
               appendMessage("Error loading image generation module.", "error");
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
+              aiState.isResponding = false;
+              sendBtn.innerHTML = aiState.originalSendIcon;
           };
           document.head.appendChild(script);
       }
@@ -796,7 +888,7 @@ function sendMessage() {
       const textToCheck = text.replace(/^@\w+\s*/, '').trim();
       if (!textToCheck) { appendMessage("Please provide text to analyze.", "error"); return; }
 
-      userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+      userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -813,21 +905,26 @@ function sendMessage() {
       loadingDiv.className = "message loading-container";
       loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Analyzing text...</span>`;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+      aiState.loadingDiv = loadingDiv;
 
       const runTxtAuth = () => {
           window.authenticateText(textToCheck).then(result => {
+              if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
+              aiState.loadingDiv = null;
               const botMsg = { role: "ai", text: result };
               chat.messages.push(botMsg);
               saveChats();
               appendMessage(botMsg.text, botMsg.role, true);
               
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+              aiState.isResponding = false;
+              sendBtn.innerHTML = aiState.originalSendIcon;
           });
       };
 
       if (window.authenticateText) { runTxtAuth(); } 
-      else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; }
+      else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon; }
       return;
   }
 
@@ -838,7 +935,7 @@ function sendMessage() {
   }
 
   const info = loadBanInfo(); info.consecutiveViolations = 0; saveBanInfo(info);
-  userInput.disabled = true; sendBtn.disabled = true; sendBtn.style.opacity = "0.5";
+  userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
@@ -862,17 +959,25 @@ function sendMessage() {
   loadingDiv.className = "message loading-container";
   loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
+  aiState.loadingDiv = loadingDiv;
 
-    setTimeout(async () => {
+    aiState.thinkingTimeout = setTimeout(async () => {
+        if (requestId !== aiState.currentRequestId) return;
         loadingDiv.remove();
+        aiState.loadingDiv = null;
         const botMsg = await findResponses(text, chat.messages);
+        if (requestId !== aiState.currentRequestId) return;
 
         chat.messages.push(botMsg);
         saveChats();
         appendMessage(botMsg.text, botMsg.role, true); 
 
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
-        setTimeout(() => { userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); }, timeout);
+        aiState.resetTimeout = setTimeout(() => { 
+            if (requestId !== aiState.currentRequestId) return;
+            userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); 
+            aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
+        }, timeout);
     }, 1500);
     
     if (currentUploadFile) { currentUploadFile = null; if(uploadBtn) uploadBtn.style.color = ""; }
