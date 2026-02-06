@@ -424,6 +424,7 @@
     }
 
     async function loadStatus() {
+        console.log("Starting status check...");
         const loading = document.getElementById('loading');
         const systemsGrid = document.getElementById('systems-grid');
         const barContainer = document.getElementById('uptime-bar');
@@ -432,9 +433,13 @@
 
         try {
             const response = await fetch('https://xpdevs.github.io/Genesis-AI/status/history.json');
-            if (!response.ok) throw new Error();
+            if (!response.ok) {
+                console.error("Failed to load status data:", response.status, response.statusText);
+                throw new Error();
+            }
             
             const data = await response.json();
+            console.log("Status data loaded successfully:", data);
             
             loading.style.display = 'none';
             mainContent.style.display = 'block';
@@ -475,6 +480,7 @@
             renderHistory(data.incidents || data.history_list || []);
 
         } catch (e) {
+            console.error("Error during status check:", e);
             loading.innerText = "Check connection.";
         }
     }
