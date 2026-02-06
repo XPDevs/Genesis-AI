@@ -294,7 +294,6 @@
         </a>
         <nav class="nav-links">
             <a id="home-nav" class="nav-link">Home</a>
-            <a href="Blog.html" class="nav-link">Blog</a>
         </nav>
     </header>
 
@@ -345,6 +344,9 @@
     </footer>
 </div>
 
+<!-- Integration of Loading Script -->
+<script src="https://xpdevs.github.io/Genesis-AI/js/loading.js"></script>
+
 <script>
     const mainContent = document.getElementById('main-content');
     const historyView = document.getElementById('history-view');
@@ -379,7 +381,6 @@
             return;
         }
 
-        // Group by Month
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const grouped = {};
 
@@ -399,7 +400,7 @@
 
             grouped[month].forEach(event => {
                 const dateObj = new Date(event.date);
-                const dayStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit',ショート: 'short' }).replace('/', ' ');
+                const dayStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).replace('/', ' ');
                 const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'short' });
 
                 const dayDiv = document.createElement('div');
@@ -437,7 +438,6 @@
             loading.style.display = 'none';
             mainContent.style.display = 'block';
 
-            // Current Status
             let allFine = true;
             systemsGrid.innerHTML = '';
             for (const [name, status] of Object.entries(data.systems || {})) {
@@ -457,7 +457,6 @@
                 banner.className = "status-banner warning";
             }
 
-            // Reliability Bar (30-day dots)
             const dailyHistory = data.daily_history || [];
             barContainer.innerHTML = '';
             for (let i = 0; i < 45; i++) {
@@ -472,8 +471,6 @@
             }
 
             if (data.uptime) uptimePercent.innerText = data.uptime;
-
-            // Timeline History (Detailed list)
             renderHistory(data.incidents || data.history_list || []);
 
         } catch (e) {
