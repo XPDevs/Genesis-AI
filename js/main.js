@@ -17,6 +17,16 @@ function loadMathSupport() {
     document.head.appendChild(script);
 }
 
+function injectCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .message span {
+            white-space: pre-wrap;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // UI Elements
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
