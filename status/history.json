@@ -1,32 +1,56 @@
 {
-"uptime": "99.98%",
-"systems": {
-"API": "Operational",
-"Genesis-AI Studio": "Operational",
-"Genesis-AI Website": "Operational"
-},
-"daily_history": [
-"operational", "operational", "operational", "maintenance", "operational",
-"operational", "operational", "operational", "operational", "operational",
-"operational", "operational", "operational", "operational", "outage",
-"operational", "operational", "operational", "operational", "operational",
-"operational", "operational", "operational", "operational", "operational",
-"operational", "operational", "operational", "operational", "operational"
-],
-"incidents": [
-{
-"date": "2026-02-03",
-"title": "Message Delivery Failure",
-"description": "Issues with message delivery where users found that messages were not sending or were stuck in a loop. Resolved by the afternoon.",
-"time": "14:30",
-"type": "resolved"
-},
-{
-"date": "2026-02-05",
-"title": "Partial slowdown in response times",
-"description": "We noticed higher than usual wait times for some queries. The core infrastructure has now fully recovered.",
-"time": "08:42",
-"type": "resolved"
-}
-]
+  "uptime": "99.98%",
+  "systems": {
+    "API": "Operational",
+    "Genesis-AI Studio": "Operational",
+    "Genesis-AI Website": "Operational"
+  },
+  "daily_history": [
+    "operational",
+    "operational",
+    "operational",
+    "maintenance",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "outage",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational",
+    "operational"
+  ],
+  "incidents": [
+    {
+      "date": "2026-02-03",
+      "title": "Message Delivery Failure",
+      "description": "Issues with message delivery where users found that messages were not sending or were stuck in a loop. Resolved by the afternoon.",
+      "time": "14:30",
+      "type": "resolved"
+    },
+    {
+      "date": "2026-02-05",
+      "title": "Partial slowdown in response times",
+      "description": "We noticed higher than usual wait times for some queries. The core infrastructure has now fully recovered.",
+      "time": "08:42",
+      "type": "resolved"
+    }
+  ]
 }
