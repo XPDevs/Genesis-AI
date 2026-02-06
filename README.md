@@ -1,8 +1,10 @@
 # Genesis-AI
 
 ## Introduction
-Genesis-AI is an experimental, web-based artificial intelligence platform created by XPDevs.  
-It represents a new approach to lightweight AI design — replacing traditional machine learning models with a custom binary format and human-readable JSON files that define the AI’s entire behavior and responses.
+Genesis-AI is an experimental, web-based artificial intelligence platform created by XPDevs.
+It represents a new approach to lightweight AI design — replacing traditional machine learning models with a custom binary format and human-readable JSON files that define the AI’s core behavior.
+
+While its foundation is a lightweight, rule-based system, it also integrates dynamic features like on-demand image generation, text/image analysis, and real-time Wikipedia lookups, all running locally in your browser.
 
 Unlike other systems that require users to install software, manage APIs, or process data on remote servers, Genesis-AI runs entirely within the web browser. Users simply visit the website and begin interacting instantly, with no downloads, no setup, and no external dependencies.
 
@@ -11,14 +13,14 @@ This project exists to explore how far simplicity can go — proving that AI-lik
 ## Project Goals
 The purpose of Genesis-AI is to:
 - Demonstrate that AI behavior can be simulated using transparent, open JSON structures.
-- Provide a fast and secure user experience by eliminating the need for cloud-based computation.
+- Provide a fast and secure user experience by eliminating the need for cloud-based computation for core chat.
 - Encourage experimentation and learning by keeping all logic readable and modifiable.
 - Promote digital safety and privacy by ensuring all processing occurs locally in the browser.
 - Inspire future developers to build simple, efficient tools that remain understandable to everyone.
 
 ## Experimental Notice
 Genesis-AI is **experimental**.  
-Because it uses a structured response system rather than an actual trained AI model, it may not always:
+Because it uses a structured response system rather than a large language model for its core chat, it may not always:
 - Understand complex or ambiguous sentences.  
 - Generate contextually consistent replies.  
 - Maintain deep conversational memory.  
@@ -28,7 +30,7 @@ Users are encouraged to explore its logic, test boundaries, and contribute ideas
 
 ## How It Works
 Genesis-AI functions entirely on client-side code, meaning:
-- When a user visits the website, the browser loads the HTML, CSS, and JavaScript files.
+- When a user visits the website, the browser loads the HTML, CSS, and JavaScript files.  
 - The AI “model” (called a **modal**) is primarily a custom, compressed binary file (`.bin`) for maximum performance. This binary is decoded in the browser.
 - The system also supports human-readable JSON files, which are ideal for creating and testing custom modals.
 - The modal contains predefined data, including:
@@ -36,15 +38,20 @@ Genesis-AI functions entirely on client-side code, meaning:
   - Contextual triggers.
   - Personality or tone parameters.
 
-The JavaScript engine decodes the modal, performs advanced pattern matching against user input (going beyond simple key-value lookups), and can even combine multiple relevant responses into a single, coherent answer.
-This method removes the need for neural processing or external APIs while keeping every behavior transparent to the public.
+The JavaScript engine decodes the modal, performs advanced pattern matching against user input, and can combine multiple relevant responses. It also recognizes special commands (prefixed with `@`) to trigger advanced modules like image generation or analysis. For general knowledge questions, it can query Wikipedia and summarize the results, providing a much broader knowledge base than the static modal alone.
+This method removes the need for neural processing for core chat while keeping every behavior transparent to the public.
 
 ## Features
-- **Web-Based & Serverless:** Runs entirely inside the browser — no installation, no servers.
+- **Web-Based & Serverless:** Runs entirely inside the browser — no installation, no servers for core chat.
 - **Instant Access:** Visit the website and start chatting immediately with no setup.
 - **Binary & JSON Modals:** AI behavior is defined in a high-performance binary format or editable JSON.
+- **On-Demand Image Generation:** Create images from text prompts using the `@img` command.
+- **AI Content Detection:** Analyze text (`@txtauth`) or uploaded images (`@ImgAuth`) to detect signatures of AI generation.
+- **Wikipedia Integration:** Automatically fetches and summarizes Wikipedia articles to answer a wide range of questions.
 - **Advanced Chat Management:** Create, rename, delete, and pin conversations.
 - **Shareable Conversations:** Generate unique, shareable links for your chat sessions.
+- **Stop Generation:** Instantly interrupt the AI's response generation with a click.
+- **Image Uploads:** Upload images directly into the chat for analysis.
 - **Lightweight Performance:** Loads in seconds and responds instantly.
 - **Tiered Safety System:** Detects unsafe messages and applies a tiered ban system for repeat violations.
 - **Privacy by Design:** No user messages are stored, logged, or transmitted.
@@ -53,6 +60,17 @@ This method removes the need for neural processing or external APIs while keepin
 - **Built-in Calculator:** Solves mathematical expressions directly in the chat.
 - **Cross-Platform & Mobile Friendly:** Works on all modern desktop and mobile browsers.
 - **Robust Error Handling:** Provides clear messages for load issues and safety violations.
+
+## Special Commands
+Genesis-AI supports special commands prefixed with `@` to unlock advanced functionality.
+
+| Command | Example | Description |
+|---|---|---|
+| `@img` | `@img a futuristic city at sunset` | Generates a 1024x1024 image based on the provided text prompt. |
+| `@ImgAuth` | `@ImgAuth` (with an image uploaded) | Analyzes the uploaded image to determine if it was generated by AI. |
+| `@txtauth` | `@txtauth This text seems very formal...` | Analyzes the provided text for patterns common in AI-generated content. |
+
+To use these, simply type the command into the chat box. For `@ImgAuth`, you must first upload an image using the attachment button.
 
 ## Appearance and Interface
 Genesis-AI provides a clean, minimal interface built for focus and accessibility.  
@@ -74,23 +92,10 @@ To access Genesis-AI, simply open the official website:
 Once the page loads:
 1. You’ll see the main Genesis-AI interface.  
 2. Type your message or question into the chat box.  
-3. Genesis-AI will respond using its JSON-based logic.  
+3. Genesis-AI will respond using its logic.  
 
 If a response cannot be generated, an appropriate error message will appear (see below).  
 Because everything is handled in-browser, you can close or refresh the page at any time without data loss or security risk.
-
-## Genesis AI Studio
-For developers and power users, XPDevs offers **Genesis AI Studio** — a comprehensive environment for testing, tuning, and managing Genesis AI models.
-
-**Features:**
-- **Playground:** Test prompts and system instructions in real-time with adjustable parameters.
-- **API Key Management:** Generate and manage keys for integrating Genesis AI into external applications.
-- **Model Tuning:** Create custom tuned models based on existing baselines.
-- **Batch Testing:** Run prompts against multiple inputs to validate consistency.
-- **Prompt Library:** Save and organize your system prompts.
-
-Access the Studio here:
-**[https://xpdevs.github.io/Genesis-AI/developers/AI-Studio](https://xpdevs.github.io/Genesis-AI/developers/AI-Studio)**
 
 ## Architecture Overview
 Genesis-AI is structured around a three-layer design:
