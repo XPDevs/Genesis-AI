@@ -15,25 +15,18 @@
 ],
 "incidents": [
 {
+"date": "2026-02-03",
+"title": "Message Delivery Failure",
+"description": "Issues with message delivery where users found that messages were not sending or were stuck in a loop. Resolved by the afternoon.",
+"time": "14:30",
+"type": "resolved"
+},
+{
 "date": "2026-02-05",
 "title": "Partial slowdown in response times",
 "description": "We noticed higher than usual wait times for some queries. The core infrastructure has now fully recovered.",
 "time": "08:42",
-"type": "maintenance"
-},
-{
-"date": "2026-02-04",
-"title": "Brief Connectivity Interruption",
-"description": "A brief period of downtime was recorded during a system update. All services are back to normal.",
-"time": "22:15",
-"type": "outage"
-},
-{
-"date": "2026-01-28",
-"title": "Planned Security Patch",
-"description": "Standard maintenance completed successfully.",
-"time": "03:00",
 "type": "resolved"
-}
+},
 ]
 }
