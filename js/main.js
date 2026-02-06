@@ -701,7 +701,9 @@ async function findResponses(input, history) {
           const pageId = Object.keys(pages)[0];
 
           if (pages[pageId] && pages[pageId].extract) {
-            const fullText = pages[pageId].extract;
+            let fullText = pages[pageId].extract;
+            // Remove Wikipedia-style headings and normalize whitespace for better summarization
+            fullText = fullText.replace(/==+[^=]+==+/g, '').replace(/\s+/g, ' ').trim();
             const summary = window.summariseConversation(fullText, 5);
             return { role: "ai", text: `\n\n${summary}\n\n` };
           }
