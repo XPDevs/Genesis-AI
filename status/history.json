@@ -27,6 +27,6 @@
 "description": "We noticed higher than usual wait times for some queries. The core infrastructure has now fully recovered.",
 "time": "08:42",
 "type": "resolved"
-},
+}
 ]
 }
