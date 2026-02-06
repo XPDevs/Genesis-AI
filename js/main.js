@@ -9,10 +9,10 @@ function loadMathSupport() {
     const link = document.createElement('link');
     link.id = 'katex-css';
     link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+    link.href = 'https://xpdevs.github.io/Genesis-AI/styles/calc-display.css';
     document.head.appendChild(link);
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+    script.src = 'https://xpdevs.github.io/GenesiAI/js/calc-display.js';
     script.onload = () => { window.katexLoaded = true; };
     document.head.appendChild(script);
 }
@@ -815,7 +815,7 @@ async function findResponses(input, history) {
                 const intro = sentences[0];
                 const outro = sentences[sentences.length - 1];
                 const facts = sentences.slice(1, -1);
-                formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n')}\n\n${outro}`;
+                formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n\n')}\n\n${outro}`;
             } else {
                 formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
             }
