@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status | Genesis-AI</title>
+    <title>XPDevs Genesis AI Status</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,7 +14,8 @@
             --success: #10a37f;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --card-bg: #f9f9fb;
+            --card-bg: #ffffff;
+            --hover-bg: #f9f9fb;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -23,7 +24,8 @@
                 --text-main: #ececec;
                 --text-muted: #b4b4b4;
                 --border-color: #2d2d2d;
-                --card-bg: #1a1a1a;
+                --card-bg: #0d0d0d;
+                --hover-bg: #1a1a1a;
             }
         }
 
@@ -45,146 +47,240 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
-            margin-top: 40px;
+            max-width: 650px;
+            margin-top: 60px;
         }
 
         header {
             margin-bottom: 40px;
-            text-align: center;
-            position: relative;
-        }
-
-        .nav-back {
-            position: absolute;
-            top: 0;
-            left: 0;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 4px;
-            transition: color 0.2s;
-        }
-
-        .nav-back:hover {
-            color: var(--text-main);
         }
 
         .brand {
-            font-weight: 600;
-            font-size: 24px;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
         }
 
         .brand img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            object-fit: contain;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+
+        .brand-name {
+            font-weight: 600;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
         }
 
         .status-banner {
-            background-color: var(--success);
-            color: white;
-            padding: 16px;
-            border-radius: 16px;
-            text-align: center;
+            padding: 16px 20px;
+            border-radius: 8px;
             font-weight: 500;
-            margin-bottom: 32px;
-            box-shadow: 0 4px 12px rgba(16, 163, 127, 0.2);
+            margin-bottom: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(16, 163, 127, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 163, 127, 0.2);
         }
 
-        .status-grid {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            overflow: hidden;
-            margin-bottom: 32px;
+        .status-banner.warning {
+            color: var(--warning);
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-list {
+            border-top: 1px solid var(--border-color);
+            margin-bottom: 40px;
         }
 
         .status-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 16px 0;
             border-bottom: 1px solid var(--border-color);
         }
 
-        .status-item:last-child {
-            border-bottom: none;
-        }
-
         .service-name {
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 400;
         }
 
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .status-label {
             font-size: 14px;
             font-weight: 500;
         }
 
-        .dot {
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-        }
+        .status-label.operational { color: var(--success); }
+        .status-label.maintenance { color: var(--warning); }
+        .status-label.outage { color: var(--danger); }
 
-        .dot.operational { background-color: var(--success); }
-        .dot.maintenance { background-color: var(--warning); }
-        .dot.outage { background-color: var(--danger); }
-
-        .operational-text { color: var(--success); }
-        .maintenance-text { color: var(--warning); }
-        .outage-text { color: var(--danger); }
-
-        .uptime-row {
-            padding: 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
+        .uptime-container {
+            margin-bottom: 48px;
         }
 
         .uptime-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         .uptime-bar {
             display: flex;
             gap: 2px;
-            height: 30px;
+            height: 34px;
         }
 
         .bar-segment {
             flex: 1;
             background-color: var(--success);
-            border-radius: 2px;
-            opacity: 0.8;
+            border-radius: 1px;
+            opacity: 0.9;
+        }
+
+        .history-btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .history-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .history-btn:hover {
+            border-color: var(--text-muted);
+            background: var(--bg-color);
+        }
+
+        .history-view {
+            display: none;
+        }
+
+        .history-month {
+            margin-bottom: 32px;
+        }
+
+        .history-month-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .history-day {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .day-label {
+            width: 60px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .day-events {
+            flex: 1;
+        }
+
+        .event-card {
+            border-left: 2px solid var(--warning);
+            padding-left: 16px;
+            margin-bottom: 24px;
+        }
+
+        .event-card.outage { border-left-color: var(--danger); }
+        .event-card.resolved { border-left-color: var(--success); }
+
+        .event-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .event-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .event-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+
+        .no-events {
+            font-size: 14px;
+            color: var(--text-muted);
         }
 
         footer {
-            margin-top: 60px;
-            text-align: center;
+            margin-top: 80px;
+            padding-bottom: 40px;
+            text-align: left;
+            border-top: 1px solid var(--border-color);
+            padding-top: 24px;
             color: var(--text-muted);
             font-size: 13px;
         }
 
         #loading {
+            padding: 60px 0;
             text-align: center;
-            padding: 40px;
             color: var(--text-muted);
+            font-size: 14px;
         }
     </style>
 </head>
@@ -192,52 +288,141 @@
 
 <div class="container">
     <header>
-        <a href="https://xpdevs.github.io/Genesis-AI" class="nav-back">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Back
+        <a href="https://xpdevs.github.io/Genesis-AI" class="brand">
+            <img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="" onerror="this.style.display='none'">
+            <span class="brand-name">XPDevs Genesis AI</span>
         </a>
-        <div class="brand">
-            <img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="Icon" onerror="this.style.display='none'">
-            Genesis-AI
-        </div>
-        <p style="color: var(--text-muted);">Status</p>
+        <nav class="nav-links">
+            <a id="home-nav" class="nav-link">Home</a>
+            <a href="Blog.html" class="nav-link">Blog</a>
+        </nav>
     </header>
 
-    <div id="loading">Checking...</div>
+    <div id="loading">Checking Current Status...</div>
 
-    <div id="content" style="display: none;">
+    <!-- Main Content Area -->
+    <div id="main-content" style="display: none;">
         <div class="status-banner" id="main-status">
-            All Operational
+            <span>All Systems Operational</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
 
-        <div class="status-grid" id="systems-grid">
-            <!-- Filled via data -->
-        </div>
+        <div class="section-title">Current Status</div>
+        <div class="status-list" id="systems-grid"></div>
 
-        <div class="uptime-row">
+        <div class="uptime-container">
+            <div class="section-title">System Reliability</div>
             <div class="uptime-header">
-                <span class="service-name">Reliability (Last 30 Days)</span>
-                <span id="uptime-percentage" style="color: var(--success)">100%</span>
+                <span>Last 30 Days</span>
+                <span id="uptime-percentage" style="color: var(--success); font-weight: 600;">100%</span>
             </div>
-            <div class="uptime-bar" id="uptime-bar">
-                <!-- Segments filled via data -->
+            <div class="uptime-bar" id="uptime-bar"></div>
+        </div>
+
+        <div class="history-btn-container">
+            <div id="show-history" class="history-btn">
+                View Historical Status
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </div>
-            <div class="uptime-header" style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
-                <span>30 days ago</span>
-                <span>Today</span>
+        </div>
+    </div>
+
+    <!-- History View Area -->
+    <div id="history-view" class="history-view">
+        <div class="section-title" style="margin-bottom: 24px;">History</div>
+        <div id="history-container"></div>
+        
+        <div class="history-btn-container">
+            <div id="hide-history" class="history-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+                Back to Current Status
             </div>
         </div>
     </div>
 
     <footer>
-        <p>© 2026 XPDevs & Genesis-AI</p>
+        <p>© 2026 XPDevs & XPDevs Genesis AI</p>
     </footer>
 </div>
 
 <script>
+    const mainContent = document.getElementById('main-content');
+    const historyView = document.getElementById('history-view');
+    const showHistoryBtn = document.getElementById('show-history');
+    const hideHistoryBtn = document.getElementById('hide-history');
+    const homeNav = document.getElementById('home-nav');
+    const historyContainer = document.getElementById('history-container');
+
+    showHistoryBtn.onclick = () => {
+        mainContent.style.display = 'none';
+        historyView.style.display = 'block';
+        window.scrollTo(0, 0);
+    };
+
+    hideHistoryBtn.onclick = () => {
+        mainContent.style.display = 'block';
+        historyView.style.display = 'none';
+        window.scrollTo(0, 0);
+    };
+
+    homeNav.onclick = () => {
+        if (historyView.style.display === 'block') {
+            hideHistoryBtn.onclick();
+        } else {
+            window.location.href = "https://xpdevs.github.io/Genesis-AI";
+        }
+    };
+
+    function renderHistory(historyData) {
+        if (!historyData || historyData.length === 0) {
+            historyContainer.innerHTML = '<div class="no-events">No incidents recorded.</div>';
+            return;
+        }
+
+        // Group by Month
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const grouped = {};
+
+        historyData.forEach(event => {
+            const date = new Date(event.date);
+            const monthName = months[date.getMonth()];
+            if (!grouped[monthName]) grouped[monthName] = [];
+            grouped[monthName].push(event);
+        });
+
+        historyContainer.innerHTML = '';
+        
+        Object.keys(grouped).reverse().forEach(month => {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'history-month';
+            monthDiv.innerHTML = `<div class="history-month-title">${month}</div>`;
+
+            grouped[month].forEach(event => {
+                const dateObj = new Date(event.date);
+                const dayStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit',ショート: 'short' }).replace('/', ' ');
+                const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'short' });
+
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'history-day';
+                dayDiv.innerHTML = `
+                    <div class="day-label">${dayStr} ${dayName}</div>
+                    <div class="day-events">
+                        <div class="event-card ${event.type || ''}">
+                            <div class="event-title">${event.title}</div>
+                            <div class="event-desc">${event.description}</div>
+                            <div class="event-time">${event.time || ''}</div>
+                        </div>
+                    </div>
+                `;
+                monthDiv.appendChild(dayDiv);
+            });
+
+            historyContainer.appendChild(monthDiv);
+        });
+    }
+
     async function loadStatus() {
         const loading = document.getElementById('loading');
-        const content = document.getElementById('content');
         const systemsGrid = document.getElementById('systems-grid');
         const barContainer = document.getElementById('uptime-bar');
         const banner = document.getElementById('main-status');
@@ -250,40 +435,36 @@
             const data = await response.json();
             
             loading.style.display = 'none';
-            content.style.display = 'block';
+            mainContent.style.display = 'block';
 
+            // Current Status
             let allFine = true;
             systemsGrid.innerHTML = '';
-            
             for (const [name, status] of Object.entries(data.systems || {})) {
                 const s = status.toLowerCase();
                 if (s !== 'operational') allFine = false;
-
                 const item = document.createElement('div');
                 item.className = 'status-item';
                 item.innerHTML = `
                     <span class="service-name">${name}</span>
-                    <div class="status-indicator">
-                        <span class="${s}-text">${status}</span>
-                        <span class="dot ${s}"></span>
-                    </div>
+                    <span class="status-label ${s}">${status}</span>
                 `;
                 systemsGrid.appendChild(item);
             }
 
             if (!allFine) {
-                banner.innerText = "Maintenance Underway";
-                banner.style.backgroundColor = "var(--warning)";
+                banner.innerHTML = `<span>Systems Experiencing Issues</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+                banner.className = "status-banner warning";
             }
 
-            const history = data.history || [];
+            // Reliability Bar (30-day dots)
+            const dailyHistory = data.daily_history || [];
             barContainer.innerHTML = '';
-            
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < 45; i++) {
                 const segment = document.createElement('div');
                 segment.className = 'bar-segment';
-                if (history[i]) {
-                    const hS = history[i].toLowerCase();
+                if (dailyHistory[i]) {
+                    const hS = dailyHistory[i].toLowerCase();
                     if (hS === 'maintenance') segment.style.backgroundColor = 'var(--warning)';
                     if (hS === 'outage') segment.style.backgroundColor = 'var(--danger)';
                 }
@@ -291,6 +472,9 @@
             }
 
             if (data.uptime) uptimePercent.innerText = data.uptime;
+
+            // Timeline History (Detailed list)
+            renderHistory(data.incidents || data.history_list || []);
 
         } catch (e) {
             loading.innerText = "Check connection.";
