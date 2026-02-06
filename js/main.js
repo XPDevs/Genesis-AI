@@ -702,10 +702,15 @@ async function findResponses(input, history) {
 
           if (pages[pageId] && pages[pageId].extract) {
             let fullText = pages[pageId].extract;
-            // Remove Wikipedia-style headings and normalize whitespace for better summarization
-            fullText = fullText.replace(/==+[^=]+==+/g, '').replace(/\s+/g, ' ').trim();
+            // Remove Wikipedia-style headings (e.g. == History ==) and normalize whitespace
+            fullText = fullText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+            
             const summary = window.summariseConversation(fullText, 5);
-            return { role: "ai", text: `\n\n${summary}\n\n` };
+            
+            // Format as bullet points for better readability and digestion
+            const formattedSummary = summary.match(/[^.!?]+[.!?]+/g)?.map(s => `• ${s.trim()}`).join('\n\n') || summary;
+            
+            return { role: "ai", text: `\n\n${formattedSummary}\n\n` };
           }
         }
       }
