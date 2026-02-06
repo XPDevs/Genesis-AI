@@ -623,6 +623,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr).replace(/%TOMORROW%/g, tomorrowStr);
 
   const hasMath = /\{\\displaystyle|\$\$/.test(processedText);
+  const hasHTML = /<[a-z][\s\S]*>/i.test(processedText);
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -698,7 +699,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
-    if (finalString.includes('<') || hasMath) {
+    if (hasHTML || hasMath) {
         if (hasMath && window.katex) {
             renderTextWithMath(textSpan, processedText);
         } else {
@@ -717,7 +718,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       if (hasMath && window.katex) {
           renderTextWithMath(textSpan, processedText);
       } else {
-          textSpan[finalString.includes('<') ? 'innerHTML' : 'textContent'] = processedText; 
+          textSpan[hasHTML ? 'innerHTML' : 'textContent'] = processedText; 
       }
   }
 }
