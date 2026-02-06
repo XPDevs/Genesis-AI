@@ -1,6 +1,20 @@
 function initializeApp() {
     console.log("Website loaded successfully V6.4");
     window.dispatchEvent(new Event('app-ready'));
+    loadMathSupport();
+}
+
+function loadMathSupport() {
+    if (document.getElementById('katex-css')) return;
+    const link = document.createElement('link');
+    link.id = 'katex-css';
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+    script.onload = () => { window.katexLoaded = true; };
+    document.head.appendChild(script);
 }
 
 // UI Elements
@@ -522,6 +536,79 @@ function renderMessages() {
   updateChatView();
 }
 
+function renderTextWithMath(element, text) {
+    if (!window.katex) {
+        element.innerHTML = text;
+        return;
+    }
+    let remaining = text;
+    element.innerHTML = "";
+    while (true) {
+        const startMarker = "{\\displaystyle";
+        const startIndex = remaining.indexOf(startMarker);
+        const doubleDollarIndex = remaining.indexOf("$$");
+        let type = null;
+        let idx = -1;
+        if (startIndex !== -1 && (doubleDollarIndex === -1 || startIndex < doubleDollarIndex)) {
+            type = 'wiki';
+            idx = startIndex;
+        } else if (doubleDollarIndex !== -1) {
+            type = 'dollar';
+            idx = doubleDollarIndex;
+        }
+        if (idx === -1) {
+            if (remaining) {
+                const span = document.createElement('span');
+                span.innerHTML = remaining;
+                element.appendChild(span);
+            }
+            break;
+        }
+        if (idx > 0) {
+            const span = document.createElement('span');
+            span.innerHTML = remaining.substring(0, idx);
+            element.appendChild(span);
+        }
+        if (type === 'wiki') {
+            let braceCount = 0;
+            let endIndex = -1;
+            for (let i = idx; i < remaining.length; i++) {
+                if (remaining[i] === '{') braceCount++;
+                else if (remaining[i] === '}') braceCount--;
+                if (braceCount === 0) { endIndex = i; break; }
+            }
+            if (endIndex !== -1) {
+                const latex = remaining.substring(idx + startMarker.length, endIndex);
+                const mathSpan = document.createElement('span');
+                try { window.katex.render(latex, mathSpan, { throwOnError: false, displayMode: true }); } 
+                catch(e) { mathSpan.textContent = remaining.substring(idx, endIndex + 1); }
+                element.appendChild(mathSpan);
+                remaining = remaining.substring(endIndex + 1);
+            } else {
+                const span = document.createElement('span');
+                span.innerHTML = remaining;
+                element.appendChild(span);
+                break;
+            }
+        } else if (type === 'dollar') {
+            const endDollar = remaining.indexOf("$$", idx + 2);
+            if (endDollar !== -1) {
+                const latex = remaining.substring(idx + 2, endDollar);
+                const mathSpan = document.createElement('span');
+                try { window.katex.render(latex, mathSpan, { throwOnError: false, displayMode: true }); } 
+                catch(e) { mathSpan.textContent = remaining.substring(idx, endDollar + 2); }
+                element.appendChild(mathSpan);
+                remaining = remaining.substring(endDollar + 2);
+            } else {
+                 const span = document.createElement('span');
+                 span.innerHTML = remaining;
+                 element.appendChild(span);
+                 break;
+            }
+        }
+    }
+}
+
 function appendMessage(text, role, isNew = false, imageUrl = null, footerText = null) {
   let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
   const now = new Date();
@@ -534,6 +621,8 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
   let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr)
     .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr).replace(/%TOMORROW%/g, tomorrowStr);
+
+  const hasMath = /\{\\displaystyle|\$\$/.test(processedText);
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -609,8 +698,12 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
-    if (finalString.includes('<')) {
-        textSpan.innerHTML = processedText;
+    if (finalString.includes('<') || hasMath) {
+        if (hasMath && window.katex) {
+            renderTextWithMath(textSpan, processedText);
+        } else {
+            textSpan.innerHTML = processedText;
+        }
     } else {
     let i = 0;
     const interval = setInterval(() => {
@@ -620,7 +713,13 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     }, 30);
     aiState.typingInterval = interval;
     }
-  } else { textSpan[finalString.includes('<') ? 'innerHTML' : 'textContent'] = processedText; }
+  } else { 
+      if (hasMath && window.katex) {
+          renderTextWithMath(textSpan, processedText);
+      } else {
+          textSpan[finalString.includes('<') ? 'innerHTML' : 'textContent'] = processedText; 
+      }
+  }
 }
 
 // --- LOGIC MODULES ---
@@ -707,8 +806,18 @@ async function findResponses(input, history) {
             
             const summary = window.summariseConversation(fullText, 5);
             
-            // Format as bullet points for better readability and digestion
-            const formattedSummary = summary.match(/[^.!?]+[.!?]+/g)?.map(s => `• ${s.trim()}`).join('\n\n') || summary;
+            // Format with intro, bullet points, and outro if enough content exists
+            const sentences = summary.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [summary];
+            let formattedSummary = summary;
+
+            if (sentences.length >= 3) {
+                const intro = sentences[0];
+                const outro = sentences[sentences.length - 1];
+                const facts = sentences.slice(1, -1);
+                formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n')}\n\n${outro}`;
+            } else {
+                formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
+            }
             
             return { role: "ai", text: `\n\n${formattedSummary}\n\n` };
           }
