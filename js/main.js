@@ -12,7 +12,7 @@ function loadMathSupport() {
     link.href = 'https://xpdevs.github.io/Genesis-AI/styles/calc-display.css';
     document.head.appendChild(link);
     const script = document.createElement('script');
-    script.src = 'https://xpdevs.github.io/GenesiAI/js/calc-display.js';
+    script.src = 'https://xpdevs.github.io/Genesis-AI/js/calc-display.js';
     script.onload = () => { window.katexLoaded = true; };
     document.head.appendChild(script);
 }
