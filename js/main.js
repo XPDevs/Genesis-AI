@@ -2,6 +2,15 @@ function initializeApp() {
     console.log("Website loaded successfully V6.4");
     window.dispatchEvent(new Event('app-ready'));
     loadMathSupport();
+
+    if (!localStorage.getItem("hasWelcomed")) {
+        if (window.innerWidth <= 768) {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+            const name = userInfo.name || "User";
+            Genesis.welcome(name);
+        }
+        localStorage.setItem("hasWelcomed", "true");
+    }
 }
 
 function loadMathSupport() {
@@ -76,6 +85,20 @@ let isReadOnlyMode = false;
 let currentUploadFile = null;
 let isDevMode = false;
 const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
+
+const Genesis = {
+    welcome: function(name) {
+        const chat = chats.find(c => c.id === activeChatId);
+        if (chat) {
+            chat.messages.push({
+                role: "ai",
+                text: `Hello ${name}! I'm Genesis-AI. How can I help you today?`
+            });
+            saveChats();
+            renderMessages();
+        }
+    }
+};
 
 // AI Control State
 let aiState = {
