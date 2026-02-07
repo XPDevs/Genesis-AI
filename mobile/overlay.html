@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB" style="background-color: #000;">
+<html lang="en-GB" style="background-color: #131314;">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +8,15 @@
 
 <style>
   :root {
-    --primary: #ffffff;
-    --text: #ffffff;
-    --bg: #000000;
-    --input-bg: #111111;
-    --border: #222222;
+    --primary: #1a73e8; /* Blue Primary Color */
+    --text: #e3e3e3;
+    --bg: #131314;     /* Main Background */
+    --input-bg: #1e1f20; /* Message Bar Color */
+    --border: #444746;
   }
 
   html, body { 
-    background-color: #000 !important; 
+    background-color: var(--bg) !important; 
     margin: 0; 
     padding: 0; 
     height: 100%;
@@ -76,7 +76,7 @@
 
   .input-container {
     padding: 15px;
-    background: #000;
+    background: var(--bg);
     display: block !important;
     box-sizing: border-box;
   }
@@ -87,7 +87,7 @@
     background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 28px;
-    padding: 6px 14px;
+    padding: 6px 10px 6px 14px; 
     max-width: 800px;
     margin: 0 auto;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -105,7 +105,7 @@
     min-width: 0;
   }
 
-  #sendBtn, #uploadBtn {
+  #uploadBtn {
     background: none;
     border: none;
     cursor: pointer;
@@ -117,10 +117,34 @@
     flex-shrink: 0;
   }
 
-  /* Specific sizing for the send icon to look better in the pill */
+  /* Blue circle send button styling */
+  #sendBtn {
+    background-color: var(--primary) !important;
+    border: none;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: filter 0.2s;
+  }
+
+  #sendBtn:active {
+    filter: brightness(0.8);
+  }
+
   #sendBtn svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
+    margin-left: 2px; 
+  }
+
+  #sendBtn svg path {
+    fill: #ffffff !important; 
   }
 
   #suggestionBox {
@@ -134,10 +158,10 @@
     }
     .input-container {
       padding: 10px;
-      padding-bottom: 25px; /* Extra space for home indicators */
+      padding-bottom: 25px;
     }
     #inputArea {
-      padding: 4px 10px;
+      padding: 4px 6px 4px 12px;
     }
   }
 </style>
@@ -226,6 +250,8 @@
   };
 
   window.onload = async () => {
+    // Force a fresh session by clearing previous chat state
+    localStorage.removeItem("activeChatId");
     localStorage.setItem("SETUP", "FLAG_TRUE");
     if (!localStorage.getItem("userInfo")) {
       localStorage.setItem("userInfo", JSON.stringify({ name: "User", id: Date.now() }));
@@ -303,6 +329,26 @@
     });
     observer.observe(chatBox, { childList: true, subtree: true });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // Logic to clear previous AI responses when sending a new message
+    const sendBtn = document.getElementById('sendBtn');
+    const userInput = document.getElementById('userInput');
+
+    const clearPreviousMessages = () => {
+      // Small delay ensures logic executes alongside the main.js sending process
+      setTimeout(() => {
+        const messages = chatBox.querySelectorAll('.message, div');
+        messages.forEach(msg => {
+            // We keep the chatBox alive but remove content to keep it minimal
+            msg.remove();
+        });
+      }, 5);
+    };
+
+    sendBtn.addEventListener('click', clearPreviousMessages);
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') clearPreviousMessages();
+    });
 
     await loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js');
     
