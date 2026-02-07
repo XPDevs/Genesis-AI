@@ -297,7 +297,8 @@
 
   // 3. Load appropriate CSS based on device
   if (isMobile) {
-    await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
+    await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css'),
+    await loadScript('https://xpdevs.github.io/Genesis-AI/js/open-app.js');
   } else {
     await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
   }
@@ -339,6 +340,7 @@ await Promise.all([
 </script>
 </body>
 </html>
+
 
 
 
