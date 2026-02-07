@@ -86,19 +86,6 @@ let currentUploadFile = null;
 let isDevMode = false;
 const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 
-const Genesis = {
-    welcome: function(name) {
-        const chat = chats.find(c => c.id === activeChatId);
-        if (chat) {
-            chat.messages.push({
-                role: "ai",
-                text: `Hello ${name}! I'm Genesis-AI. How can I help you today?`
-            });
-            saveChats();
-            renderMessages();
-        }
-    }
-};
 
 // AI Control State
 let aiState = {
