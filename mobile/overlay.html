@@ -37,6 +37,20 @@
     visibility: hidden !important;
   }
 
+  /* Hide User Messages and specific Action Buttons */
+  .user-message, 
+  .message.user,
+  .copy-btn,
+  .listen-btn,
+  .speaker-icon,
+  [title*="Copy"],
+  [title*="Listen"],
+  [title*="Speak"],
+  [class*="speaker"],
+  [class*="audio"] {
+    display: none !important;
+  }
+
   .chat-main {
     display: flex;
     flex-direction: column;
@@ -50,10 +64,10 @@
   #chatBox {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 40px 20px;
+    padding: 20px;
     display: flex !important;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
@@ -61,9 +75,10 @@
   }
 
   .input-container {
-    padding: 30px 20px;
-    background: linear-gradient(transparent, #000 30%);
+    padding: 15px;
+    background: #000;
     display: block !important;
+    box-sizing: border-box;
   }
 
   #inputArea {
@@ -72,10 +87,11 @@
     background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 28px;
-    padding: 10px 20px;
+    padding: 6px 14px;
     max-width: 800px;
     margin: 0 auto;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    box-sizing: border-box;
   }
 
   #userInput {
@@ -83,9 +99,10 @@
     background: transparent;
     border: none;
     color: #fff;
-    padding: 12px;
+    padding: 10px;
     font-size: 16px;
     outline: none;
+    min-width: 0;
   }
 
   #sendBtn, #uploadBtn {
@@ -97,15 +114,35 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Specific sizing for the send icon to look better in the pill */
+  #sendBtn svg {
+    width: 22px;
+    height: 22px;
   }
 
   #suggestionBox {
     display: none !important;
   }
+
+  /* Mobile Adjustments */
+  @media (max-width: 600px) {
+    #chatBox {
+      padding: 15px;
+    }
+    .input-container {
+      padding: 10px;
+      padding-bottom: 25px; /* Extra space for home indicators */
+    }
+    #inputArea {
+      padding: 4px 10px;
+    }
+  }
 </style>
 </head>
 <body>
-  <!-- Hidden greeting container for logic to dump into -->
   <div id="greeting" style="display:none;"></div>
 
   <div class="sidebar">
@@ -132,7 +169,7 @@
         <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
         <input type="text" id="userInput" placeholder="Message..." autocomplete="off">
         <button id="sendBtn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
           </svg>
         </button>
@@ -189,7 +226,6 @@
   };
 
   window.onload = async () => {
-    // 1. Setup necessary markers
     localStorage.setItem("SETUP", "FLAG_TRUE");
     if (!localStorage.getItem("userInfo")) {
       localStorage.setItem("userInfo", JSON.stringify({ name: "User", id: Date.now() }));
@@ -197,7 +233,6 @@
 
     window.GENESIS_CODE = "9980748324";
 
-    // 2. Intercept URL constructions
     const OriginalURL = window.URL;
     window.URL = function(url, base) {
       if (typeof url === 'string' && (url.includes('/home/james/') || url.includes('pillbar.html') || url.includes('file:'))) {
@@ -213,7 +248,6 @@
     window.URL.createObjectURL = OriginalURL.createObjectURL;
     window.URL.revokeObjectURL = OriginalURL.revokeObjectURL;
 
-    // 3. Intercept history changes
     const originalPushState = window.history.pushState;
     window.history.pushState = function(state, title, url) {
       if (typeof url === 'string' && (url.includes('/home/james/') || url.includes('pillbar.html') || url.includes('file:'))) {
@@ -238,13 +272,13 @@
       }
     };
 
-    // 4. Greeting Interceptor: Block greetings from showing anywhere
     const chatBox = document.getElementById('chatBox');
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === 1) { 
             const text = node.innerText || node.textContent;
+            
             if (text && (
                 text.toLowerCase().includes("good morning") || 
                 text.toLowerCase().includes("good afternoon") || 
@@ -252,7 +286,17 @@
             )) {
               node.style.setProperty('display', 'none', 'important');
               node.remove();
+              return;
             }
+
+            if (node.classList.contains('user-message') || node.classList.contains('user')) {
+              node.style.setProperty('display', 'none', 'important');
+              node.remove();
+              return;
+            }
+
+            const actionButtons = node.querySelectorAll('.copy-btn, .listen-btn, .speaker-icon, button[title*="Copy"], button[title*="Listen"], button[title*="Speak"]');
+            actionButtons.forEach(btn => btn.remove());
           }
         });
       });
@@ -260,7 +304,6 @@
     observer.observe(chatBox, { childList: true, subtree: true });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 5. Load core application logic
     await loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js');
     
     const parts = [
