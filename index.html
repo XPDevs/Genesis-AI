@@ -295,12 +295,12 @@
   // 2. Set handshake code to bypass mobile redirect logic in main.js
   window.GENESIS_CODE = "9980748324";
 
-  // 3. Load appropriate CSS based on device
-  if (isMobile) {
-    await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css'),
-  } else {
-    await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
-  }
+// 3. Load appropriate CSS based on device
+if (isMobile) {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
+} else {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
+}
 
   // 4. Load common assets
   await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
@@ -339,6 +339,7 @@ await Promise.all([
 </script>
 </body>
 </html>
+
 
 
 
