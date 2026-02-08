@@ -3,6 +3,7 @@ function initializeApp() {
     window.dispatchEvent(new Event('app-ready'));
     loadMathSupport();
     injectCSS();
+    initGoogleSignIn();
 
     if (!localStorage.getItem("hasWelcomed")) {
         if (window.innerWidth <= 768) {
@@ -1328,10 +1329,12 @@ if (userIcon) {
     userIcon.onclick = () => {
         if (accountModal) {
             accountModal.style.display = "flex";
+            const currentInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+            const currentName = currentInfo.name || "User";
             const accName = document.getElementById("accountName");
             const accAvatar = document.getElementById("accountAvatar");
-            if (accName) accName.textContent = name;
-            if (accAvatar) accAvatar.textContent = name.charAt(0).toUpperCase();
+            if (accName) accName.textContent = currentName;
+            if (accAvatar) accAvatar.textContent = currentName.charAt(0).toUpperCase();
         }
     };
 }
@@ -1408,6 +1411,57 @@ if (deleteAccountBtn) {
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
 document.getElementById("deleteAccountConfirm").onclick = () => { localStorage.clear(); window.location.reload(); };
+
+// --- Account Management & Google Sign-In ---
+
+function updateUserProfile(newName) {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    userInfo.name = newName;
+    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    
+    const initial = newName.charAt(0).toUpperCase();
+    
+    const accName = document.getElementById("accountName");
+    const accAvatar = document.getElementById("accountAvatar");
+    const userIcon = document.getElementById("userIcon");
+    
+    if (accName) accName.textContent = newName;
+    if (accAvatar) accAvatar.textContent = initial;
+    if (userIcon) userIcon.textContent = initial;
+}
+
+const editNameBtn = document.getElementById("editNameBtn");
+if (editNameBtn) {
+    editNameBtn.onclick = () => {
+        const currentName = document.getElementById("accountName").textContent;
+        const newName = prompt("Enter your name:", currentName);
+        if (newName && newName.trim() !== "") {
+            updateUserProfile(newName.trim());
+        }
+    };
+}
+
+window.handleGoogleCredentialResponse = function(response) {
+    try {
+        const base64Url = response.credential.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const payload = JSON.parse(jsonPayload);
+        if (payload.name) updateUserProfile(payload.name);
+    } catch (e) { console.error("Error parsing Google credential", e); }
+}
+
+function initGoogleSignIn() {
+    const container = document.getElementById("googleSignInContainer");
+    if (window.google && container) {
+        google.accounts.id.initialize({
+            client_id: "243159738325-feq9jnd1sulm3tdpq7nq1b2vtoltu6r3.apps.googleusercontent.com",
+            callback: window.handleGoogleCredentialResponse
+        });
+        google.accounts.id.renderButton(container, { theme: "outline", size: "large" });
+    } else if (container) { setTimeout(initGoogleSignIn, 500); }
+}
+
 function startApp() {
     if (isCurrentlyBanned()) {
         showBanModal();
