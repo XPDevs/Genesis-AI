@@ -444,8 +444,21 @@ fetch(jsonURL + "?v=" + Date.now())
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 function updateURL(chatTitle) {
   const url = new URL(window.location.origin + window.location.pathname);
-  const randomString = Math.random().toString(36).substring(2, 12);
-  url.searchParams.set("c", randomString);
+  const chat = chats.find(c => c.id === activeChatId);
+  if (chat && chat.messages.length > 0) {
+    if (!chat.urlCode) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let randomString = '';
+      for (let i = 0; i < 20; i++) {
+        randomString += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      chat.urlCode = randomString;
+      saveChats();
+    }
+    url.searchParams.set("c", chat.urlCode);
+  } else {
+    url.searchParams.delete("c");
+  }
   history.pushState({}, "", url);
 }
 
@@ -1387,6 +1400,16 @@ function startApp() {
     }
     
     if (loadSharedChat()) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatCode = urlParams.get("c");
+    if (chatCode) {
+        const chatByCode = chats.find(c => c.urlCode === chatCode);
+        if (chatByCode) {
+            activeChatId = chatByCode.id;
+            localStorage.setItem("activeChatId", activeChatId);
+        }
+    }
 
     const isMobile = window.innerWidth <= 768;
 
