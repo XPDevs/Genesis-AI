@@ -444,7 +444,8 @@ fetch(jsonURL + "?v=" + Date.now())
 function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
 function updateURL(chatTitle) {
   const url = new URL(window.location.origin + window.location.pathname);
-  url.searchParams.set("chat", chatTitle);
+  const randomString = Math.random().toString(36).substring(2, 12);
+  url.searchParams.set("c", randomString);
   history.pushState({}, "", url);
 }
 
