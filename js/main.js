@@ -37,7 +37,7 @@ function injectCSS() {
             width: 24px;
             height: 24px;
         }
-        #settingsBtn {
+        #settingsBtn { 
             font-size: 1.1rem;
         }
     `;
@@ -45,6 +45,7 @@ function injectCSS() {
 }
 
 // UI Elements
+
 const chatList = document.getElementById("chatList");
 const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
@@ -53,6 +54,7 @@ const newChatBtn = document.getElementById("newChatBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const userIcon = document.getElementById("userIcon");
 const settingsModal = document.getElementById("settingsModal");
+const accountModal = document.getElementById("accountModal");
 const themeToggle = document.getElementById("themeToggle");
 const autoThemeToggle = document.getElementById("autoThemeToggle");
 const modelSelect = document.getElementById("modelSelect");
@@ -1317,15 +1319,20 @@ settingsBtn.onclick = () => {
     document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
+if (accountModal) accountModal.onclick = e => { if (e.target === accountModal) accountModal.style.display = "none"; };
 
 if (userIcon) {
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const name = userInfo.name || "User";
     userIcon.textContent = name.charAt(0).toUpperCase();
     userIcon.onclick = () => {
-        settingsModal.style.display = "flex";
-        document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
-        document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+        if (accountModal) {
+            accountModal.style.display = "flex";
+            const accName = document.getElementById("accountName");
+            const accAvatar = document.getElementById("accountAvatar");
+            if (accName) accName.textContent = name;
+            if (accAvatar) accAvatar.textContent = name.charAt(0).toUpperCase();
+        }
     };
 }
 
@@ -1388,7 +1395,7 @@ document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localS
 const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 if (deleteAccountBtn) {
     deleteAccountBtn.onclick = () => {
-        document.getElementById("settingsModal").style.display = "none";
+        if (accountModal) accountModal.style.display = "none";
         document.getElementById("deleteAccountModal").style.display = "flex";
         const list = document.getElementById("deleteAccountList");
         if (list) {
