@@ -1325,7 +1325,14 @@ if (accountModal) accountModal.onclick = e => { if (e.target === accountModal) a
 if (userIcon) {
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const name = userInfo.name || "User";
-    userIcon.textContent = name.charAt(0).toUpperCase();
+    
+    if (userInfo.picture) {
+        userIcon.textContent = "";
+        userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+    } else {
+        userIcon.textContent = name.charAt(0).toUpperCase();
+    }
+
     userIcon.onclick = () => {
         if (accountModal) {
             accountModal.style.display = "flex";
@@ -1333,8 +1340,21 @@ if (userIcon) {
             const currentName = currentInfo.name || "User";
             const accName = document.getElementById("accountName");
             const accAvatar = document.getElementById("accountAvatar");
+            
             if (accName) accName.textContent = currentName;
-            if (accAvatar) accAvatar.textContent = currentName.charAt(0).toUpperCase();
+            
+            if (currentInfo.picture && accAvatar) {
+                accAvatar.textContent = "";
+                accAvatar.style.background = `url('${currentInfo.picture}') center/cover no-repeat`;
+            } else if (accAvatar) {
+                accAvatar.textContent = currentName.charAt(0).toUpperCase();
+                accAvatar.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+            }
+            
+            const gBtn = document.getElementById("googleSignInContainer");
+            if (gBtn) {
+                gBtn.style.display = currentInfo.googleId ? "none" : "flex";
+            }
         }
     };
 }
@@ -1410,13 +1430,18 @@ if (deleteAccountBtn) {
     };
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
-document.getElementById("deleteAccountConfirm").onclick = () => { localStorage.clear(); window.location.reload(); };
+document.getElementById("deleteAccountConfirm").onclick = () => { 
+    if (window.google && window.google.accounts) google.accounts.id.disableAutoSelect();
+    localStorage.clear(); 
+    window.location.reload(); 
+};
 
 // --- Account Management & Google Sign-In ---
 
-function updateUserProfile(newName) {
+function updateUserProfile(newName, newPicture) {
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     userInfo.name = newName;
+    if (newPicture) userInfo.picture = newPicture;
     localStorage.setItem("userInfo", JSON.stringify(userInfo));
     
     const initial = newName.charAt(0).toUpperCase();
@@ -1426,8 +1451,19 @@ function updateUserProfile(newName) {
     const userIcon = document.getElementById("userIcon");
     
     if (accName) accName.textContent = newName;
-    if (accAvatar) accAvatar.textContent = initial;
-    if (userIcon) userIcon.textContent = initial;
+    
+    const updateEl = (el) => {
+        if (!el) return;
+        if (userInfo.picture) {
+            el.textContent = "";
+            el.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+        } else {
+            el.textContent = initial;
+            el.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        }
+    };
+    updateEl(accAvatar);
+    updateEl(userIcon);
 }
 
 const editNameBtn = document.getElementById("editNameBtn");
@@ -1447,12 +1483,28 @@ window.handleGoogleCredentialResponse = function(response) {
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         const payload = JSON.parse(jsonPayload);
-        if (payload.name) updateUserProfile(payload.name);
+        if (payload.name) {
+            const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+            userInfo.googleId = payload.sub;
+            localStorage.setItem("userInfo", JSON.stringify(userInfo));
+            
+            updateUserProfile(payload.name, payload.picture);
+            
+            const container = document.getElementById("googleSignInContainer");
+            if (container) container.style.display = "none";
+        }
     } catch (e) { console.error("Error parsing Google credential", e); }
 }
 
 function initGoogleSignIn() {
     const container = document.getElementById("googleSignInContainer");
+    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    
+    if (userInfo.googleId && container) {
+        container.style.display = "none";
+        return;
+    }
+
     if (window.google && container) {
         google.accounts.id.initialize({
             client_id: "243159738325-feq9jnd1sulm3tdpq7nq1b2vtoltu6r3.apps.googleusercontent.com",
