@@ -34,8 +34,8 @@ function injectCSS() {
             white-space: pre-wrap;
         }
         #settingsBtn svg {
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
         }
         #settingsBtn {
             font-size: 1.1rem;
