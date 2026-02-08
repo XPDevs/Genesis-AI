@@ -2,6 +2,7 @@ function initializeApp() {
     console.log("Website loaded successfully V6.4");
     window.dispatchEvent(new Event('app-ready'));
     loadMathSupport();
+    injectCSS();
 
     if (!localStorage.getItem("hasWelcomed")) {
         if (window.innerWidth <= 768) {
@@ -31,6 +32,13 @@ function injectCSS() {
     style.textContent = `
         .message span {
             white-space: pre-wrap;
+        }
+        #settingsBtn svg {
+            width: 32px;
+            height: 32px;
+        }
+        #settingsBtn {
+            font-size: 1.1rem;
         }
     `;
     document.head.appendChild(style);
