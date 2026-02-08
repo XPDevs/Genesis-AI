@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en-GB" style="background-color: #000;">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<title>Genesis AI</title>
+
+<style>
+  /* Immediate black-out and hide elements to prevent flash */
+  html, body { 
+    background-color: #000 !important; 
+    margin: 0; 
+    padding: 0; 
+    height: 100%;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+  body { visibility: hidden; }
+  .sidebar, .chat-main { display: none; }
+
+  /* Responsive Toggle visibility */
+  #sidebarToggle {
+    display: none; /* Hidden on desktop by default */
+    background: none; 
+    border: none; 
+    color: var(--text, #fff); 
+    cursor: pointer; 
+    padding: 0; 
+    margin-right: 15px; 
+    align-items: center;
+  }
+
+  /* Mobile-specific overrides using Media Queries */
+  @media (max-width: 768px) {
+    #sidebarToggle {
+      display: flex;
+    }
+  }
+
+  #suggestionBox {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: var(--input-bg, #222);
+    border: 1px solid var(--border, #444);
+    border-radius: 8px;
+    padding: 5px;
+    z-index: 1000;
+    margin-bottom: 5px;
+    min-width: 150px;
+  }
+  .suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text, #fff);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .sidebar {
+    flex-direction: column;
+    height: 100%;
+  }
+  .chat-list {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  #settingsBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn">+ New Chat</button>
+    </div>
+    <ul id="chatList" class="chat-list"></ul>
+    <div class="sidebar-footer" style="margin-top: auto; padding: 10px; border-top: 1px solid var(--border, #444);">
+      <button id="settingsBtn" title="Settings" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 10px; background: none; border: none; color: var(--text, #fff); cursor: pointer; text-align: left; border-radius: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <button id="sidebarToggle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <h3 id="chatTitle">Genesis AI</h3>
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+    
+    <div class="input-container">
+      <div class="input-area" style="position: relative;">
+        <div id="suggestionBox"></div>
+        <button id="uploadBtn" style="background:none; border:none; cursor:pointer; padding: 0 10px; color: var(--text, #fff);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        </button>
+        <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
+        <input type="text" id="userInput" placeholder="Ask Genesis AI">
+        <button id="sendBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="contentWarning">
+        Genesis may display inaccurate info, including about people, so double-check its responses.  
+        <br>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0 10px 0;">
+        <span>Dark Mode</span>
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 5px 0;">
+        <span>Auto Theme</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoThemeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; margin-top: 0;">
+        Automatically switches to Light Mode between 10:00 AM and 5:00 PM, and Dark Mode otherwise.
+      </p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
+        <span>AI Modal</span>
+        <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
+          <option value="https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin">Genesis SPT 4.5 (Default)</option>
+          <option value="https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json">Genesis SPT 1.0 (Legacy)</option>
+        </select>
+      </div>
+      <div style="margin: 20px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">System Info</div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Current Modal: <span id="modelNameDisplay">Loading</span></div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="modelParamsDisplay">0</span></div>
+      </div>
+      <div class="setting-item">
+        <button id="deleteAllChatsBtn" style="background:#ff4d4d;color:#fff;border:none;padding:12px;border-radius:20px;cursor:pointer;width:100%;font-weight:500;">
+          Delete All Chats
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="confirm" onclick="window.location.href='https://xpdevs.github.io/Genesis-AI/developers/AI-Studio#'">Genesis AI Studio</button>
+        <button id="deleteAccountBtn" style="background:#ff4d4d;color:#fff;">Delete Account</button>
+        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput" placeholder="Enter new name..." style="width: 100%; padding: 12px; margin: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+      <div class="modal-actions">
+        <button class="cancel" id="renameCancel">Cancel</button>
+        <button class="confirm" id="renameConfirm">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteCancel">Cancel</button>
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Account?</h2>
+      <p>This will permanently delete:</p>
+      <ul id="deleteAccountList" style="text-align: left; margin-bottom: 20px; padding-left: 20px;">
+        <li>All chat history</li>
+        <li>Your saved name</li>
+        <li>Agreement to Terms & Privacy Policy</li>
+      </ul>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteAccountCancel">Cancel</button>
+        <button class="confirm" id="deleteAccountConfirm" style="background:#ff4d4d;color:#fff;">Delete All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete everything?</h2>
+      <p>This will permanently remove all chat history.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;">Yes, Delete All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareModal" class="modal">
+    <div class="modal-content">
+      <h2>Share Chat</h2>
+      <p>Copy this link to share your conversation.</p>
+      <div style="display: flex; gap: 8px; margin: 20px 0;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+        <button id="copyShareLinkBtn" style="background:var(--primary);color:#fff;border:none;padding:0 20px;border-radius:12px;cursor:pointer;">Copy</button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" id="shareCancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer Modal -->
+  <div id="devModal" class="modal" style="display: none; z-index: 100000;">
+    <div class="modal-content" style="max-width: 600px; width: 100%;">
+      <div id="devModalWaiting">
+        <h2 style="margin-top: 0;">Developer Access</h2>
+        <p>Enter the access code in the browser console to proceed.</p>
+        <p>Example: <code>devAccess("xpdevs_power_user")</code></p>
+        <div class="modal-actions">
+          <button id="devModalCancel" class="cancel">Close</button>
+        </div>
+      </div>
+      <div id="devModalOptions" style="display: none;">
+        <h2 style="margin-top: 0;">Developer Options</h2>
+        <div id="devModalStatus">
+          <p><strong>Current Modal:</strong> <span id="devCurrentModalName"></span></p>
+          <p><strong>Mode:</strong> <span id="devCurrentModalMode"></span></p>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--border);">
+        <h4>Load Custom Session Modal</h4>
+        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json or .bin modal file. This will only be used for the current session and will be lost on refresh.</p>
+        <input type="file" id="customModelInput" accept=".json,.bin" style="margin-top: 10px;">
+        <p id="uploadStatus" style="font-size: 12px; margin-top: 8px; color: var(--primary);"></p>
+        <div class="modal-actions">
+          <button id="devModalClose" class="cancel">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="refreshWarningModal" class="modal">
+    <div class="modal-content">
+      <h2>Switch Modal?</h2>
+      <p>Changing the AI modal requires the page to reload. Any unsaved context might be lost.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="refreshCancel">Cancel</button>
+        <button class="confirm" id="refreshConfirm">Switch & Reload</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const loadStyle = (href) => {
+    return new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `${href}?v=${Date.now()}`;
+      link.onload = resolve;
+      link.onerror = () => { console.warn(`CSS failed: ${href}`); resolve(); };
+      document.head.appendChild(link);
+    });
+  };
+
+  const loadScript = (src, isAsync = true) => {
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = `${src}?v=${Date.now()}`;
+      s.async = isAsync;
+      s.onload = resolve;
+      s.onerror = () => { console.warn(`Script failed: ${src}`); resolve(); };
+      document.head.appendChild(s);
+    });
+  };
+
+(async () => {
+  // 1. Identify platform
+  const isMobile = window.innerWidth <= 768;
+  
+  // 2. Set handshake code to bypass mobile redirect logic in main.js
+  window.GENESIS_CODE = "9980748324";
+
+// 3. Load appropriate CSS based on device
+if (isMobile) {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
+} else {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
+}
+
+  // 4. Load common assets
+  await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+  
+  document.body.style.visibility = 'visible';
+  const uiElements = document.querySelectorAll('.sidebar, .chat-main');
+  uiElements.forEach(el => el.style.display = 'flex');
+  
+await Promise.all([
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/TXTAuth.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/v2.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/image-gen.js')
+]);
+
+  // 6. Universal Sidebar Toggle Logic (Works if element exists)
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const sidebar = document.querySelector('.sidebar');
+  
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
