@@ -117,14 +117,6 @@
         </button>
         <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
         <input type="text" id="userInput" placeholder="Ask Genesis AI">
-        <button id="voiceBtn" style="background:none; border:none; cursor:pointer; padding: 0 5px;">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="12" fill="#007bff"/>
-            <rect x="8" y="9" width="2" height="6" rx="1" fill="white"/>
-            <rect x="11" y="6" width="2" height="12" rx="1" fill="white"/>
-            <rect x="14" y="9" width="2" height="6" rx="1" fill="white"/>
-          </svg>
-        </button>
         <button id="sendBtn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
@@ -352,6 +344,7 @@ if (isMobile) {
   
 await Promise.all([
   loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/speech.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
