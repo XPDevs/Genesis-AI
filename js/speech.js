@@ -86,6 +86,7 @@
         if (userInputEl && userInputEl.value.trim() && sendMessageFn) {
             window.shouldSpeakResponse = true;
             sendMessageFn();
+            finalTranscript = ""; // Clear transcript after sending
         }
     }
     
