@@ -24,6 +24,9 @@
     // This flag is used by main.js to trigger TTS
     window.shouldSpeakResponse = false;
 
+    // This is used by main.js to check if live mode is active
+    window.isSpeechLiveModeActive = () => isLiveModeActive;
+
     // This is called by main.js when TTS finishes, to continue the conversation loop
     window.startListeningAfterSpeech = () => {
         if (isLiveModeActive) {
@@ -39,22 +42,21 @@
     // 4. Handle results
     recognition.onresult = (event) => {
         let interimTranscript = '';
-        let newFinal = '';
+        let currentFinal = '';
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        // Rebuild the transcript from the beginning to avoid duplication
+        for (let i = 0; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                newFinal += event.results[i][0].transcript + ' ';
+                currentFinal += event.results[i][0].transcript;
             } else {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
 
-        if (newFinal) {
-            finalTranscript += newFinal;
-        }
+        finalTranscript = currentFinal; // Overwrite global state
         
         if (userInputEl) {
-            userInputEl.value = finalTranscript + interimTranscript;
+            userInputEl.value = (finalTranscript ? finalTranscript + ' ' : '') + interimTranscript;
 
             // Update live captions if visible
             const captionContainer = document.getElementById('live-captions-container');
@@ -199,7 +201,7 @@
             border: "none",
             cursor: "pointer",
             color: "white",
-            borderRadius: "8px",
+            borderRadius: "50%",
             width: "40px",
             height: "40px",
             display: "flex",

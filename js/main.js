@@ -166,7 +166,9 @@ function stopGeneration() {
     if (aiState.originalSendIcon) sendBtn.innerHTML = aiState.originalSendIcon;
     sendBtn.disabled = false;
     sendBtn.style.opacity = "1";
-    userInput.focus();
+    if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
+        userInput.focus();
+    }
     
     if (currentUploadFile) { 
         currentUploadFile = null; 
@@ -1170,7 +1172,10 @@ function sendMessage() {
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         aiState.resetTimeout = setTimeout(() => { 
             if (requestId !== aiState.currentRequestId) return;
-            userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus(); 
+            userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; 
+            if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
+                userInput.focus(); 
+            }
             aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
         }, timeout);
     }, 1500);
