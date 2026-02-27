@@ -14,14 +14,22 @@
     const recognition = new SpeechEngine();
     let isListening = false;
     let finalTranscript = "";
+    let isLiveModeActive = false;
 
     // These will be set by initSpeech
     let userInputEl;
-    let micBtnEl;
+    let liveModeBtnEl;
     let sendMessageFn;
 
     // This flag is used by main.js to trigger TTS
     window.shouldSpeakResponse = false;
+
+    // This is called by main.js when TTS finishes, to continue the conversation loop
+    window.startListeningAfterSpeech = () => {
+        if (isLiveModeActive) {
+            startListening();
+        }
+    };
 
     // 3. Configure the engine
     recognition.continuous = true;
@@ -47,6 +55,14 @@
         
         if (userInputEl) {
             userInputEl.value = finalTranscript + interimTranscript;
+
+            // Update live captions if visible
+            const captionContainer = document.getElementById('live-captions-container');
+            const captionEl = document.getElementById('live-caption-text');
+            if (captionContainer && captionContainer.classList.contains('visible') && captionEl) {
+                captionEl.textContent = finalTranscript + interimTranscript;
+                captionEl.className = 'user-caption';
+            }
             userInputEl.dispatchEvent(new Event('input')); // For suggestion box etc.
         }
     };
@@ -60,52 +76,148 @@
             window.speechSynthesis.cancel();
         }
 
+        // Haptic feedback for mobile
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+
         finalTranscript = "";
         if (userInputEl) userInputEl.value = "";
         
         recognition.start();
         isListening = true;
         
-        if (micBtnEl) {
-            micBtnEl.style.color = "#ff4444";
-            micBtnEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="16" rx="2"></rect><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line></svg>';
+        if (liveModeBtnEl) {
+            liveModeBtnEl.classList.add('active');
         }
     }
 
-    function stopListening() {
+    function stopListening(shouldSendMessage = true) {
         if (!isListening) return;
 
         recognition.stop();
         isListening = false;
 
-        if (micBtnEl) {
-            micBtnEl.style.color = "var(--text-color)";
-            micBtnEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+        if (liveModeBtnEl) {
+            liveModeBtnEl.classList.remove('active');
         }
 
-        if (userInputEl && userInputEl.value.trim() && sendMessageFn) {
+        if (shouldSendMessage && userInputEl && userInputEl.value.trim() && sendMessageFn) {
             window.shouldSpeakResponse = true;
             sendMessageFn();
             finalTranscript = ""; // Clear transcript after sending
+        } else {
+            finalTranscript = "";
+            if (userInputEl) userInputEl.value = "";
         }
     }
     
-    recognition.onend = () => { if (isListening) stopListening(); };
+    recognition.onend = () => {
+        if (!isLiveModeActive) {
+            if (isListening) stopListening(true);
+            return;
+        }
+        // In live mode, when user pauses, send the message.
+        // The TTS `onend` event will restart listening.
+        if (isListening) {
+            stopListening(true);
+        }
+    };
 
-    // 6. Create the UI button
-    function createMicButton() {
-        const micBtn = document.createElement("button");
-        micBtn.id = "micBtn";
-        micBtn.className = "action-btn";
-        micBtn.title = "Speak to AI";
-        micBtn.style.marginRight = "8px";
-        micBtn.style.background = "transparent";
-        micBtn.style.border = "none";
-        micBtn.style.cursor = "pointer";
-        micBtn.style.color = "var(--text-color)";
-        micBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
-        micBtn.onclick = () => { isListening ? stopListening() : startListening(); };
-        return micBtn;
+    // --- Live Mode ---
+
+    function startLiveMode() {
+        if (isLiveModeActive) return;
+        isLiveModeActive = true;
+
+        if (window.innerWidth <= 768) {
+            const overlay = document.getElementById('live-mode-overlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+        startListening();
+    }
+
+    function stopLiveMode() {
+        if (!isLiveModeActive) return;
+        isLiveModeActive = false;
+
+        const overlay = document.getElementById('live-mode-overlay');
+        if (overlay) overlay.style.display = 'none';
+
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        stopListening(false); // false = don't send a message
+    }
+
+    function createLiveOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'live-mode-overlay';
+        overlay.style.display = 'none';
+
+        overlay.innerHTML = `
+            <style>
+                #live-mode-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+                .live-header { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
+                .live-btn { background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+                .pulsing-ball { width: 150px; height: 150px; background: radial-gradient(circle, #5891fA, #2563eb); border-radius: 50%; transition: transform 0.3s ease; }
+                .pulsing-ball.speaking { animation: pulse 1.5s infinite; }
+                @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+                .live-captions { position: absolute; bottom: 10%; width: 90%; max-width: 600px; text-align: center; font-size: 1.5rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+                .live-captions.visible { opacity: 1; }
+                .live-captions .user-caption { color: #aaa; }
+                .live-captions .ai-caption { color: #fff; font-weight: 600; }
+            </style>
+            <div class="live-header">
+                <button id="live-close-btn" class="live-btn">&times;</button>
+                <button id="live-captions-btn" class="live-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </button>
+            </div>
+            <div id="pulsing-ball" class="pulsing-ball"></div>
+            <div id="live-captions-container" class="live-captions">
+                <p id="live-caption-text"></p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('live-close-btn').onclick = stopLiveMode;
+        document.getElementById('live-captions-btn').onclick = () => {
+            document.getElementById('live-captions-container').classList.toggle('visible');
+        };
+    }
+
+    function createLiveModeButton() {
+        const liveBtn = document.createElement("button");
+        liveBtn.id = "liveModeBtn";
+        liveBtn.className = "action-btn";
+        liveBtn.title = "Start Live Mode";
+        
+        Object.assign(liveBtn.style, {
+            marginRight: "8px",
+            background: "#2563eb",
+            border: "none",
+            cursor: "pointer",
+            color: "white",
+            borderRadius: "8px",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.2s"
+        });
+
+        liveBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="6" y1="9" x2="6" y2="15"></line><line x1="18" y1="9" x2="18" y2="15"></line></svg>';
+        
+        liveBtn.onclick = startLiveMode;
+
+        // Add a style for the active state
+        const style = document.createElement('style');
+        style.textContent = `#liveModeBtn.active { background-color: #ff4444 !important; }`;
+        document.head.appendChild(style);
+
+        return liveBtn;
     }
 
     // 7. Expose the initialization function
@@ -117,7 +229,9 @@
         }
         userInputEl = userInput;
         sendMessageFn = sendMessage;
-        micBtnEl = createMicButton();
-        inputArea.insertBefore(micBtnEl, sendBtn);
+
+        createLiveOverlay();
+        liveModeBtnEl = createLiveModeButton();
+        inputArea.insertBefore(liveModeBtnEl, sendBtn);
     };
 })();
