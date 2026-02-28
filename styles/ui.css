@@ -864,7 +864,7 @@ body.is-new-chat .input-container {
 }
 
 .genesis-sidebar.collapsed #settingsBtn {
-  margin: auto auto 5px auto;
+  margin: auto auto 10px auto;
   width: 40px;
   padding: 0;
   justify-content: center;
@@ -873,7 +873,7 @@ body.is-new-chat .input-container {
 }
 .genesis-sidebar.collapsed #settingsBtn::after { display: none; }
 .genesis-sidebar.collapsed #userIcon {
-  margin: 5px auto 15px auto;
+  margin: 0 auto 20px auto;
   width: 32px;
   height: 32px;
 }
