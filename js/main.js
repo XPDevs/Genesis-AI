@@ -4,6 +4,7 @@ function initializeApp() {
     loadMathSupport();
     injectCSS();
     initGoogleSignIn();
+    setupSidebarUI();
 
     // Initialize speech recognition after other scripts are loaded
     const startSpeech = () => {
@@ -56,6 +57,191 @@ function injectCSS() {
         }
         #settingsBtn { 
             font-size: 1.1rem;
+        }
+        
+        /* Sidebar Redesign */
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 68px;
+            --transition-speed: 0.3s;
+        }
+
+        .genesis-sidebar {
+            width: var(--sidebar-width);
+            transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .genesis-sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            height: 64px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .genesis-sidebar.collapsed .sidebar-header {
+            justify-content: center;
+            padding: 15px 0;
+        }
+
+        .genesis-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.1rem;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .genesis-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .genesis-sidebar.collapsed .genesis-logo span {
+            display: none;
+        }
+
+        .sidebar-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .genesis-sidebar.collapsed .sidebar-controls {
+            display: none;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(128, 128, 128, 0.1);
+            opacity: 1;
+        }
+
+        .search-container {
+            padding: 0 15px 15px 15px;
+            flex-shrink: 0;
+        }
+
+        .genesis-sidebar.collapsed .search-container {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 32px 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .search-icon-overlay {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            pointer-events: none;
+            display: flex;
+        }
+
+        .genesis-sidebar.collapsed .search-input-wrapper {
+            display: none;
+        }
+
+        .collapsed-stack {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding-bottom: 10px;
+        }
+
+        .genesis-sidebar.collapsed .collapsed-stack {
+            display: flex;
+        }
+
+        .genesis-sidebar.collapsed #chatList {
+            display: none;
+        }
+
+        /* Mobile Overrides */
+        @media (max-width: 768px) {
+            .genesis-sidebar {
+                position: fixed;
+                z-index: 1000;
+                height: 100%;
+                width: 80%;
+                max-width: 300px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .genesis-sidebar.active {
+                transform: translateX(0);
+            }
+
+            .collapse-btn {
+                display: none !important;
+            }
+            
+            /* Ensure content is visible on mobile when open */
+            .genesis-sidebar.collapsed {
+                width: 80% !important;
+                max-width: 300px !important;
+            }
+            
+            .genesis-sidebar.collapsed .sidebar-controls,
+            .genesis-sidebar.collapsed .search-input-wrapper,
+            .genesis-sidebar.collapsed #chatList,
+            .genesis-sidebar.collapsed .genesis-logo span {
+                display: flex !important;
+            }
+            
+            .genesis-sidebar.collapsed .collapsed-stack {
+                display: none !important;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -112,6 +298,7 @@ let currentDeleteId = null;
 let isReadOnlyMode = false;
 let currentUploadFile = null;
 let isDevMode = false;
+let searchQuery = "";
 const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
 
 
@@ -498,8 +685,18 @@ function updateURL(chatTitle) {
 function renderChatList() {
   if (isReadOnlyMode) return;
   chatList.innerHTML = "";
-  chats.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-  chats.forEach(chat => {
+  
+  let displayChats = chats;
+  if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      displayChats = chats.filter(c => 
+          (c.title && c.title.toLowerCase().includes(q)) || 
+          (c.messages && c.messages.some(m => m.text && typeof m.text === 'string' && m.text.toLowerCase().includes(q)))
+      );
+  }
+
+  displayChats.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  displayChats.forEach(chat => {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
     
@@ -1272,6 +1469,108 @@ window.addEventListener('keydown', (e) => {
         else { devModalWaiting.style.display = 'block'; devModalOptions.style.display = 'none'; }
     }
 });
+
+function setupSidebarUI() {
+    const sidebar = chatList.parentElement;
+    if (!sidebar) return;
+    
+    sidebar.classList.add('genesis-sidebar');
+    
+    // Hide original new chat button if it exists
+    if (newChatBtn) newChatBtn.style.display = 'none';
+
+    // Create Header
+    const header = document.createElement('div');
+    header.className = 'sidebar-header';
+    
+    // Logo
+    const logoLink = document.createElement('a');
+    logoLink.href = 'https://xpdevs.github.io/Genesis-AI';
+    logoLink.className = 'genesis-logo';
+    logoLink.innerHTML = `<img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="Genesis"><span>Genesis AI</span>`;
+    
+    // Controls Container (New Chat + Collapse)
+    const controls = document.createElement('div');
+    controls.className = 'sidebar-controls';
+    
+    // New Chat Icon
+    const newChatIcon = document.createElement('button');
+    newChatIcon.className = 'icon-btn new-chat-icon';
+    newChatIcon.title = 'New Chat';
+    newChatIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
+    newChatIcon.onclick = () => {
+        if (newChatBtn) newChatBtn.click();
+    };
+    
+    // Collapse Icon
+    const collapseBtn = document.createElement('button');
+    collapseBtn.className = 'icon-btn collapse-btn';
+    collapseBtn.title = 'Toggle Sidebar';
+    collapseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/></svg>';
+    
+    const toggleSidebar = () => {
+        sidebar.classList.toggle('collapsed');
+    };
+    collapseBtn.onclick = toggleSidebar;
+    
+    controls.appendChild(newChatIcon);
+    controls.appendChild(collapseBtn);
+    
+    header.appendChild(logoLink);
+    header.appendChild(controls);
+    
+    // Search Container
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'search-container';
+    
+    // Expanded Search Input
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'search-input-wrapper';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search chats...';
+    searchInput.className = 'search-input';
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderChatList();
+    });
+    
+    const searchIcon = document.createElement('div');
+    searchIcon.className = 'search-icon-overlay';
+    searchIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
+    
+    searchWrapper.appendChild(searchInput);
+    searchWrapper.appendChild(searchIcon);
+    
+    // Collapsed Stack (New Chat + Search)
+    const collapsedStack = document.createElement('div');
+    collapsedStack.className = 'collapsed-stack';
+
+    const collapsedNewChatBtn = newChatIcon.cloneNode(true);
+    collapsedNewChatBtn.onclick = () => {
+        if (newChatBtn) newChatBtn.click();
+        if (sidebar.classList.contains('collapsed')) toggleSidebar();
+    };
+
+    const collapsedSearchBtn = document.createElement('button');
+    collapsedSearchBtn.className = 'icon-btn collapsed-search-btn';
+    collapsedSearchBtn.title = 'Search';
+    collapsedSearchBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
+    collapsedSearchBtn.onclick = () => {
+        if (sidebar.classList.contains('collapsed')) toggleSidebar();
+        setTimeout(() => searchInput.focus(), 300);
+    };
+
+    collapsedStack.appendChild(collapsedNewChatBtn);
+    collapsedStack.appendChild(collapsedSearchBtn);
+
+    searchContainer.appendChild(searchWrapper);
+    searchContainer.appendChild(collapsedStack);
+    
+    // Insert at top of sidebar
+    sidebar.insertBefore(searchContainer, sidebar.firstChild);
+    sidebar.insertBefore(header, sidebar.firstChild);
+}
 
 // --- INITIALIZATION ---
 function showShareModal(chatId) {
