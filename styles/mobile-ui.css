@@ -684,6 +684,82 @@ body.is-new-chat .input-container {
   font-weight: 600;
 }
 
+/* --- Genesis Sidebar Redesign (Ported) --- */
+.genesis-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.genesis-logo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.search-container {
+  padding: 0 15px 15px 15px;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.search-icon-overlay {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  pointer-events: none;
+  display: flex;
+}
+
+.collapsed-stack, .expand-icon {
+  display: none;
+}
+
 /* --- Genesis Sidebar Mobile Overrides --- */
 .genesis-sidebar {
   position: fixed;
