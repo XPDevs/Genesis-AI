@@ -211,7 +211,6 @@
     function createLiveModeButton(sendBtn) {
         const liveBtn = document.createElement("button");
         liveBtn.id = "liveModeBtn";
-        liveBtn.className = "action-btn";
         liveBtn.title = "Start Live Mode";
         
         // Attempt to match send button size/style
