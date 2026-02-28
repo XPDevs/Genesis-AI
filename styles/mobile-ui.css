@@ -60,6 +60,7 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  height: auto;
 }
 
 #newChatBtn {
@@ -693,6 +694,7 @@ body.is-new-chat .input-container {
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   left: 0; /* Override default sidebar left */
+  background: var(--sidebar);
 }
 
 .genesis-sidebar.open,
