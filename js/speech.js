@@ -5,7 +5,10 @@
     let LocalSpeechRecognition;
     try {
         const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0/dist/transformers.min.js');
-        env.allowLocalModels = true;
+        env.allowLocalModels = false;
+        env.allowRemoteModels = true;
+        env.remoteHost = 'https://xpdevs.github.io/Genesis-AI/models/';
+        env.remotePathTemplate = '{model}/{file}';
         env.useBrowserCache = false;
         
         LocalSpeechRecognition = class {
@@ -31,7 +34,7 @@
                 try {
                     if (!this._transcriber) {
                         // Point to the local models/STT folder
-                        this._transcriber = await pipeline('automatic-speech-recognition', 'https://xpdevs.github.io/Genesis-AI/models/STT/');
+                        this._transcriber = await pipeline('automatic-speech-recognition', 'STT');
                     }
 
                     this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
