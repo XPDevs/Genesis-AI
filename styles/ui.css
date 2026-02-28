@@ -836,20 +836,20 @@ body.is-new-chat .input-container {
 #settingsBtn { 
   order: 10; 
   margin-top: auto;
-  font-size: 0; 
-  padding: 0;
-  width: 40px;
+  font-size: 14px; 
+  padding: 0 12px;
+  width: calc(100% - 30px);
   height: 40px;
   margin: 5px 15px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
   background: transparent;
   border: none;
   color: var(--text);
-  gap: 0;
+  gap: 12px;
 }
 #settingsBtn::after { content: none; display: none; }
 #settingsBtn:hover { background: var(--input-bg); }
