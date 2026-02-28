@@ -17,6 +17,7 @@
     let finalTranscript = "";
     let isLiveModeActive = false;
     let silenceTimer = null;
+    let currentAiText = "";
 
     // These will be set by initSpeech
     let userInputEl;
@@ -46,19 +47,6 @@
         if (isLiveModeActive) resetInactivityTimer();
         if (!isListening) return;
 
-        // Interruption: If AI is speaking and we detect input, stop AI.
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-            finalTranscript = ""; 
-            if (userInputEl) userInputEl.value = "";
-            
-            // Restart recognition to clear any buffered AI speech
-            isListening = false;
-            recognition.abort();
-            setTimeout(startListening, 100);
-            return;
-        }
-
         let interimTranscript = '';
         let currentFinal = '';
 
@@ -70,6 +58,7 @@
                 interimTranscript += event.results[i][0].transcript;
             }
         }
+
 
         finalTranscript = currentFinal; // Overwrite global state
         
@@ -99,8 +88,8 @@
     function startListening() {
         if (isListening) return;
         
-        // Only stop AI speech if NOT in live mode (in live mode we allow interruption)
-        if (!isLiveModeActive && window.speechSynthesis && window.speechSynthesis.speaking) {
+        // Stop any AI speech before listening
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
 
@@ -329,25 +318,18 @@
     if (window.speechSynthesis) {
         const originalSpeak = window.speechSynthesis.speak;
         window.speechSynthesis.speak = function(utterance) {
+            currentAiText = utterance.text || "";
             if (isListening) {
-                // In live mode, we keep listening to allow interruption
-                if (!isLiveModeActive) {
-                    stopListening(false);
-                } else {
-                    // Ensure listening is active for interruption
-                    try { recognition.start(); isListening = true; } catch(e){}
-                }
-                
-                if (isLiveModeActive) {
-                    const originalOnEnd = utterance.onend;
-                    utterance.onend = (e) => {
-                        if (originalOnEnd) originalOnEnd(e);
-                        startListening();
-                    };
-                }
-            } else if (isLiveModeActive) {
-                // If not listening but in live mode, start listening for interruption
-                try { recognition.start(); isListening = true; } catch(e){}
+                stopListening(false);
+            }
+            
+            if (isLiveModeActive) {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                const originalOnEnd = utterance.onend;
+                utterance.onend = (e) => {
+                    if (originalOnEnd) originalOnEnd(e);
+                    startListening();
+                };
             }
             originalSpeak.call(window.speechSynthesis, utterance);
         };

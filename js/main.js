@@ -765,10 +765,38 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         const ball = document.getElementById('pulsing-ball');
         const captionEl = document.getElementById('live-caption-text');
 
+        // Split text into sentences for chunked captioning
+        const sentences = processedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [processedText];
+        let currentSentenceIdx = -1;
+
+        utterance.onboundary = (event) => {
+             if (event.name === 'word') {
+                let charCount = 0;
+                let newIndex = 0;
+                for (let i = 0; i < sentences.length; i++) {
+                    charCount += sentences[i].length;
+                    if (event.charIndex < charCount) {
+                        newIndex = i;
+                        break;
+                    }
+                }
+                if (newIndex !== currentSentenceIdx) {
+                    currentSentenceIdx = newIndex;
+                    if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
+                        let text = sentences[currentSentenceIdx];
+                        if (sentences[currentSentenceIdx + 1]) text += " " + sentences[currentSentenceIdx + 1];
+                        captionEl.textContent = text;
+                    }
+                }
+             }
+        };
+
         utterance.onstart = () => {
             if (ball) ball.classList.add('speaking');
             if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
-                captionEl.textContent = processedText;
+                let text = sentences[0];
+                if (sentences[1]) text += " " + sentences[1];
+                captionEl.textContent = text;
                 captionEl.className = 'ai-caption';
             }
         };
@@ -837,6 +865,24 @@ function summariseTitle(text) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+function playThinkingSound() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, t);
+    osc.frequency.exponentialRampToValueAtTime(1000, t + 0.1);
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.start(t);
+    osc.stop(t + 0.3);
+}
+
 function typeChatTitle(newTitle, callback) {
   chatTitle.textContent = ""; let i = 0;
   const interval = setInterval(() => {
@@ -881,6 +927,7 @@ async function findResponses(input, history) {
       const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
       if (isQuestion) {
+        playThinkingSound();
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
@@ -1387,6 +1434,13 @@ function setupSidebarUI() {
     // Insert at top of sidebar
     sidebar.insertBefore(searchContainer, sidebar.firstChild);
     sidebar.insertBefore(header, sidebar.firstChild);
+
+    // Create Footer
+    const footer = document.createElement('div');
+    footer.className = 'sidebar-footer';
+    if (settingsBtn) footer.appendChild(settingsBtn);
+    if (userIcon) footer.appendChild(userIcon);
+    sidebar.appendChild(footer);
 }
 
 // --- INITIALIZATION ---
