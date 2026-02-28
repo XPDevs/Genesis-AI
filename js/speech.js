@@ -82,7 +82,7 @@
         if (isLiveModeActive && (finalTranscript || interimTranscript)) {
             silenceTimer = setTimeout(() => {
                 if (isListening) stopListening(true);
-            }, 2000);
+            }, 1000);
         }
     };
 
@@ -208,30 +208,49 @@
         };
     }
 
-    function createLiveModeButton() {
+    function createLiveModeButton(sendBtn) {
         const liveBtn = document.createElement("button");
         liveBtn.id = "liveModeBtn";
         liveBtn.className = "action-btn";
         liveBtn.title = "Start Live Mode";
         
+        // Attempt to match send button size/style
+        let width = "40px";
+        let height = "40px";
+        let borderRadius = "50%";
+        
+        if (sendBtn) {
+            const style = window.getComputedStyle(sendBtn);
+            if (style.width && style.width !== 'auto') width = style.width;
+            if (style.height && style.height !== 'auto') height = style.height;
+            if (style.borderRadius) borderRadius = style.borderRadius;
+        }
+
         Object.assign(liveBtn.style, {
             marginRight: "8px",
             background: "#2563eb",
             border: "none",
             cursor: "pointer",
             color: "white",
-            borderRadius: "50%",
-            width: "40px",
-            height: "40px",
+            borderRadius: borderRadius,
+            width: width,
+            height: height,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "background-color 0.2s"
+            transition: "background-color 0.2s",
+            alignSelf: "center"
         });
 
         liveBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="6" y1="9" x2="6" y2="15"></line><line x1="18" y1="9" x2="18" y2="15"></line></svg>';
         
-        liveBtn.onclick = startLiveMode;
+        liveBtn.onclick = () => {
+            if (isLiveModeActive) {
+                stopLiveMode();
+            } else {
+                startLiveMode();
+            }
+        };
 
         // Add a style for the active state
         const style = document.createElement('style');
@@ -252,7 +271,7 @@
         sendMessageFn = sendMessage;
 
         createLiveOverlay();
-        liveModeBtnEl = createLiveModeButton();
+        liveModeBtnEl = createLiveModeButton(sendBtn);
         inputArea.insertBefore(liveModeBtnEl, sendBtn);
     };
 
