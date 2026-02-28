@@ -55,9 +55,6 @@ function injectCSS() {
             width: 24px;
             height: 24px;
         }
-        #settingsBtn { 
-            font-size: 1.1rem;
-        }
         
         /* Sidebar Redesign */
         :root {
@@ -268,18 +265,38 @@ function injectCSS() {
 
         /* Bottom Buttons Collapsed & Ordering */
         #chatList { flex: 1; }
-        #settingsBtn { order: 10; margin-top: auto; }
-        #userIcon { order: 11; }
-
-        .genesis-sidebar.collapsed #settingsBtn {
-            font-size: 0 !important;
+        
+        #settingsBtn { 
+            order: 10; 
+            margin-top: auto;
+            /* Icon-only style for both states */
+            font-size: 0 !important; 
             padding: 0;
             width: 40px;
             height: 40px;
-            margin: 5px auto;
+            margin: 5px 15px;
             display: flex;
             justify-content: center;
             align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+        }
+        #settingsBtn:hover { background: var(--bg-secondary); }
+
+        #userIcon { 
+            order: 11; 
+            margin: 0 15px 15px 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .genesis-sidebar.collapsed #settingsBtn {
+            margin: 5px auto;
         }
         .genesis-sidebar.collapsed #userIcon {
             margin: 5px auto 15px auto;
