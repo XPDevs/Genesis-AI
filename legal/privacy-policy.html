@@ -140,8 +140,8 @@
         <header>
             <h1>Privacy Policy</h1>
             <div class="doc-metadata">
-                <span>Ref: GNS-PRIV-2026-V1</span>
-                <span>Effective Date: 24 January 2026</span>
+                <span>Ref: GNS-PRIV-2026-V2</span>
+                <span>Effective Date: 04 February 2026</span>
                 <span>Jurisdiction: England & Wales</span>
             </div>
         </header>
@@ -150,7 +150,7 @@
             <p>This Privacy Policy outlines the practices and procedures observed by <strong>James Turner (XPDevs)</strong> ("Proprietor") regarding the governance of information during your engagement with the Genesis AI application ("Service").</p>
             
             <div class="policy-statement">
-                The primary architectural directive of Genesis AI is the preservation of user privacy through absolute client-side execution. No textual dialogue, prompt data, or generated responses are transmitted to, or stored upon, any external infrastructure managed by the Proprietor.
+                The primary architectural directive of Genesis AI is the preservation of user privacy through absolute client-side execution. With the exception of specific opt-in features (Image Generation), no textual dialogue, prompt data, or generated responses are transmitted to, or stored upon, any external infrastructure managed by the Proprietor.
             </div>
         </section>
 
@@ -171,15 +171,28 @@
         <h3>2.2 Preference Persistence</h3>
         <p>Basic operational preferences, such as interface themes and state configurations, are retained via local mechanisms. These are utilized solely to enhance the immediate user experience and are not repurposed for profiling, tracking, or marketing activities.</p>
 
-        <h2>Section III: User Empowerment and Deletion</h2>
-        <h3>3.1 Right to Erasure</h3>
+        <h2>Section III: Integrated Features and Third-Party Processing</h2>
+        <h3>3.1 Google Authentication</h3>
+        <p>Users may optionally utilize Google Sign-In for profile personalization. The Service retrieves and locally stores basic profile information (Name, Profile Picture) solely for display purposes within the user interface. This data is not transmitted to the Proprietor and remains stored locally on the User's device.</p>
+
+        <h3>3.2 Voice Recognition</h3>
+        <p>Voice input functionality relies on the User's browser-native Web Speech API. Audio data is processed by the browser vendor (e.g., Google, Apple) in accordance with their respective privacy policies. The Service does not record or transmit audio data to the Proprietor.</p>
+
+        <h3>3.3 Image Generation</h3>
+        <p>The Image Generation feature utilizes the <strong>Puter.js</strong> cloud infrastructure. Prompts submitted specifically for image generation are transmitted to Puter.js for processing. The Proprietor does not retain logs of these prompts, but Users acknowledge that this specific feature requires external transmission.</p>
+
+        <h3>3.4 Location Data</h3>
+        <p>The Service does not actively track User location. However, location data may be inferred by third-party hosting providers (GitHub Pages) via IP address logging, or processed locally if explicitly provided by the User within the conversation context for specific features such as weather updates.</p>
+
+        <h2>Section IV: User Empowerment and Deletion</h2>
+        <h3>4.1 Right to Erasure</h3>
         <p>The User maintains absolute authority over their local data. The Service provides dedicated functions to purge all stored history and preference data. Manual clearance of browser storage will also result in the permanent and irrecoverable erasure of all local Service records.</p>
 
-        <h2>Section IV: Amendments and Enforceability</h2>
-        <h3>4.1 Policy Evolution</h3>
+        <h2>Section V: Amendments and Enforceability</h2>
+        <h3>5.1 Policy Evolution</h3>
         <p>The Proprietor reserves the right to amend this Privacy Policy as the Service architecture evolves. Continued use of the Service following such amendments constitutes acknowledgement of the updated practices.</p>
 
-        <h3>4.2 Jurisdictional Compliance</h3>
+        <h3>5.2 Jurisdictional Compliance</h3>
         <p>This Policy is designed to adhere to the high standards of data protection expected within the jurisdiction of England and Wales. Any inquiries regarding data practices should be directed to the Proprietor.</p>
 
         <div class="footer-legal">

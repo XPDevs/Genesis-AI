@@ -6,150 +6,205 @@
     <title>Genesis-AI Setup</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* Global Reset & Device Consistency */
-        html, body { 
-            background-color: #000 !important; 
-            margin: 0; 
-            padding: 0; 
-            width: 100%;
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
+        :root {
+            --bg: #ffffff;
+            --text: #1f1f1f;
+            --sidebar: #f0f4f9;
+            --input-bg: #f0f4f9;
+            --border: #dee2e6;
+            --primary: #1a73e8;
+            --button-text: #ffffff;
+            --card-bg: #ffffff;
         }
 
-        /* Prevent visibility flicker */
-        body { visibility: hidden; }
-
-        :root {
-            --bg: #131314; /* Default to Dark Mode for XPDevs aesthetic */
-            --text: #ffffff; /* Forced White Text */
-            --primary: #8ab4f8;
-            --border: #444746;
+        body.dark {
+            --bg: #131314;
+            --text: #e3e3e3;
+            --sidebar: #1e1f20;
             --input-bg: #1e1f20;
+            --border: #444746;
+            --primary: #8ab4f8;
+            --button-text: #131314;
+            --card-bg: #1e1f20;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #131314;
+                --text: #e3e3e3;
+                --sidebar: #1e1f20;
+                --input-bg: #1e1f20;
+                --border: #444746;
+                --primary: #8ab4f8;
+                --button-text: #131314;
+                --card-bg: #1e1f20;
+            }
         }
 
         body {
-            background-color: var(--bg);
+            margin: 0; 
+            padding: 0; 
+            font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
             color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            visibility: hidden; /* Prevent flicker */
         }
 
         .container {
-            max-width: 400px;
-            width: 85%;
-            padding: 20px;
+            max-width: 420px;
+            width: 90%;
+            padding: 48px 32px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid var(--border);
             text-align: center;
-            /* Ensure it stays centered on small mobile screens */
             display: flex;
             flex-direction: column;
             justify-content: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
-        /* Text Styling */
         h1 { 
-            margin-bottom: 15px; 
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #ffffff; /* Explicit White */
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0 0 16px 0;
+            letter-spacing: -0.03em;
+            color: var(--text);
         }
 
         p { 
-            line-height: 1.5; 
-            color: #ffffff; 
-            opacity: 0.9; 
-            margin-bottom: 30px;
             font-size: 1rem;
+            color: var(--text);
+            opacity: 0.8;
+            margin-bottom: 32px;
+            line-height: 1.5; 
         }
 
-        /* Buttons with Rounded Modern UI */
+        /* Checkbox Layout */
+        .checkbox-group {
+            text-align: left;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        
+        .checkbox-group:hover {
+            border-color: var(--border);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 4px;
+            min-width: 18px;
+            min-height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 0.9rem;
+            color: var(--text);
+            cursor: pointer;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 24px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        /* Buttons */
         button {
             background-color: var(--primary);
-            color: #000; /* Dark text on light blue button for contrast */
+            color: var(--button-text);
             border: none;
-            padding: 14px 24px;
-            border-radius: 28px;
+            padding: 16px 24px;
+            border-radius: 100px;
             font-size: 1rem;
             cursor: pointer;
             font-weight: 600;
-            transition: transform 0.1s, opacity 0.2s;
+            transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
             width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            letter-spacing: 0.02em;
         }
 
         button:disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             cursor: not-allowed;
-            filter: grayscale(1);
+            filter: grayscale(0.5);
+        }
+
+        button:not(:disabled):hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         button:not(:disabled):active {
             transform: scale(0.98);
         }
 
-        /* Input Styling */
-        input[type="text"] {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--input-bg);
-            color: #ffffff;
-            font-size: 1rem;
-            box-sizing: border-box;
-            margin-bottom: 25px;
-            outline: none;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--primary);
-        }
-
-        /* Checkbox Layout */
-        .checkbox-group {
-            text-align: left;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: flex-start; /* Better for wrapped text on mobile */
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            margin-right: 12px;
-            margin-top: 4px;
-            min-width: 20px;
-            min-height: 20px;
-            accent-color: var(--primary);
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            font-size: 0.95rem;
-            color: #ffffff;
-            cursor: pointer;
-            line-height: 1.4;
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
         .hidden {
             display: none !important;
         }
 
-        /* Loading script handling */
-        #loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+            color: var(--text);
+            opacity: 0.5;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
+        
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .divider::before { margin-right: 10px; }
+        .divider::after { margin-left: 10px; }
     </style>
 </head>
-<body>
+<body class="dark">
 
     <div class="container" id="step1">
         <h1>Legal Agreement</h1>
@@ -176,7 +231,7 @@
         <p>How should Genesis-AI address you?</p>
         
         <div id="googleSignInBtn" style="display: flex; justify-content: center; margin-bottom: 20px; width: 100%;"></div>
-        <div style="text-align: center; margin-bottom: 15px; opacity: 0.7; font-size: 0.9em;">- OR -</div>
+        <div class="divider">OR</div>
         
         <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off">
         
