@@ -64,6 +64,19 @@ function injectCSS() {
             gap: 16px;
             padding: 16px 0;
         }
+        .genesis-sidebar.collapsed #settingsBtn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .genesis-sidebar.collapsed #userIcon {
+            width: 40px;
+            height: 40px;
+        }
     `;
     document.head.appendChild(style);
 }
