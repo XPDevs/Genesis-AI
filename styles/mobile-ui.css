@@ -79,22 +79,37 @@ body {
 }
 
 #settingsBtn {
+  order: 10;
+  margin-top: auto;
   background: transparent;
   border: none;
   color: var(--text);
   cursor: pointer;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
+  width: calc(100% - 30px);
+  height: 40px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   transition: background 0.2s ease;
-  padding: 0;
+  padding: 0 12px;
+  margin: 5px 15px;
+  gap: 12px;
+  font-size: 14px;
 }
+#settingsBtn::after { content: "Settings"; font-weight: 500; }
 
 #settingsBtn:hover {
   background: var(--active-chat);
+}
+
+#userIcon {
+  order: 11;
+  margin: 0 15px 15px 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 /* --- Chat List & Options --- */
@@ -704,4 +719,17 @@ body.is-new-chat .input-container {
 
 .genesis-sidebar.collapsed .collapsed-stack {
   display: none !important;
+}
+
+.genesis-sidebar.collapsed #settingsBtn {
+  width: calc(100% - 30px) !important;
+  margin: 5px 15px !important;
+  padding: 0 12px !important;
+  justify-content: flex-start !important;
+}
+.genesis-sidebar.collapsed #settingsBtn::after { display: block !important; }
+.genesis-sidebar.collapsed #userIcon {
+  margin: 0 15px 15px 15px !important;
+  width: 40px !important;
+  height: 40px !important;
 }

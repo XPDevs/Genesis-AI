@@ -836,21 +836,22 @@ body.is-new-chat .input-container {
 #settingsBtn { 
   order: 10; 
   margin-top: auto;
-  /* Icon-only style for both states */
-  font-size: 0 !important; 
-  padding: 0;
-  width: 40px;
+  font-size: 14px; 
+  padding: 0 12px;
+  width: calc(100% - 30px);
   height: 40px;
   margin: 5px 15px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   border-radius: 8px;
   cursor: pointer;
   background: transparent;
   border: none;
   color: var(--text);
+  gap: 12px;
 }
+#settingsBtn::after { content: "Settings"; font-weight: 500; }
 #settingsBtn:hover { background: var(--input-bg); }
 
 #userIcon { 
@@ -864,7 +865,11 @@ body.is-new-chat .input-container {
 
 .genesis-sidebar.collapsed #settingsBtn {
   margin: 5px auto;
+  width: 40px;
+  padding: 0;
+  justify-content: center;
 }
+.genesis-sidebar.collapsed #settingsBtn::after { display: none; }
 .genesis-sidebar.collapsed #userIcon {
   margin: 5px auto 15px auto;
   width: 32px;
