@@ -7,7 +7,7 @@
         const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0/dist/transformers.min.js');
         env.allowLocalModels = false;
         env.allowRemoteModels = true;
-        env.remoteHost = 'https://xpdevs.github.io/Genesis-AI/models/';
+        env.remoteHost = 'https://xpdevs.github.io/Genesis-AI/modals/';
         env.remotePathTemplate = '{model}/';
         env.useBrowserCache = false;
         
@@ -94,7 +94,7 @@
                 this.stop();
             }
         };
-        console.log("Local Speech Recognition initialized with https://xpdevs.github.io/Genesis-AI/models/STT/");
+        console.log("Local Speech Recognition initialized with https://xpdevs.github.io/Genesis-AI/modals/STT/");
 
     } catch (e) {
         console.warn("Transformers.js failed to load, falling back to native speech recognition.", e);
