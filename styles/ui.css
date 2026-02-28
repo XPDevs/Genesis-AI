@@ -851,7 +851,7 @@ body.is-new-chat .input-container {
   color: var(--text);
   gap: 12px;
 }
-#settingsBtn::after { content: "Settings"; font-weight: 500; }
+#settingsBtn::after { content: none; display: none; }
 #settingsBtn:hover { background: var(--input-bg); }
 
 #userIcon { 
@@ -864,10 +864,12 @@ body.is-new-chat .input-container {
 }
 
 .genesis-sidebar.collapsed #settingsBtn {
-  margin: 5px auto;
+  margin: auto auto 5px auto;
   width: 40px;
   padding: 0;
   justify-content: center;
+  font-size: 0;
+  gap: 0;
 }
 .genesis-sidebar.collapsed #settingsBtn::after { display: none; }
 .genesis-sidebar.collapsed #userIcon {

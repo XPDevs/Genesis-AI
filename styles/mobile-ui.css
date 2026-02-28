@@ -97,7 +97,7 @@ body {
   gap: 12px;
   font-size: 14px;
 }
-#settingsBtn::after { content: "Settings"; font-weight: 500; }
+#settingsBtn::after { display: none; }
 
 #settingsBtn:hover {
   background: var(--active-chat);
@@ -722,14 +722,16 @@ body.is-new-chat .input-container {
 }
 
 .genesis-sidebar.collapsed #settingsBtn {
-  width: calc(100% - 30px) !important;
-  margin: 5px 15px !important;
-  padding: 0 12px !important;
-  justify-content: flex-start !important;
-}
-.genesis-sidebar.collapsed #settingsBtn::after { display: block !important; }
-.genesis-sidebar.collapsed #userIcon {
-  margin: 0 15px 15px 15px !important;
+  margin: auto auto 5px auto !important;
   width: 40px !important;
-  height: 40px !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  font-size: 0 !important;
+  gap: 0 !important;
+}
+.genesis-sidebar.collapsed #settingsBtn::after { display: none !important; }
+.genesis-sidebar.collapsed #userIcon {
+  margin: 5px auto 15px auto !important;
+  width: 32px !important;
+  height: 32px !important;
 }
