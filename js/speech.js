@@ -7,6 +7,7 @@
         console.warn("Speech recognition is not supported in this browser.");
         // Define a dummy init function if not supported
         window.initSpeech = () => {};
+        window.dispatchEvent(new Event('speech-ready'));
         return;
     }
 
@@ -273,6 +274,7 @@
         liveModeBtnEl = createLiveModeButton(sendBtn);
         inputArea.insertBefore(liveModeBtnEl, sendBtn);
     };
+    window.dispatchEvent(new Event('speech-ready'));
 
     // Monkey patch speech synthesis to pause recognition when AI speaks
     if (window.speechSynthesis) {

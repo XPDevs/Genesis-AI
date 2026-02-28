@@ -6,13 +6,19 @@ function initializeApp() {
     initGoogleSignIn();
 
     // Initialize speech recognition after other scripts are loaded
-    if (window.initSpeech) {
-        initSpeech({
+    const startSpeech = () => {
+        window.initSpeech({
             inputArea: document.getElementById("inputArea"),
             userInput: document.getElementById("userInput"),
             sendBtn: document.getElementById("sendBtn"),
             sendMessage: sendMessage
         });
+    };
+
+    if (window.initSpeech) {
+        startSpeech();
+    } else {
+        window.addEventListener('speech-ready', startSpeech);
     }
 
     if (!localStorage.getItem("hasWelcomed")) {
