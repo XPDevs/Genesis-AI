@@ -47,7 +47,24 @@ function loadMathSupport() {
 
 function injectCSS() {
     const style = document.createElement('style');
-    style.textContent = ``;
+    style.textContent = `
+        .sidebar-footer {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin-top: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .genesis-sidebar.collapsed .sidebar-footer {
+            flex-direction: column;
+            justify-content: center;
+            gap: 16px;
+            padding: 16px 0;
+        }
+    `;
     document.head.appendChild(style);
 }
 
