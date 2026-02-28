@@ -1387,6 +1387,9 @@ function setupSidebarUI() {
     // Insert at top of sidebar
     sidebar.insertBefore(searchContainer, sidebar.firstChild);
     sidebar.insertBefore(header, sidebar.firstChild);
+
+    if (settingsBtn) sidebar.appendChild(settingsBtn);
+    if (userIcon) sidebar.appendChild(userIcon);
 }
 
 // --- INITIALIZATION ---
