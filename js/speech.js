@@ -51,6 +51,12 @@
             window.speechSynthesis.cancel();
             finalTranscript = ""; 
             if (userInputEl) userInputEl.value = "";
+            
+            // Restart recognition to clear any buffered AI speech
+            isListening = false;
+            recognition.abort();
+            setTimeout(startListening, 100);
+            return;
         }
 
         let interimTranscript = '';
