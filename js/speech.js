@@ -31,7 +31,7 @@
                 try {
                     if (!this._transcriber) {
                         // Point to the local models/STT folder
-                        this._transcriber = await pipeline('automatic-speech-recognition', 'models/STT');
+                        this._transcriber = await pipeline('automatic-speech-recognition', 'https://xpdevs.github.io/Genesis-AI/models/STT/');
                     }
 
                     this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -91,7 +91,7 @@
                 this.stop();
             }
         };
-        console.log("Local Speech Recognition initialized with models/STT");
+        console.log("Local Speech Recognition initialized with https://xpdevs.github.io/Genesis-AI/models/STT/");
 
     } catch (e) {
         console.warn("Transformers.js failed to load, falling back to native speech recognition.", e);
