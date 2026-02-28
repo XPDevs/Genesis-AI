@@ -7,9 +7,7 @@
         const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0/dist/transformers.min.js');
         env.allowLocalModels = false;
         env.allowRemoteModels = true;
-        env.remoteHost = 'https://xpdevs.github.io/Genesis-AI/modals/';
-        env.remotePathTemplate = '{model}/';
-        env.useBrowserCache = false;
+        env.useBrowserCache = true;
         
         LocalSpeechRecognition = class {
             constructor() {
@@ -33,8 +31,8 @@
 
                 try {
                     if (!this._transcriber) {
-                        // Point to the local models/STT folder
-                        this._transcriber = await pipeline('automatic-speech-recognition', 'STT');
+                        // Use a supported model (Whisper) instead of the unsupported 'moonshine' type
+                        this._transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
                     }
 
                     this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -94,7 +92,7 @@
                 this.stop();
             }
         };
-        console.log("Local Speech Recognition initialized with https://xpdevs.github.io/Genesis-AI/modals/STT/");
+        console.log("Local Speech Recognition initialized with Xenova/whisper-tiny.en");
 
     } catch (e) {
         console.warn("Transformers.js failed to load, falling back to native speech recognition.", e);
