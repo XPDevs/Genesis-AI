@@ -43,12 +43,14 @@
 
     // 4. Handle results
     recognition.onresult = (event) => {
+        if (isLiveModeActive) resetInactivityTimer();
         if (!isListening) return;
 
-        // Prevent AI self-detection
+        // Interruption: If AI is speaking and we detect input, stop AI.
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
-            recognition.stop();
-            return;
+            window.speechSynthesis.cancel();
+            finalTranscript = ""; 
+            if (userInputEl) userInputEl.value = "";
         }
 
         let interimTranscript = '';
@@ -91,8 +93,8 @@
     function startListening() {
         if (isListening) return;
         
-        // Stop any AI speech before listening
-        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        // Only stop AI speech if NOT in live mode (in live mode we allow interruption)
+        if (!isLiveModeActive && window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
 
@@ -105,12 +107,15 @@
         if (userInputEl) userInputEl.value = "";
         if (silenceTimer) clearTimeout(silenceTimer);
         
-        recognition.start();
-        isListening = true;
-        
-        if (liveModeBtnEl) {
-            liveModeBtnEl.classList.add('active');
+        try {
+            recognition.start();
+            isListening = true;
+        } catch (e) {
+            console.warn("Speech recognition already started");
+            isListening = true;
         }
+        
+        if (isLiveModeActive) resetInactivityTimer();
     }
 
     function stopListening(shouldSendMessage = true) {
@@ -119,10 +124,6 @@
         if (silenceTimer) clearTimeout(silenceTimer);
         recognition.stop();
         isListening = false;
-
-        if (liveModeBtnEl) {
-            liveModeBtnEl.classList.remove('active');
-        }
 
         if (shouldSendMessage && userInputEl && userInputEl.value.trim() && sendMessageFn) {
             window.shouldSpeakResponse = true;
@@ -148,9 +149,28 @@
 
     // --- Live Mode ---
 
+    let inactivityTimer = null;
+
+    function resetInactivityTimer() {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        if (isLiveModeActive) {
+            inactivityTimer = setTimeout(() => {
+                const captionEl = document.getElementById('live-caption-text');
+                if (captionEl) {
+                    captionEl.textContent = "Live mode ended due to inactivity.";
+                    captionEl.className = 'ai-caption';
+                    document.getElementById('live-captions-container')?.classList.add('visible');
+                }
+                setTimeout(() => stopLiveMode(), 2000);
+            }, 30000); // 30 seconds timeout
+        }
+    }
+
     function startLiveMode() {
         if (isLiveModeActive) return;
         isLiveModeActive = true;
+
+        if (liveModeBtnEl) liveModeBtnEl.classList.add('active');
 
         if (window.innerWidth <= 768) {
             const overlay = document.getElementById('live-mode-overlay');
@@ -162,6 +182,9 @@
     function stopLiveMode() {
         if (!isLiveModeActive) return;
         isLiveModeActive = false;
+
+        if (liveModeBtnEl) liveModeBtnEl.classList.remove('active');
+        if (inactivityTimer) clearTimeout(inactivityTimer);
 
         const overlay = document.getElementById('live-mode-overlay');
         if (overlay) overlay.style.display = 'none';
@@ -182,11 +205,31 @@
                 #live-mode-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
                 .live-header { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
                 .live-btn { background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; }
-                .pulsing-ball { width: 150px; height: 150px; background: radial-gradient(circle, #5891fA, #2563eb); border-radius: 50%; transition: transform 0.3s ease; }
-                .pulsing-ball.speaking { animation: pulse 1.5s infinite; }
-                @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+                .pulsing-ball { 
+                    width: 150px; height: 150px; 
+                    background: radial-gradient(circle, #5891fA, #2563eb); 
+                    border-radius: 50%; 
+                    transition: transform 0.1s ease;
+                    box-shadow: 0 0 0 0 rgba(88, 145, 250, 0.7);
+                }
+                .pulsing-ball.speaking { 
+                    animation: pulse-wave 1.5s infinite ease-out; 
+                }
+                @keyframes pulse-wave {
+                    0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(88, 145, 250, 0.7); }
+                    50% { transform: scale(1.1); box-shadow: 0 0 0 30px rgba(88, 145, 250, 0); }
+                    100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(88, 145, 250, 0); }
+                }
                 .live-captions { position: absolute; bottom: 10%; width: 90%; max-width: 600px; text-align: center; font-size: 1.5rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
                 .live-captions.visible { opacity: 1; }
+                .live-captions p {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    margin: 0;
+                    line-height: 1.4;
+                }
                 .live-captions .user-caption { color: #aaa; }
                 .live-captions .ai-caption { color: #fff; font-weight: 600; }
             </style>
@@ -281,7 +324,14 @@
         const originalSpeak = window.speechSynthesis.speak;
         window.speechSynthesis.speak = function(utterance) {
             if (isListening) {
-                stopListening(false);
+                // In live mode, we keep listening to allow interruption
+                if (!isLiveModeActive) {
+                    stopListening(false);
+                } else {
+                    // Ensure listening is active for interruption
+                    try { recognition.start(); isListening = true; } catch(e){}
+                }
+                
                 if (isLiveModeActive) {
                     const originalOnEnd = utterance.onend;
                     utterance.onend = (e) => {
@@ -289,6 +339,9 @@
                         startListening();
                     };
                 }
+            } else if (isLiveModeActive) {
+                // If not listening but in live mode, start listening for interruption
+                try { recognition.start(); isListening = true; } catch(e){}
             }
             originalSpeak.call(window.speechSynthesis, utterance);
         };
