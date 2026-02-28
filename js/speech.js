@@ -8,7 +8,7 @@
         env.allowLocalModels = false;
         env.allowRemoteModels = true;
         env.remoteHost = 'https://xpdevs.github.io/Genesis-AI/models/';
-        env.remotePathTemplate = '{model}/{file}';
+        env.remotePathTemplate = '{model}/';
         env.useBrowserCache = false;
         
         LocalSpeechRecognition = class {
