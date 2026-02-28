@@ -667,3 +667,41 @@ body.is-new-chat .input-container {
   color: #fff;
   font-weight: 600;
 }
+
+/* --- Genesis Sidebar Mobile Overrides --- */
+.genesis-sidebar {
+  position: fixed;
+  z-index: 1000;
+  height: 100%;
+  width: 80%;
+  max-width: 300px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  left: 0; /* Override default sidebar left */
+}
+
+.genesis-sidebar.open,
+.genesis-sidebar.active {
+  transform: translateX(0);
+}
+
+.collapse-btn {
+  display: none !important;
+}
+
+/* Ensure content is visible on mobile when open, even if logically collapsed */
+.genesis-sidebar.collapsed {
+  width: 80% !important;
+  max-width: 300px !important;
+}
+
+.genesis-sidebar.collapsed .sidebar-controls,
+.genesis-sidebar.collapsed .search-input-wrapper,
+.genesis-sidebar.collapsed #chatList,
+.genesis-sidebar.collapsed .genesis-logo span {
+  display: flex !important;
+}
+
+.genesis-sidebar.collapsed .collapsed-stack {
+  display: none !important;
+}
