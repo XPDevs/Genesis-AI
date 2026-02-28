@@ -2,7 +2,7 @@
     'use strict';
 
     // 1. Check for browser support
-    const SpeechEngine = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechEngine = window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition;
     if (!SpeechEngine) {
         console.warn("Speech recognition is not supported in this browser.");
         // Define a dummy init function if not supported
