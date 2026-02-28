@@ -15,6 +15,7 @@
     let isListening = false;
     let finalTranscript = "";
     let isLiveModeActive = false;
+    let silenceTimer = null;
 
     // These will be set by initSpeech
     let userInputEl;
@@ -41,6 +42,14 @@
 
     // 4. Handle results
     recognition.onresult = (event) => {
+        if (!isListening) return;
+
+        // Prevent AI self-detection
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+            recognition.stop();
+            return;
+        }
+
         let interimTranscript = '';
         let currentFinal = '';
 
@@ -67,6 +76,14 @@
             }
             userInputEl.dispatchEvent(new Event('input')); // For suggestion box etc.
         }
+
+        // Auto-send after 2 seconds of silence
+        if (silenceTimer) clearTimeout(silenceTimer);
+        if (isLiveModeActive && (finalTranscript || interimTranscript)) {
+            silenceTimer = setTimeout(() => {
+                if (isListening) stopListening(true);
+            }, 2000);
+        }
     };
 
     // 5. Listening lifecycle functions
@@ -85,6 +102,7 @@
 
         finalTranscript = "";
         if (userInputEl) userInputEl.value = "";
+        if (silenceTimer) clearTimeout(silenceTimer);
         
         recognition.start();
         isListening = true;
@@ -97,6 +115,7 @@
     function stopListening(shouldSendMessage = true) {
         if (!isListening) return;
 
+        if (silenceTimer) clearTimeout(silenceTimer);
         recognition.stop();
         isListening = false;
 
@@ -236,4 +255,22 @@
         liveModeBtnEl = createLiveModeButton();
         inputArea.insertBefore(liveModeBtnEl, sendBtn);
     };
+
+    // Monkey patch speech synthesis to pause recognition when AI speaks
+    if (window.speechSynthesis) {
+        const originalSpeak = window.speechSynthesis.speak;
+        window.speechSynthesis.speak = function(utterance) {
+            if (isListening) {
+                stopListening(false);
+                if (isLiveModeActive) {
+                    const originalOnEnd = utterance.onend;
+                    utterance.onend = (e) => {
+                        if (originalOnEnd) originalOnEnd(e);
+                        startListening();
+                    };
+                }
+            }
+            originalSpeak.call(window.speechSynthesis, utterance);
+        };
+    }
 })();
