@@ -243,6 +243,49 @@ function injectCSS() {
                 display: none !important;
             }
         }
+
+        /* Logo Expand Hover */
+        .genesis-logo {
+            position: relative;
+        }
+        .expand-icon {
+            display: none;
+            position: absolute;
+            left: 0; top: 0;
+            width: 32px; height: 32px;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+        .genesis-sidebar.collapsed .genesis-logo:hover img {
+            opacity: 0;
+        }
+        .genesis-sidebar.collapsed .genesis-logo:hover .expand-icon {
+            display: flex;
+        }
+
+        /* Bottom Buttons Collapsed & Ordering */
+        #chatList { flex: 1; }
+        #settingsBtn { order: 10; margin-top: auto; }
+        #userIcon { order: 11; }
+
+        .genesis-sidebar.collapsed #settingsBtn {
+            font-size: 0 !important;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            margin: 5px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .genesis-sidebar.collapsed #userIcon {
+            margin: 5px auto 15px auto;
+            width: 32px;
+            height: 32px;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -1476,6 +1519,10 @@ function setupSidebarUI() {
     
     sidebar.classList.add('genesis-sidebar');
     
+    const toggleSidebar = () => {
+        sidebar.classList.toggle('collapsed');
+    };
+
     // Hide original new chat button if it exists
     if (newChatBtn) newChatBtn.style.display = 'none';
 
@@ -1487,7 +1534,19 @@ function setupSidebarUI() {
     const logoLink = document.createElement('a');
     logoLink.href = 'https://xpdevs.github.io/Genesis-AI';
     logoLink.className = 'genesis-logo';
-    logoLink.innerHTML = `<img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="Genesis"><span>Genesis AI</span>`;
+    logoLink.innerHTML = `
+        <img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="Genesis">
+        <div class="expand-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/></svg>
+        </div>
+        <span>Genesis AI</span>`;
+    
+    logoLink.onclick = (e) => {
+        if (sidebar.classList.contains('collapsed')) {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    };
     
     // Controls Container (New Chat + Collapse)
     const controls = document.createElement('div');
@@ -1508,9 +1567,6 @@ function setupSidebarUI() {
     collapseBtn.title = 'Toggle Sidebar';
     collapseBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M9 3v18"/></svg>';
     
-    const toggleSidebar = () => {
-        sidebar.classList.toggle('collapsed');
-    };
     collapseBtn.onclick = toggleSidebar;
     
     controls.appendChild(newChatIcon);
