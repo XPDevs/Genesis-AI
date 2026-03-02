@@ -953,10 +953,31 @@ async function findResponses(input, history) {
 
   if (foundMatches.length === 0) {
     try {
-      const prefixes = ["how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are"];
+      const prefixes = [
+  // Original
+  "how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are",
+  // Action & Procedure
+  "how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for",
+  // Descriptions & Definitions
+  "meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of",
+  // Comparisons & Quantifiers
+  "difference between", "compare", "list of", "examples of", "pros and cons of",
+  // Identity & Discovery
+  "who was", "where are", "origin of", "source of", "background on", "is there a"
+];
       const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
-      if (isQuestion) {
+      const modelVer = (responses.ver || "").toLowerCase();
+      let allowWiki = true;
+
+      if (modelVer.includes("1.0")) {
+          allowWiki = false;
+      } else if (modelVer.includes("coder")) {
+          const codingTerms = ["code", "coding", "program", "programming", "dev", "developer", "software", "script", "function", "variable", "class", "object", "api", "database", "sql", "html", "css", "javascript", "python", "java", "c++", "c#", "linux", "terminal", "git", "github", "error", "bug", "debug", "compile", "runtime", "framework", "library", "react", "node", "npm", "pip", "docker", "aws", "cloud", "http", "rest", "json", "xml"];
+          allowWiki = codingTerms.some(t => lowerInput.includes(t));
+      }
+
+      if (isQuestion && allowWiki) {
         playThinkingSound();
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
