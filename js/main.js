@@ -12,6 +12,20 @@ function initializeApp() {
     initGoogleSignIn();
     setupSidebarUI();
 
+    // Move settings button to chat header and restyle it
+    if (chatTitle && settingsBtn) {
+        const chatHeader = chatTitle.parentElement;
+        if (chatHeader) {
+            chatHeader.appendChild(settingsBtn);
+            chatHeader.classList.add('chat-header');
+        }
+        // Remove text from settings button, leaving only the icon
+        const icon = settingsBtn.querySelector('svg');
+        if (icon) {
+            settingsBtn.innerHTML = icon.outerHTML;
+        }
+    }
+
     // Initialize speech recognition after other scripts are loaded
     const startSpeech = () => {
         window.initSpeech({
@@ -70,7 +84,20 @@ function injectCSS() {
             gap: 16px;
             padding: 16px 0;
         }
-        .genesis-sidebar.collapsed #settingsBtn {
+        .genesis-sidebar.collapsed #userIcon {
+            width: 40px;
+            height: 40px;
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* Add some padding so the button isn't flush with the edge */
+            padding-right: 16px;
+            box-sizing: border-box;
+        }
+        #settingsBtn {
+            /* Style to be a small, circular icon button */
             width: 40px;
             height: 40px;
             padding: 0;
@@ -78,10 +105,22 @@ function injectCSS() {
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            flex-shrink: 0; /* Prevent shrinking in flex container */
         }
-        .genesis-sidebar.collapsed #userIcon {
-            width: 40px;
-            height: 40px;
+        /* Ensure chat container takes full height for proper scrollbar placement */
+        body {
+            display: flex;
+            overflow: hidden; /* Prevent body from scrolling */
+        }
+        .chat-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #chatBox {
+            flex-grow: 1;
+            overflow-y: auto;
         }
     `;
     document.head.appendChild(style);
@@ -1507,7 +1546,6 @@ function setupSidebarUI() {
     // Create Footer
     const footer = document.createElement('div');
     footer.className = 'sidebar-footer';
-    if (settingsBtn) footer.appendChild(settingsBtn);
     if (userIcon) footer.appendChild(userIcon);
     sidebar.appendChild(footer);
 }
