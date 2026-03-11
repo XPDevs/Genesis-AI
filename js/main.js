@@ -72,7 +72,7 @@ function injectCSS() {
             display: flex;
             flex-direction: row;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             padding: 12px 16px;
             margin-top: auto;
             width: 100%;
@@ -981,7 +981,7 @@ async function findResponses(input, history) {
           const result = window.calc(decodedInput);
           if (result !== "Error" && result !== "Invalid input") {
               // Encode the response before returning
-              return { role: "ai", text: window.tokenizer.encode(`The answer is ${result}`) };
+              return { role: "ai", text: window.tokenizer.encode(`The answer is: ${result}`) };
           }
       }
   }
