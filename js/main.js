@@ -1,6 +1,12 @@
 function initializeApp() {
     console.log("Website loaded successfully V6.4");
     window.dispatchEvent(new Event('app-ready'));
+
+    // Load tokenizer first as it's a core dependency
+    const tokenizerScript = document.createElement('script');
+    tokenizerScript.src = 'https://xpdevs.github.io/Genesis-AI/js/token.js';
+    document.head.appendChild(tokenizerScript);
+
     loadMathSupport();
     injectCSS();
     initGoogleSignIn();
@@ -922,18 +928,21 @@ function typeChatTitle(newTitle, callback) {
 }
 
 async function findResponses(input, history) {
-  const lowerInput = input.toLowerCase();
+  // Decode the input from UTF-8 hex format
+  const decodedInput = window.tokenizer.decode(input);
+  const lowerInput = decodedInput.toLowerCase();
 
 
   // Calculator Integration
   if (typeof window.calc === 'function') {
-      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(input);
-      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(input) && /[\d]/.test(input) && /[-+*/^x]/.test(input);
+      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
+      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(decodedInput) && /[\d]/.test(decodedInput) && /[-+*/^x]/.test(decodedInput);
       
       if (isExplicit || isMathExpression) {
-          const result = window.calc(input);
+          const result = window.calc(decodedInput);
           if (result !== "Error" && result !== "Invalid input") {
-              return { role: "ai", text: `The answer is ${result}` };
+              // Encode the response before returning
+              return { role: "ai", text: window.tokenizer.encode(`The answer is ${result}`) };
           }
       }
   }
@@ -979,7 +988,7 @@ async function findResponses(input, history) {
 
       if (isQuestion && allowWiki) {
         playThinkingSound();
-        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(input)}&format=json&origin=*`;
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(decodedInput)}&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
 
@@ -1011,19 +1020,19 @@ async function findResponses(input, history) {
                 formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
             }
             
-            return { role: "ai", text: `\n\n${formattedSummary}\n\n` };
+            return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
           }
         }
       }
     } catch (e) {
       console.error("Wikipedia fetch failed:", e);
     }
-    return { role: "ai", text: "I’m not quite sure I follow. Could you give me a bit more detail?" };
+    return { role: "ai", text: window.tokenizer.encode("I’m not quite sure I follow. Could you give me a bit more detail?") };
   }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
+  if (orderedMessages.length === 1) return { role: "ai", text: window.tokenizer.encode(orderedMessages[0]) };
   const last = orderedMessages.pop();
-  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
+  return { role: "ai", text: window.tokenizer.encode(orderedMessages.join(", ") + " and " + last) };
 }
 
 function sendMessage() {
@@ -1267,8 +1276,17 @@ function sendMessage() {
         if (requestId !== aiState.currentRequestId) return;
         loadingDiv.remove();
         aiState.loadingDiv = null;
-        const botMsg = await findResponses(text, chat.messages);
+
+        // Encode user input before sending to the AI
+        const encodedText = window.tokenizer.encode(text);
+        const botMsg = await findResponses(encodedText, chat.messages);
+
         if (requestId !== aiState.currentRequestId) return;
+
+        // Decode the AI's response before displaying
+        if (botMsg && botMsg.text) {
+            botMsg.text = window.tokenizer.decode(botMsg.text);
+        }
 
         chat.messages.push(botMsg);
         saveChats();
