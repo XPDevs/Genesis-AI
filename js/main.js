@@ -4,7 +4,7 @@ function initializeApp() {
 
     // Load tokenizer first as it's a core dependency
     const tokenizerScript = document.createElement('script');
-    tokenizerScript.src = 'https://xpdevs.github.io/Genesis-AI/js/token.js';
+    tokenizerScript.src = 'https://xpdevs.github.io/Genesis-AI/js/token.js?v=' + Date.now();
     document.head.appendChild(tokenizerScript);
 
     loadMathSupport();
@@ -13,7 +13,7 @@ function initializeApp() {
 
     // Load sidebar logic
     const sidebarScript = document.createElement('script');
-    sidebarScript.src = 'js/sidebar.js';
+    sidebarScript.src = 'js/sidebar.js?v=' + Date.now();
     sidebarScript.onload = () => { if (typeof setupSidebarUI === 'function') setupSidebarUI(); };
     sidebarScript.onerror = () => { console.error("Failed to load js/sidebar.js. Please ensure the file exists."); };
     document.head.appendChild(sidebarScript);
@@ -63,10 +63,10 @@ function loadMathSupport() {
     const link = document.createElement('link');
     link.id = 'katex-css';
     link.rel = 'stylesheet';
-    link.href = 'https://xpdevs.github.io/Genesis-AI/styles/calc-display.css';
+    link.href = 'https://xpdevs.github.io/Genesis-AI/styles/calc-display.css?v=' + Date.now();
     document.head.appendChild(link);
     const script = document.createElement('script');
-    script.src = 'https://xpdevs.github.io/Genesis-AI/js/calc-display.js';
+    script.src = 'https://xpdevs.github.io/Genesis-AI/js/calc-display.js?v=' + Date.now();
     script.onload = () => { window.katexLoaded = true; };
     document.head.appendChild(script);
 }
@@ -516,8 +516,8 @@ fetch(jsonURL + "?v=" + Date.now())
   })
   .catch(err => {
     console.error("Reconstruction Error:", err);
-    // Legacy Safety Fallback to 1.0 JSON
-    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json")
+    // Legacy Safety Fallback to 1.0 JSON (with cache busting)
+    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
       .then(r => r.json())
       .then(data => { 
         responses = data; 
@@ -1203,7 +1203,7 @@ function sendMessage() {
           runGen();
       } else {
           const script = document.createElement('script');
-          script.src = "js/image-gen.js";
+          script.src = "js/image-gen.js?v=" + Date.now();
           script.onload = runGen;
           script.onerror = () => {
               if (requestId !== aiState.currentRequestId) return;
