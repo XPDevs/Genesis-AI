@@ -164,8 +164,6 @@ let isReadOnlyMode = false;
 let currentUploadFile = null;
 let isDevMode = false;
 let searchQuery = "";
-const DEV_PASSWORD = "7v#K9!mP2@zR5*qX";
-
 
 // AI Control State
 let aiState = {
@@ -412,7 +410,7 @@ function showBanModal() {
 
 // --- BINARY DECODER (V4.5 OPTIMIZED) ---
 // Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin";
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.bin";
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 function decodeBinary(buffer) {
@@ -1346,23 +1344,20 @@ function updateDevModalStatus() {
     uploadStatus.textContent = "";
 }
 
+// This function is kept for compatibility in case it's called from HTML, but password check is removed.
 window.devAccess = function(password) {
-    if (password === DEV_PASSWORD) {
-        console.log("Developer access granted.");
-        isDevMode = true;
-        devModalWaiting.style.display = 'none';
-        devModalOptions.style.display = 'block';
-        updateDevModalStatus();
-    } else {
-        console.error("Incorrect developer password.");
-    }
+    console.log("Developer access granted.");
+    isDevMode = true;
+    if (devModalWaiting) devModalWaiting.style.display = 'none';
+    if (devModalOptions) devModalOptions.style.display = 'block';
+    updateDevModalStatus();
 };
 
 function handleCustomModelUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    uploadStatus.textContent = `Reading ${file.name}...`;
+    const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
+    if (statusEl) statusEl.textContent = `Reading ${file.name}...`;
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -1389,17 +1384,27 @@ function handleCustomModelUpload(event) {
             }
 
             responses = newResponses; // Override for session
-            uploadStatus.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
-            updateDevModalStatus();
+            if (statusEl) statusEl.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
+            
+            // Update settings modal display
+            if (document.getElementById("modelNameDisplay")) {
+                document.getElementById("modelNameDisplay").textContent = responses.ver || "Unknown Version";
+            }
+            if (document.getElementById("modelParamsDisplay")) {
+                document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+            }
+            
+            // Also update dev modal if it's open
+            if (isDevMode) updateDevModalStatus();
 
         } catch (err) {
             console.error("Custom modal load failed:", err);
-            uploadStatus.textContent = `Error: ${err.message}`;
+            if (statusEl) statusEl.textContent = `Error: ${err.message}`;
         }
     };
 
     reader.onerror = function() {
-        uploadStatus.textContent = "Error reading file.";
+        if (statusEl) statusEl.textContent = "Error reading file.";
     };
 
     reader.readAsArrayBuffer(file);
@@ -1410,8 +1415,11 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         if (!devModal) return;
         devModal.style.display = 'flex';
-        if (isDevMode) { devModalWaiting.style.display = 'none'; devModalOptions.style.display = 'block'; updateDevModalStatus(); } 
-        else { devModalWaiting.style.display = 'block'; devModalOptions.style.display = 'none'; }
+        // Directly grant access without password
+        isDevMode = true;
+        devModalWaiting.style.display = 'none';
+        devModalOptions.style.display = 'block';
+        updateDevModalStatus();
     }
 });
 
@@ -1507,8 +1515,17 @@ sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.5";
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.6";
     document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    // Add upload status element if it doesn't exist
+    if (modelSelect && !document.getElementById("customModelStatus")) {
+        const statusEl = document.createElement('p');
+        statusEl.id = "customModelStatus";
+        statusEl.style.fontSize = "0.8em";
+        statusEl.style.marginTop = "5px";
+        statusEl.style.opacity = "0.7";
+        modelSelect.parentElement.insertBefore(statusEl, modelSelect.nextSibling);
+    }
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 if (accountModal) accountModal.onclick = e => { if (e.target === accountModal) accountModal.style.display = "none"; };
@@ -1551,10 +1568,22 @@ if (userIcon) {
 }
 
 if (modelSelect) {
+    // Add custom model upload option
+    if (!modelSelect.querySelector('option[value="custom"]')) {
+        const customOption = document.createElement('option');
+        customOption.value = "custom";
+        customOption.textContent = "Load from file...";
+        modelSelect.appendChild(customOption);
+    }
+
     modelSelect.value = jsonURL;
     modelSelect.onchange = () => {
         const selectedValue = modelSelect.value;
-        if (selectedValue !== jsonURL) {
+        if (selectedValue === "custom") {
+            if (customModelInput) customModelInput.click();
+            // Reset dropdown to current model after opening file dialog
+            setTimeout(() => { modelSelect.value = jsonURL; }, 100);
+        } else if (selectedValue !== jsonURL) {
             document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
