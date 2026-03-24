@@ -77,6 +77,7 @@ function injectCSS() {
         .chat-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding-top: 8px; /* Add some space at the top */
             padding-right: 16px;
             box-sizing: border-box;
@@ -413,75 +414,75 @@ const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6
 const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
 
 function decodeBinary(buffer) {
-    const bytes = new Uint8Array(buffer);
-    const view = new DataView(buffer);
-    const XOR_KEY = 0xAA; 
-    const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
-    
-    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
-    // We check the first 4 bytes for the "GNIS" signature
-    let i = 0;
-    try {
-        const sig = view.getUint32(0, true); // true = little-endian
-        if (sig === 0x53494E47) {
-            i = 4; // Skip "GNIS" header
-            console.log("Valid Signature.");
-        } else {
-            console.warn("Signature mismatch, attempting skip-less parse.");
-            i = 0;
-        }
-    } catch (e) {
-        i = 0;
-    }
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    const XOR_KEY = 0xAA; 
+    const decoder = new TextDecoder('utf-8');
+    let jsonString = "";
+    
+    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
+    // We check the first 4 bytes for the "GNIS" signature
+    let i = 0;
+    try {
+        const sig = view.getUint32(0, true); // true = little-endian
+        if (sig === 0x53494E47) {
+            i = 4; // Skip "GNIS" header
+            console.log("Valid Signature.");
+        } else {
+            console.warn("Signature mismatch, attempting skip-less parse.");
+            i = 0;
+        }
+    } catch (e) {
+        i = 0;
+    }
 
-    // 2. Token-based Reconstruction
-    while (i < bytes.length) {
-        const b = bytes[i];
-        
-        switch(b) {
-            case 0x01: jsonString += "{"; break; // T_START
-            case 0x02: jsonString += "}"; break; // T_END
-            case 0x03: jsonString += ":"; break; // T_SEP
-            case 0x04: // T_NEXT
-                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
-                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
-                    jsonString += ",";
-                }
-                break;
-            case 0x05: jsonString += "["; break; // T_ARR_S
-            case 0x06: jsonString += "]"; break; // T_ARR_E
-            case 0x07: // T_STR (String Start)
-                i++; 
-                let start = i;
-                
-                // Find the 0x00 null terminator used in json2bin.c
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
-                
-                const chunk = bytes.slice(start, i);
-                const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
-                
-                // The C compiler preserves the string content as it appears in the JSON file,
-                // including escape characters like \". Using JSON.stringify would re-escape
-                // these, corrupting the data (e.g., \" becomes \\").
-                // The correct approach is to simply wrap the decoded string in quotes,
-                // mirroring the behavior of the nano_decompile function in json2bin.c.
-                const stringContent = decoder.decode(decrypted);
-                jsonString += '"' + stringContent + '"';
-                break;
-            default:
-                // Ignore unexpected bytes (like padding)
-                break;
-        }
-        i++;
-    }
-    
-    return jsonString.trim();
+    // 2. Token-based Reconstruction
+    while (i < bytes.length) {
+        const b = bytes[i];
+        
+        switch(b) {
+            case 0x01: jsonString += "{"; break; // T_START
+            case 0x02: jsonString += "}"; break; // T_END
+            case 0x03: jsonString += ":"; break; // T_SEP
+            case 0x04: // T_NEXT
+                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
+                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
+                    jsonString += ",";
+                }
+                break;
+            case 0x05: jsonString += "["; break; // T_ARR_S
+            case 0x06: jsonString += "]"; break; // T_ARR_E
+            case 0x07: // T_STR (String Start)
+                i++; 
+                let start = i;
+                
+                // Find the 0x00 null terminator used in json2bin.c
+                while (i < bytes.length && bytes[i] !== 0x00) {
+                    i++;
+                }
+                
+                const chunk = bytes.slice(start, i);
+                const decrypted = new Uint8Array(chunk.length);
+                for (let j = 0; j < chunk.length; j++) {
+                    decrypted[j] = chunk[j] ^ XOR_KEY;
+                }
+                
+                // The C compiler preserves the string content as it appears in the JSON file,
+                // including escape characters like \". Using JSON.stringify would re-escape
+                // these, corrupting the data (e.g., \" becomes \\").
+                // The correct approach is to simply wrap the decoded string in quotes,
+                // mirroring the behavior of the nano_decompile function in json2bin.c.
+                const stringContent = decoder.decode(decrypted);
+                jsonString += '"' + stringContent + '"';
+                break;
+            default:
+                // Ignore unexpected bytes (like padding)
+                break;
+        }
+        i++;
+    }
+    
+    return jsonString.trim();
 }  
 
 // 3. Model Loading Logic
@@ -624,6 +625,7 @@ function renderChatList() {
   });
 }
 
+// FIX: Update chat view to position settings button correctly on new chats
 function updateChatView() {
     const chat = chats.find(c => c.id === activeChatId);
     let greetingEl = document.getElementById('greeting');
@@ -633,10 +635,11 @@ function updateChatView() {
     if (chat && chat.messages.length === 0) {
         document.body.classList.add('is-new-chat');
         if (chatHeader) {
-            chatHeader.style.display = 'flex'; // Ensure header is visible
-            if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
-            chatHeader.style.justifyContent = 'flex-end'; // Push settings button to the right
-            chatHeader.style.alignItems = 'flex-start'; // Align button to the top
+            chatHeader.style.display = 'flex';
+            if (chatTitle) chatTitle.style.display = 'none';
+            chatHeader.style.justifyContent = 'flex-end';
+            chatHeader.style.alignItems = 'flex-start';
+            chatHeader.style.paddingTop = '0'; // Remove top padding for new chat
         }
 
         if (!greetingEl) {
@@ -654,10 +657,11 @@ function updateChatView() {
     } else {
         document.body.classList.remove('is-new-chat');
         if (chatHeader) {
-            chatHeader.style.display = ''; // Restore default display
-            if (chatTitle) chatTitle.style.display = ''; // Restore title
-            chatHeader.style.justifyContent = ''; // Restore justification
-            chatHeader.style.alignItems = 'center'; // Vertically center title and button
+            chatHeader.style.display = '';
+            if (chatTitle) chatTitle.style.display = '';
+            chatHeader.style.justifyContent = '';
+            chatHeader.style.alignItems = '';
+            chatHeader.style.paddingTop = ''; // Restore default padding from CSS
         }
         if (greetingEl) {
             greetingEl.remove();
