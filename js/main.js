@@ -77,8 +77,8 @@ function injectCSS() {
         .chat-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            /* Add some padding so the button isn't flush with the edge */
+            align-items: flex-start;
+            padding-top: 8px; /* Add some space at the top */
             padding-right: 16px;
             box-sizing: border-box;
         }
