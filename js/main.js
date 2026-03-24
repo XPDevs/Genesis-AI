@@ -637,6 +637,7 @@ function updateChatView() {
             chatHeader.style.display = 'flex'; // Ensure header is visible
             if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
             chatHeader.style.justifyContent = 'flex-end'; // Push settings button to the right
+            chatHeader.style.alignItems = 'flex-start'; // Align button to the top
         }
 
         if (!greetingEl) {
@@ -657,6 +658,7 @@ function updateChatView() {
             chatHeader.style.display = ''; // Restore default display
             if (chatTitle) chatTitle.style.display = ''; // Restore title
             chatHeader.style.justifyContent = ''; // Restore justification
+            chatHeader.style.alignItems = ''; // Restore vertical alignment
         }
         if (greetingEl) {
             greetingEl.remove();
