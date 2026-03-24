@@ -629,9 +629,16 @@ function updateChatView() {
     const chat = chats.find(c => c.id === activeChatId);
     let greetingEl = document.getElementById('greeting');
     const chatMain = document.querySelector('.chat-main');
+    const chatHeader = chatTitle ? chatTitle.parentElement : null;
 
     if (chat && chat.messages.length === 0) {
         document.body.classList.add('is-new-chat');
+        if (chatHeader) {
+            chatHeader.style.display = 'flex'; // Ensure header is visible
+            if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
+            chatHeader.style.justifyContent = 'flex-end'; // Push settings button to the right
+        }
+
         if (!greetingEl) {
             greetingEl = document.createElement('div');
             greetingEl.id = 'greeting';
@@ -646,6 +653,11 @@ function updateChatView() {
         greetingEl.textContent = `${greetingText}, ${name}`;
     } else {
         document.body.classList.remove('is-new-chat');
+        if (chatHeader) {
+            chatHeader.style.display = ''; // Restore default display
+            if (chatTitle) chatTitle.style.display = ''; // Restore title
+            chatHeader.style.justifyContent = ''; // Restore justification
+        }
         if (greetingEl) {
             greetingEl.remove();
         }
