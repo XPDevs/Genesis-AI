@@ -77,7 +77,6 @@ function injectCSS() {
         .chat-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding-top: 8px; /* Add some space at the top */
             padding-right: 16px;
             box-sizing: border-box;
@@ -658,7 +657,7 @@ function updateChatView() {
             chatHeader.style.display = ''; // Restore default display
             if (chatTitle) chatTitle.style.display = ''; // Restore title
             chatHeader.style.justifyContent = ''; // Restore justification
-            chatHeader.style.alignItems = ''; // Restore vertical alignment
+            chatHeader.style.alignItems = 'center'; // Vertically center title and button
         }
         if (greetingEl) {
             greetingEl.remove();
