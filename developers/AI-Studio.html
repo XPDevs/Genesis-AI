@@ -152,8 +152,9 @@
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-300">Base Model</label>
                 <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
+                    <option value="Genesis-SPT-4.6">Genesis SPT-4.6</option>
                     <option value="Genesis-SPT-4.5">Genesis SPT-4.5</option>
+                    <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
                 </select>
             </div>
             <div class="flex justify-end space-x-3 mt-4">
@@ -199,7 +200,7 @@
             </button>
         </div>
 
-        <nav class="flex flex-col space-y-2 mt-6">
+        <nav class="flex flex-col space-y-2 mt-6 overflow-y-auto">
             
             <!-- Dashboard Link -->
             <a href="#" onclick="switchView('view-dashboard', this)" data-view="view-dashboard" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
@@ -269,6 +270,12 @@
             <a href="#" onclick="switchView('view-guide', this)" data-view="view-guide" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span class="ml-3">AI Guide</span>
+            </a>
+
+            <!-- Research Paper Link -->
+            <a href="#" onclick="switchView('view-research', this)" data-view="view-research" class="flex items-center p-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800/50 hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="ml-3">Image to Vectors</span>
             </a>
 
         </nav>
@@ -452,6 +459,7 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Model</label>
                             <select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                <option value="spt-4.6-json" selected>Genesis SPT-4.6 (JSON)</option>
                                 <option value="spt-4.5-bin">Genesis SPT-4.5 (Binary)</option>
                                 <option value="spt-1.0-json">Genesis SPT-1.0 (JSON)</option>
                             </select>
@@ -546,16 +554,30 @@
                 <p class="text-gray-400">Explore the different AI models (modals) available on the Genesis platform.</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Genesis SPT-4.6 -->
+                    <div class="card-bg p-6 rounded-xl border border-indigo-500/50 ring-2 ring-indigo-500/20">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.6</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Latest</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">The newest and most capable JSON model. Optimized for complex reasoning and broader knowledge coverage. Human-readable and easy to edit.</p>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+                            <p><span class="text-gray-300">Parameters:</span> 5079</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-4.6.json</code></p>
+                        </div>
+                    </div>
+
                     <!-- Genesis SPT-4.5 -->
                     <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
                         <div class="flex justify-between items-start mb-4">
                             <h4 class="text-xl font-bold text-white">Genesis SPT-4.5</h4>
-                            <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Binary (.bin)</span>
+                            <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">Binary (.bin)</span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4">The latest high-performance binary model. Optimized for speed and broader knowledge coverage. Uses a custom binary format for efficient client-side decoding.</p>
+                        <p class="text-gray-400 text-sm mb-4">A high-performance binary model. Optimized for speed and general knowledge. Uses a custom binary format for efficient client-side decoding.</p>
                         <div class="space-y-2 text-xs text-gray-500">
                             <p><span class="text-gray-300">Format:</span> Custom Binary</p>
-                            <p><span class="text-gray-300">Size:</span> ~1.2 MB (Compressed)</p>
+                            <p><span class="text-gray-300">Parameters:</span> 1446</p>
                             <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-4.5-240126P1105M.bin</code></p>
                         </div>
                     </div>
@@ -850,6 +872,17 @@ function violatesRules(text) {
                 </div>
                 <div class="w-full h-[calc(100vh-200px)] bg-white rounded-xl overflow-hidden border border-gray-700">
                     <iframe src="../docs/ai-guide-2.html" class="w-full h-full border-none"></iframe>
+                </div>
+            </section>
+
+            <!-- RESEARCH VIEW -->
+            <section id="view-research" class="studio-content space-y-8 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-3xl font-bold text-white">Research: Image to Vectors</h3>
+                    <a href="https://xpdevs.github.io/Genesis-AI/docs/image-to-vectors.html" target="_blank" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition-colors text-white">Open in New Tab</a>
+                </div>
+                <div class="w-full h-[calc(100vh-200px)] bg-white rounded-xl overflow-hidden border border-gray-700">
+                    <iframe src="https://xpdevs.github.io/Genesis-AI/docs/image-to-vectors.html" class="w-full h-full border-none"></iframe>
                 </div>
             </section>
 
@@ -1242,7 +1275,11 @@ function violatesRules(text) {
 
             try {
                 let url = "";
-                if (modelSelect.value === 'spt-4.5-bin') {
+                if (modelSelect.value === 'spt-4.6-json') {
+                    url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json';
+                    const res = await fetch(url);
+                    activeModelData = await res.json();
+                } else if (modelSelect.value === 'spt-4.5-bin') {
                     url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin';
                     const res = await fetch(url);
                     const buffer = await res.arrayBuffer();
@@ -1359,7 +1396,7 @@ function violatesRules(text) {
             const sys = document.getElementById('system-prompt').value;
             const topp = document.getElementById('topp-slider').value;
             const topk = document.getElementById('topk-slider').value;
-            const modelName = model === 'spt-4.5-bin' ? 'genesis-spt-4.5' : 'genesis-spt-1.0';
+            const modelName = model === 'spt-4.6-json' ? 'genesis-spt-4.6' : model === 'spt-4.5-bin' ? 'genesis-spt-4.5' : 'genesis-spt-1.0';
             
             // Collect Examples
             const examples = [];
@@ -1373,7 +1410,7 @@ function violatesRules(text) {
 
 const config = {
     apiUrl: "https://xpdevs.github.io/Genesis-AI/developers/api/generate",
-    modelUrl: "${model === 'spt-4.5-bin' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
+    modelUrl: "${model === 'spt-4.6-json' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json' : model === 'spt-4.5-bin' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
     topP: ${topp},
@@ -1550,7 +1587,8 @@ async function runGenesis(userQuery) {
                 'view-tuning': 'Tuned Models',
                 'view-settings': 'Settings',
                 'view-batch': 'Batch Testing',
-                'view-guide': 'AI Guide'
+                'view-guide': 'AI Guide',
+                'view-research': 'Research: Image to Vectors'
             };
             document.getElementById('current-view-title').textContent = titleMap[viewId] || 'Console';
 
