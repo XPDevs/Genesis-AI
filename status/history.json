@@ -35,7 +35,7 @@
     "operational",
     "operational",
     "operational",
-    "operational"
+    "degraded"
   ],
   "incidents": [
     {
@@ -50,6 +50,13 @@
       "title": "Partial slowdown in response times",
       "description": "We noticed higher than usual wait times for some queries. The core infrastructure has now fully recovered.",
       "time": "08:42",
+      "type": "resolved"
+    },
+    {
+      "date": "2026-03-28",
+      "title": "Website loading issues for some users",
+      "description": "A small non-functional problem caused the website to not load correctly for a subset of users. The issue was identified and resolved quickly.",
+      "time": "10:15",
       "type": "resolved"
     }
   ]
