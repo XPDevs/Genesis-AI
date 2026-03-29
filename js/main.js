@@ -1,6 +1,101 @@
-function initializeApp() {
+// --- DATABASE UTILITY (IndexedDB) ---
+const DB = {
+    dbName: "GenesisAI",
+    dbVersion: 1,
+    storeName: "settings",
+    db: null,
+
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName);
+                }
+            };
+            request.onsuccess = (e) => {
+                this.db = e.target.result;
+                resolve();
+            };
+            request.onerror = (e) => reject(e.target.error);
+        });
+    },
+
+    async get(key, defaultValue = null) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], "readonly");
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result !== undefined ? request.result : defaultValue);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async set(key, value) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], "readwrite");
+            const store = transaction.objectStore(this.storeName);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async delete(key) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], "readwrite");
+            const store = transaction.objectStore(this.storeName);
+            const request = store.delete(key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async clear() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.storeName], "readwrite");
+            const store = transaction.objectStore(this.storeName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+};
+
+async function migrateFromLocalStorage() {
+    const keys = ["chats", "activeChatId", "userInfo", "hasWelcomed", "genesisBanInfo", "selectedModel", "autoTheme", "theme", "SETUP"];
+    for (const key of keys) {
+        const val = localStorage.getItem(key);
+        if (val !== null) {
+            try {
+                const parsed = JSON.parse(val);
+                await DB.set(key, parsed);
+            } catch (e) {
+                await DB.set(key, val);
+            }
+            localStorage.removeItem(key);
+        }
+    }
+}
+
+async function initializeApp() {
     console.log("Website loaded successfully V6.4");
-    window.dispatchEvent(new Event('app-ready'));
+
+    if (!(await DB.get("hasWelcomed"))) {
+        if (window.innerWidth <= 768) {
+            const userInfo = await DB.get("userInfo", {});
+            const name = userInfo.name || "User";
+            if (window.Genesis && typeof window.Genesis.welcome === 'function') {
+                Genesis.welcome(name);
+            }
+        }
+        await DB.set("hasWelcomed", "true");
+    }
 
     // Load tokenizer first as it's a core dependency
     const tokenizerScript = document.createElement('script');
@@ -48,14 +143,7 @@ function initializeApp() {
         window.addEventListener('speech-ready', startSpeech);
     }
 
-    if (!localStorage.getItem("hasWelcomed")) {
-        if (window.innerWidth <= 768) {
-            const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-            const name = userInfo.name || "User";
-            Genesis.welcome(name);
-        }
-        localStorage.setItem("hasWelcomed", "true");
-    }
+    window.dispatchEvent(new Event('app-ready'));
 }
 
 function loadMathSupport() {
@@ -77,7 +165,6 @@ function injectCSS() {
         .chat-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding-top: 8px; /* Add some space at the top */
             padding-right: 16px;
             box-sizing: border-box;
@@ -155,8 +242,8 @@ const devCurrentModalMode = document.getElementById("devCurrentModalMode");
 const uploadStatus = document.getElementById("uploadStatus");
 
 // State
-let chats = JSON.parse(localStorage.getItem("chats") || "[]");
-let activeChatId = localStorage.getItem("activeChatId");
+let chats = [];
+let activeChatId = null;
 let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
@@ -276,7 +363,7 @@ function decodeChat(encodedString) {
     return messages;
 }
 
-function loadAndSaveSharedChat(messages, originalTitle) {
+async function loadAndSaveSharedChat(messages, originalTitle) {
     isReadOnlyMode = false;
     if (readOnlyBanner) readOnlyBanner.style.display = 'none';
     if (inputArea) inputArea.style.display = 'flex';
@@ -288,8 +375,8 @@ function loadAndSaveSharedChat(messages, originalTitle) {
     const newChat = { id: Date.now().toString(), title: newChatTitle, messages: messages };
     chats.unshift(newChat);
     activeChatId = newChat.id;
-    localStorage.setItem("activeChatId", activeChatId);
-    saveChats(); renderChatList(); renderMessages();
+    await DB.set("activeChatId", activeChatId);
+    await saveChats(); renderChatList(); renderMessages();
     if (newChatBtn) newChatBtn.disabled = false;
     if (settingsBtn) settingsBtn.disabled = false;
     updateURL(newChatTitle);
@@ -313,14 +400,12 @@ function loadSharedChat() {
 const BAN_STORAGE_KEY = 'genesisBanInfo';
 const SECRET_UNBAN_CODE = 'Te3nt!?'; 
 
-function loadBanInfo() {
-  const raw = localStorage.getItem(BAN_STORAGE_KEY);
-  if (!raw) return { consecutiveViolations: 0, banHistoryCount: 0, bannedUntil: null };
-  try { return JSON.parse(raw); } catch { return { consecutiveViolations: 0, banHistoryCount: 0, bannedUntil: null }; }
+async function loadBanInfo() {
+  return await DB.get(BAN_STORAGE_KEY, { consecutiveViolations: 0, banHistoryCount: 0, bannedUntil: null });
 }
-function saveBanInfo(info) { localStorage.setItem(BAN_STORAGE_KEY, JSON.stringify(info)); }
-function isCurrentlyBanned() {
-  const info = loadBanInfo();
+async function saveBanInfo(info) { await DB.set(BAN_STORAGE_KEY, info); }
+async function isCurrentlyBanned() {
+  const info = await loadBanInfo();
   if (!info.bannedUntil) return false;
   if (info.bannedUntil === 'perm') return true;
   return Date.now() < info.bannedUntil;
@@ -345,8 +430,8 @@ function ensureBanModal() {
 }
 
 let banCountdownInterval = null;
-function applyBan() {
-  const info = loadBanInfo();
+async function applyBan() {
+  const info = await loadBanInfo();
   const nextBanIndex = info.banHistoryCount || 0;
   let durationMs;
   let perm = false;
@@ -356,31 +441,31 @@ function applyBan() {
   info.banHistoryCount = nextBanIndex + 1;
   info.consecutiveViolations = 0;
   info.bannedUntil = perm ? 'perm' : Date.now() + durationMs;
-  saveBanInfo(info);
-  showBanModal();
+  await saveBanInfo(info);
+  await showBanModal();
 }
 
-function liftBan() {
-  const info = loadBanInfo();
+async function liftBan() {
+  const info = await loadBanInfo();
   info.bannedUntil = null;
   info.consecutiveViolations = 0;
-  saveBanInfo(info);
+  await saveBanInfo(info);
   const m = document.getElementById('banModal');
   if (m) m.style.display = 'none';
   if (banCountdownInterval) { clearInterval(banCountdownInterval); banCountdownInterval = null; }
 }
 
-window.unbanGenesis = function(code) {
-  if (code === SECRET_UNBAN_CODE) { liftBan(); return true; }
+window.unbanGenesis = async function(code) {
+  if (code === SECRET_UNBAN_CODE) { await liftBan(); return true; }
   return false;
 };
 
-function showBanModal() {
+async function showBanModal() {
   const modal = ensureBanModal();
   const title = modal.querySelector('#banModalTitle');
   const msg = modal.querySelector('#banModalMessage');
   const countdownEl = modal.querySelector('#banModalCountdown');
-  const info = loadBanInfo();
+  const info = await loadBanInfo();
   if (info.bannedUntil === 'perm') {
     title.textContent = 'You have been permanently banned';
     msg.textContent = 'This account is permanently banned due to repeated violations of our terms.';
@@ -391,17 +476,17 @@ function showBanModal() {
   }
   const end = info.bannedUntil;
   if (!end) return;
-  function updateCountdown() {
+  async function updateCountdown() {
     const remaining = end - Date.now();
     if (remaining <= 0) {
       countdownEl.textContent = 'Ban expired — you may continue.';
-      liftBan(); document.body.style.pointerEvents = 'auto'; return;
+      await liftBan(); document.body.style.pointerEvents = 'auto'; return;
     }
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
     countdownEl.textContent = `Time left: ${mins}m ${secs}s`;
   }
-  updateCountdown();
+  await updateCountdown();
   if (banCountdownInterval) clearInterval(banCountdownInterval);
   banCountdownInterval = setInterval(updateCountdown, 1000);
   modal.style.display = 'flex';
@@ -411,7 +496,7 @@ function showBanModal() {
 // --- BINARY DECODER (V4.5 OPTIMIZED) ---
 // Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
 const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.bin";
-const jsonURL = localStorage.getItem("selectedModel") || defaultModel;
+let jsonURL = defaultModel;
 
 function decodeBinary(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -486,9 +571,12 @@ function decodeBinary(buffer) {
 }  
 
 // 3. Model Loading Logic
-fetch(jsonURL + "?v=" + Date.now())
-  .then(r => r.ok ? r.arrayBuffer() : Promise.reject("File not found!"))
-  .then(buffer => {
+async function loadModel() {
+  jsonURL = await DB.get("selectedModel", defaultModel);
+  try {
+    const r = await fetch(jsonURL + "?v=" + Date.now());
+    if (!r.ok) throw new Error("File not found!");
+    const buffer = await r.arrayBuffer();
     try {
       const decoded = decodeBinary(buffer);
       
@@ -511,21 +599,23 @@ fetch(jsonURL + "?v=" + Date.now())
           throw new Error("File is not in either supported format.");
       }
     }
-  })
-  .catch(err => {
+  } catch (err) {
     console.error("Reconstruction Error:", err);
     // Legacy Safety Fallback to 1.0 JSON (with cache busting)
-    fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now())
-      .then(r => r.json())
-      .then(data => { 
-        responses = data; 
-        if (typeof showLegacyModal === "function") showLegacyModal(); 
-      });
-  });
+    try {
+      const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
+      const data = await r.json();
+      responses = data; 
+      if (typeof showLegacyModal === "function") showLegacyModal();
+    } catch (e) {
+      console.error("Final fallback failed:", e);
+    }
+  }
+}
 
 // --- UI & MESSAGING ---
-function saveChats() { localStorage.setItem("chats", JSON.stringify(chats)); }
-function updateURL(chatTitle) {
+async function saveChats() { await DB.set("chats", chats); }
+async function updateURL(chatTitle) {
   const url = new URL(window.location.origin + window.location.pathname);
   const chat = chats.find(c => c.id === activeChatId);
   if (chat && chat.messages.length > 0) {
@@ -536,7 +626,7 @@ function updateURL(chatTitle) {
         randomString += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       chat.urlCode = randomString;
-      saveChats();
+      await saveChats();
     }
     url.searchParams.set("c", chat.urlCode);
   } else {
@@ -602,7 +692,7 @@ function renderChatList() {
     const shareBtn = document.createElement("button");
     shareBtn.textContent = "Share";
 
-    pinBtn.onclick = e => { e.stopPropagation(); chat.pinned = !chat.pinned; saveChats(); renderChatList(); dropdown.style.display = "none"; };
+    pinBtn.onclick = async e => { e.stopPropagation(); chat.pinned = !chat.pinned; await saveChats(); renderChatList(); dropdown.style.display = "none"; };
     renameBtn.onclick = e => { e.stopPropagation(); currentRenameId = chat.id; renameInput.value = chat.title; renameModal.style.display = "flex"; dropdown.style.display = "none"; };
     deleteBtn.onclick = e => { e.stopPropagation(); currentDeleteId = chat.id; deleteModal.style.display = "flex"; dropdown.style.display = "none"; };
     shareBtn.onclick = e => { e.stopPropagation(); showShareModal(chat.id); dropdown.style.display = "none"; };
@@ -619,14 +709,13 @@ function renderChatList() {
 
     dropdown.append(pinBtn, renameBtn, deleteBtn, shareBtn);
     options.append(dots, dropdown);
-    li.onclick = () => { activeChatId = chat.id; localStorage.setItem("activeChatId", activeChatId); renderChatList(); renderMessages(); updateURL(chat.title); };
+    li.onclick = async () => { activeChatId = chat.id; await DB.set("activeChatId", activeChatId); renderChatList(); renderMessages(); await updateURL(chat.title); };
     li.append(span, options);
     chatList.append(li);
   });
 }
 
-// FIX: Update chat view to position settings button correctly on new chats
-function updateChatView() {
+async function updateChatView() {
     const chat = chats.find(c => c.id === activeChatId);
     let greetingEl = document.getElementById('greeting');
     const chatMain = document.querySelector('.chat-main');
@@ -635,11 +724,10 @@ function updateChatView() {
     if (chat && chat.messages.length === 0) {
         document.body.classList.add('is-new-chat');
         if (chatHeader) {
-            chatHeader.style.display = 'flex';
-            if (chatTitle) chatTitle.style.display = 'none';
-            chatHeader.style.justifyContent = 'flex-end';
-            chatHeader.style.alignItems = 'flex-start';
-            chatHeader.style.paddingTop = '0'; // Remove top padding for new chat
+            chatHeader.style.display = 'flex'; // Ensure header is visible
+            if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
+            chatHeader.style.justifyContent = 'flex-end'; // Push settings button to the right
+            chatHeader.style.alignItems = 'flex-start'; // Align button to the top
         }
 
         if (!greetingEl) {
@@ -649,7 +737,7 @@ function updateChatView() {
                 chatMain.insertBefore(greetingEl, chatBox);
             }
         }
-        const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
         const hour = new Date().getHours();
         const greetingText = hour < 12 ? 'Good Morning' : 'Good Afternoon';
@@ -657,11 +745,10 @@ function updateChatView() {
     } else {
         document.body.classList.remove('is-new-chat');
         if (chatHeader) {
-            chatHeader.style.display = '';
-            if (chatTitle) chatTitle.style.display = '';
-            chatHeader.style.justifyContent = '';
-            chatHeader.style.alignItems = '';
-            chatHeader.style.paddingTop = ''; // Restore default padding from CSS
+            chatHeader.style.display = ''; // Restore default display
+            if (chatTitle) chatTitle.style.display = ''; // Restore title
+            chatHeader.style.justifyContent = ''; // Restore justification
+            chatHeader.style.alignItems = 'center'; // Vertically center title and button
         }
         if (greetingEl) {
             greetingEl.remove();
@@ -669,16 +756,16 @@ function updateChatView() {
     }
 }
 
-function renderMessages() {
+async function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
-  if (!chat) { updateChatView(); return; }
+  if (!chat) { await updateChatView(); return; }
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer));
   chatBox.scrollTop = chatBox.scrollHeight;
-  if (chat) updateURL(chat.title);
-  updateChatView();
+  if (chat) await updateURL(chat.title);
+  await updateChatView();
 }
 
 function renderTextWithMath(element, text) {
@@ -1075,9 +1162,9 @@ async function findResponses(input, history) {
   return { role: "ai", text: window.tokenizer.encode(orderedMessages.join(", ") + " and " + last) };
 }
 
-function sendMessage() {
+async function sendMessage() {
   if (isReadOnlyMode) return;
-  if (isCurrentlyBanned()) { showBanModal(); return; }
+  if (await isCurrentlyBanned()) { await showBanModal(); return; }
 
   if (aiState.isResponding) {
       stopGeneration();
@@ -1093,7 +1180,7 @@ function sendMessage() {
   sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
   userInput.value = "";
 
-  const continueSend = (imgSrc) => {
+  const continueSend = async (imgSrc) => {
   // Image Authentication Command
   const lowerText = text.toLowerCase();
   if (text.includes("@ImgAuth") || text.includes("@ImAuth") || (currentUploadFile && /\bis this ai\b/.test(lowerText))) {
@@ -1106,19 +1193,19 @@ function sendMessage() {
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-        saveChats(); renderChatList();
+        chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
+        await saveChats(); renderChatList();
       }
 
       const chat = chats.find(c => c.id === activeChatId);
       const userMsg = { role: "user", text: text };
       if (imgSrc) userMsg.imageUrl = imgSrc;
       chat.messages.push(userMsg);
-      renderMessages(); saveChats();
+      await renderMessages(); await saveChats();
 
       if (chat.messages.filter(m => m.role === "user").length === 1) {
         const newTitle = summariseTitle(text);
-        typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
+        typeChatTitle(newTitle, async () => { chat.title = newTitle; await saveChats(); renderChatList(); await updateURL(newTitle); });
       }
 
       const loadingDiv = document.createElement("div");
@@ -1129,17 +1216,17 @@ function sendMessage() {
 
       const runAuth = () => {
           const startTime = Date.now();
-          window.authenticateImage(currentUploadFile).then(result => {
+          window.authenticateImage(currentUploadFile).then(async result => {
               if (requestId !== aiState.currentRequestId) return;
               const elapsedTime = Date.now() - startTime;
               const delay = Math.max(0, 3000 - elapsedTime);
-              setTimeout(() => {
+              setTimeout(async () => {
                   if (requestId !== aiState.currentRequestId) return;
                   loadingDiv.remove();
                   aiState.loadingDiv = null;
                   const botMsg = { role: "ai", text: result };
                   chat.messages.push(botMsg);
-                  saveChats();
+                  await saveChats();
                   appendMessage(botMsg.text, botMsg.role, true);
                   
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
@@ -1180,14 +1267,14 @@ function sendMessage() {
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-        saveChats(); renderChatList();
+        chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
+        await saveChats(); renderChatList();
       }
 
       const chat = chats.find(c => c.id === activeChatId);
       const userMsg = { role: "user", text: text };
       chat.messages.push(userMsg);
-      renderMessages(); saveChats();
+      await renderMessages(); await saveChats();
 
       const loadingDiv = document.createElement("div");
       loadingDiv.className = "message loading-container";
@@ -1196,14 +1283,14 @@ function sendMessage() {
       aiState.loadingDiv = loadingDiv;
 
       const runGen = () => {
-          window.generateImage(prompt).then(imgUrl => {
+          window.generateImage(prompt).then(async imgUrl => {
               if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
               aiState.loadingDiv = null;
               if (imgUrl && imgUrl.trim()) {
                   const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: "Would you like to me add anything the image?" };
                   chat.messages.push(botMsg);
-                  saveChats();
+                  await saveChats();
                   appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer);
               } else {
                   appendMessage("Failed to generate image. Please try again.", "error");
@@ -1243,14 +1330,14 @@ function sendMessage() {
 
       if (!activeChatId) {
         const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-        chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-        saveChats(); renderChatList();
+        chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
+        await saveChats(); renderChatList();
       }
 
       const chat = chats.find(c => c.id === activeChatId);
       const userMsg = { role: "user", text: text };
       chat.messages.push(userMsg);
-      renderMessages(); saveChats();
+      await renderMessages(); await saveChats();
 
       const loadingDiv = document.createElement("div");
       loadingDiv.className = "message loading-container";
@@ -1259,13 +1346,13 @@ function sendMessage() {
       aiState.loadingDiv = loadingDiv;
 
       const runTxtAuth = () => {
-          window.authenticateText(textToCheck).then(result => {
+          window.authenticateText(textToCheck).then(async result => {
               if (requestId !== aiState.currentRequestId) return;
               loadingDiv.remove();
               aiState.loadingDiv = null;
               const botMsg = { role: "ai", text: result };
               chat.messages.push(botMsg);
-              saveChats();
+              await saveChats();
               appendMessage(botMsg.text, botMsg.role, true);
               
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
@@ -1279,19 +1366,19 @@ function sendMessage() {
       return;
   }
 
-  if (violatesRules(text)) {
-    const info = loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; saveBanInfo(info);
-    if (info.consecutiveViolations >= 5) { applyBan(); return; }
+  if (await violatesRules(text)) {
+    const info = await loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; await saveBanInfo(info);
+    if (info.consecutiveViolations >= 5) { await applyBan(); return; }
     return appendMessage('This message violates AI safety and use policies. Please try again.', 'error');
   }
 
-  const info = loadBanInfo(); info.consecutiveViolations = 0; saveBanInfo(info);
+  const info = await loadBanInfo(); info.consecutiveViolations = 0; await saveBanInfo(info);
   userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
   if (!activeChatId) {
     const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
-    chats.unshift(newChat); activeChatId = newChat.id; localStorage.setItem("activeChatId", activeChatId);
-    saveChats(); renderChatList();
+    chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
+    await saveChats(); renderChatList();
   }
 
   const chat = chats.find(c => c.id === activeChatId);
@@ -1299,11 +1386,11 @@ function sendMessage() {
   if (imgSrc) userMsg.imageUrl = imgSrc;
   
   chat.messages.push(userMsg);
-  renderMessages(); saveChats();
+  await renderMessages(); await saveChats();
 
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
-    typeChatTitle(newTitle, () => { chat.title = newTitle; saveChats(); renderChatList(); updateURL(newTitle); });
+    typeChatTitle(newTitle, async () => { chat.title = newTitle; await saveChats(); renderChatList(); await updateURL(newTitle); });
   }
 
   const loadingDiv = document.createElement("div");
@@ -1329,7 +1416,7 @@ function sendMessage() {
         }
 
         chat.messages.push(botMsg);
-        saveChats();
+        await saveChats();
         appendMessage(botMsg.text, botMsg.role, true); 
 
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
@@ -1461,18 +1548,19 @@ if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
 };
 
 if (devModal) { devModalCancel.onclick = () => devModal.style.display = 'none'; devModalClose.onclick = () => devModal.style.display = 'none'; customModelInput.addEventListener('change', handleCustomModelUpload); }
-if (renameCancel) renameCancel.onclick = () => renameModal.style.display = "none";
-if (deleteCancel) deleteCancel.onclick = () => deleteModal.style.display = "none";
-if (renameConfirm) renameConfirm.onclick = () => {
+if (renameConfirm) renameConfirm.onclick = async () => {
   const chat = chats.find(c => c.id === currentRenameId);
-  if (chat && renameInput.value.trim()) { chat.title = renameInput.value.trim(); saveChats(); renderChatList(); renderMessages(); updateURL(chat.title); }
+  if (chat && renameInput.value.trim()) { 
+    chat.title = renameInput.value.trim(); 
+    await saveChats(); renderChatList(); await renderMessages(); await updateURL(chat.title); 
+  }
   renameModal.style.display = "none";
 };
-if (deleteConfirm) deleteConfirm.onclick = () => {
+if (deleteConfirm) deleteConfirm.onclick = async () => {
     chats = chats.filter(c => c.id !== currentDeleteId);
     if (activeChatId === currentDeleteId) {
         activeChatId = null;
-        localStorage.removeItem("activeChatId");
+        await DB.delete("activeChatId");
         chatBox.innerHTML = "";
         // After deleting, go to a new chat screen
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
@@ -1481,11 +1569,12 @@ if (deleteConfirm) deleteConfirm.onclick = () => {
             chats.unshift(newChat);
         }
         activeChatId = newChat.id;
+        await DB.set("activeChatId", activeChatId);
     }
-    saveChats(); renderChatList(); renderMessages(); deleteModal.style.display = "none";
+    await saveChats(); renderChatList(); await renderMessages(); deleteModal.style.display = "none";
 };
 
-newChatBtn.onclick = () => {
+newChatBtn.onclick = async () => {
   if (isReadOnlyMode) return;
   let existingNewChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
   if (existingNewChat) {
@@ -1495,8 +1584,8 @@ newChatBtn.onclick = () => {
       chats.unshift(newChat);
       activeChatId = newChat.id;
   }
-  localStorage.setItem("activeChatId", activeChatId);
-  saveChats(); renderChatList(); renderMessages(); updateURL("New Chat");
+  await DB.set("activeChatId", activeChatId);
+  await saveChats(); renderChatList(); await renderMessages(); await updateURL("New Chat");
 };
 
 if (uploadBtn && imgUploadInput) {
@@ -1548,20 +1637,21 @@ settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.sty
 if (accountModal) accountModal.onclick = e => { if (e.target === accountModal) accountModal.style.display = "none"; };
 
 if (userIcon) {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-    const name = userInfo.name || "User";
-    
-    if (userInfo.picture) {
-        userIcon.textContent = "";
-        userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
-    } else {
-        userIcon.textContent = name.charAt(0).toUpperCase();
-    }
+    userIcon.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const name = userInfo.name || "User";
+        
+        if (userInfo.picture) {
+            userIcon.textContent = "";
+            userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+        } else {
+            userIcon.textContent = name.charAt(0).toUpperCase();
+            userIcon.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        }
 
-    userIcon.onclick = () => {
         if (accountModal) {
             accountModal.style.display = "flex";
-            const currentInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+            const currentInfo = await DB.get("userInfo", {});
             const currentName = currentInfo.name || "User";
             const accName = document.getElementById("accountName");
             const accAvatar = document.getElementById("accountAvatar");
@@ -1582,6 +1672,18 @@ if (userIcon) {
             }
         }
     };
+
+    // Initial icon setup
+    (async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const name = userInfo.name || "User";
+        if (userInfo.picture) {
+            userIcon.textContent = "";
+            userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+        } else {
+            userIcon.textContent = name.charAt(0).toUpperCase();
+        }
+    })();
 }
 
 if (modelSelect) {
@@ -1593,35 +1695,40 @@ if (modelSelect) {
         modelSelect.appendChild(customOption);
     }
 
-    modelSelect.value = jsonURL;
-    modelSelect.onchange = () => {
+    (async () => {
+        modelSelect.value = await DB.get("selectedModel", defaultModel);
+    })();
+
+    modelSelect.onchange = async () => {
         const selectedValue = modelSelect.value;
+        const currentModel = await DB.get("selectedModel", defaultModel);
         if (selectedValue === "custom") {
             if (customModelInput) customModelInput.click();
             // Reset dropdown to current model after opening file dialog
-            setTimeout(() => { modelSelect.value = jsonURL; }, 100);
-        } else if (selectedValue !== jsonURL) {
+            setTimeout(() => { modelSelect.value = currentModel; }, 100);
+        } else if (selectedValue !== currentModel) {
             document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
 }
-document.getElementById("refreshConfirm").onclick = () => {
+document.getElementById("refreshConfirm").onclick = async () => {
     const selectedValue = modelSelect.value;
-    localStorage.setItem("selectedModel", selectedValue);
+    await DB.set("selectedModel", selectedValue);
     window.location.reload();
 };
-document.getElementById("refreshCancel").onclick = () => {
+document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    modelSelect.value = jsonURL;
+    modelSelect.value = await DB.get("selectedModel", defaultModel);
 };
 
-function applyTheme() {
+async function applyTheme() {
     // Default to auto if not set, unless legacy theme exists
-    if (localStorage.getItem("autoTheme") === null) {
-        localStorage.setItem("autoTheme", localStorage.getItem("theme") === null ? "true" : "false");
+    if (await DB.get("autoTheme") === null) {
+        const legacyTheme = await DB.get("theme");
+        await DB.set("autoTheme", legacyTheme === null ? "true" : "false");
     }
     
-    const isAuto = localStorage.getItem("autoTheme") === "true";
+    const isAuto = (await DB.get("autoTheme")) === "true";
     if (autoThemeToggle) autoThemeToggle.checked = isAuto;
     
     if (themeToggle) {
@@ -1634,7 +1741,7 @@ function applyTheme() {
         const hour = new Date().getHours();
         isDark = (hour < 10 || hour >= 17);
     } else {
-        isDark = localStorage.getItem("theme") === "dark";
+        isDark = (await DB.get("theme")) === "dark";
     }
     
     if (themeToggle) themeToggle.checked = isDark;
@@ -1642,15 +1749,30 @@ function applyTheme() {
 }
 
 applyTheme();
-if (autoThemeToggle) autoThemeToggle.onchange = () => { localStorage.setItem("autoTheme", autoThemeToggle.checked); if (!autoThemeToggle.checked) localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); applyTheme(); };
-if (themeToggle) themeToggle.onchange = () => { document.body.classList.toggle("dark", themeToggle.checked); localStorage.setItem("theme", themeToggle.checked ? "dark" : "light"); };
+if (autoThemeToggle) autoThemeToggle.onchange = async () => { 
+    await DB.set("autoTheme", autoThemeToggle.checked ? "true" : "false"); 
+    if (!autoThemeToggle.checked) await DB.set("theme", themeToggle.checked ? "dark" : "light"); 
+    await applyTheme(); 
+};
+if (themeToggle) themeToggle.onchange = async () => { 
+    document.body.classList.toggle("dark", themeToggle.checked); 
+    await DB.set("theme", themeToggle.checked ? "dark" : "light"); 
+};
 
 const deleteAllBtn = document.getElementById("deleteAllChatsBtn");
 if (deleteAllBtn) {
     deleteAllBtn.onclick = () => document.getElementById("deleteAllModal").style.display = "flex";
 }
 document.getElementById("deleteAllCancel").onclick = () => document.getElementById("deleteAllModal").style.display = "none";
-document.getElementById("deleteAllConfirm").onclick = () => { chats = []; localStorage.removeItem("chats"); localStorage.removeItem("activeChatId"); activeChatId = null; renderChatList(); chatBox.innerHTML = ""; document.getElementById("deleteAllModal").style.display = "none"; };
+document.getElementById("deleteAllConfirm").onclick = async () => { 
+    chats = []; 
+    await DB.delete("chats"); 
+    await DB.delete("activeChatId"); 
+    activeChatId = null; 
+    renderChatList(); 
+    chatBox.innerHTML = ""; 
+    document.getElementById("deleteAllModal").style.display = "none"; 
+};
 
 const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 if (deleteAccountBtn) {
@@ -1667,19 +1789,20 @@ if (deleteAccountBtn) {
     };
 }
 document.getElementById("deleteAccountCancel").onclick = () => document.getElementById("deleteAccountModal").style.display = "none";
-document.getElementById("deleteAccountConfirm").onclick = () => { 
+document.getElementById("deleteAccountConfirm").onclick = async () => { 
     if (window.google && window.google.accounts) google.accounts.id.disableAutoSelect();
+    await DB.clear();
     localStorage.clear(); 
     window.location.reload(); 
 };
 
 // --- Account Management & Google Sign-In ---
 
-function updateUserProfile(newName, newPicture) {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+async function updateUserProfile(newName, newPicture) {
+    const userInfo = await DB.get("userInfo", {});
     userInfo.name = newName;
     if (newPicture) userInfo.picture = newPicture;
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    await DB.set("userInfo", userInfo);
     
     const initial = newName.charAt(0).toUpperCase();
     
@@ -1705,27 +1828,28 @@ function updateUserProfile(newName, newPicture) {
 
 const editNameBtn = document.getElementById("editNameBtn");
 if (editNameBtn) {
-    editNameBtn.onclick = () => {
-        const currentName = document.getElementById("accountName").textContent;
+    editNameBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const currentName = userInfo.name || "User";
         const newName = prompt("Enter your name:", currentName);
         if (newName && newName.trim() !== "") {
-            updateUserProfile(newName.trim());
+            await updateUserProfile(newName.trim());
         }
     };
 }
 
-window.handleGoogleCredentialResponse = function(response) {
+window.handleGoogleCredentialResponse = async function(response) {
     try {
         const base64Url = response.credential.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         const payload = JSON.parse(jsonPayload);
         if (payload.name) {
-            const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+            const userInfo = await DB.get("userInfo", {});
             userInfo.googleId = payload.sub;
-            localStorage.setItem("userInfo", JSON.stringify(userInfo));
+            await DB.set("userInfo", userInfo);
             
-            updateUserProfile(payload.name, payload.picture);
+            await updateUserProfile(payload.name, payload.picture);
             
             const container = document.getElementById("googleSignInContainer");
             if (container) container.style.display = "none";
@@ -1733,9 +1857,9 @@ window.handleGoogleCredentialResponse = function(response) {
     } catch (e) { console.error("Error parsing Google credential", e); }
 }
 
-function initGoogleSignIn() {
+async function initGoogleSignIn() {
     const container = document.getElementById("googleSignInContainer");
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    const userInfo = await DB.get("userInfo", {});
     
     if (userInfo.googleId && container) {
         container.style.display = "none";
@@ -1751,13 +1875,18 @@ function initGoogleSignIn() {
     } else if (container) { setTimeout(initGoogleSignIn, 500); }
 }
 
-function startApp() {
-    if (isCurrentlyBanned()) {
-        showBanModal();
+async function startApp() {
+    if (await isCurrentlyBanned()) {
+        await showBanModal();
         return;
     }
     
+    await loadModel();
+
     if (loadSharedChat()) return;
+
+    chats = await DB.get("chats", []);
+    activeChatId = await DB.get("activeChatId");
 
     const urlParams = new URLSearchParams(window.location.search);
     const chatCode = urlParams.get("c");
@@ -1765,7 +1894,7 @@ function startApp() {
         const chatByCode = chats.find(c => c.urlCode === chatCode);
         if (chatByCode) {
             activeChatId = chatByCode.id;
-            localStorage.setItem("activeChatId", activeChatId);
+            await DB.set("activeChatId", activeChatId);
         }
     }
 
@@ -1777,34 +1906,49 @@ function startApp() {
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
             chats.unshift(newChat);
-            saveChats();
+            await saveChats();
         }
         activeChatId = newChat.id;
-        localStorage.setItem("activeChatId", activeChatId);
+        await DB.set("activeChatId", activeChatId);
     } else {
         // Mobile: Load last active chat or create new if none exists
         if (activeChatId && !chats.find(c => c.id === activeChatId)) activeChatId = null;
         
         if (!activeChatId && chats.length > 0) {
             activeChatId = chats[0].id;
-            localStorage.setItem("activeChatId", activeChatId);
+            await DB.set("activeChatId", activeChatId);
         }
         if (!activeChatId && chats.length === 0) {
             const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
             chats.unshift(newChat);
             activeChatId = newChat.id;
-            saveChats();
-            localStorage.setItem("activeChatId", activeChatId);
+            await saveChats();
+            await DB.set("activeChatId", activeChatId);
         }
     }
     renderChatList();
-    renderMessages();
+    await renderMessages();
 }
 
 window.addEventListener('app-ready', startApp);
 
-(function() {
-  if (localStorage.getItem("SETUP") !== "FLAG_TRUE" || !localStorage.getItem("userInfo")) {
+(async function() {
+  await DB.init();
+  const setup = await DB.get("SETUP");
+  const userInfo = await DB.get("userInfo");
+  
+  if (setup !== "FLAG_TRUE" || !userInfo) {
+    // Migration fallback
+    if (localStorage.getItem("SETUP") === "FLAG_TRUE" || localStorage.getItem("userInfo")) {
+      await migrateFromLocalStorage();
+      // Verify again after migration
+      const migratedSetup = await DB.get("SETUP");
+      const migratedUserInfo = await DB.get("userInfo");
+      if (migratedSetup === "FLAG_TRUE" || migratedUserInfo) {
+        initializeApp();
+        return;
+      }
+    }
     window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
     return;
   }
