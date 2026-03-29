@@ -726,8 +726,15 @@ async function updateChatView() {
         if (chatHeader) {
             chatHeader.style.display = 'flex'; // Ensure header is visible
             if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
-            chatHeader.style.justifyContent = 'flex-end'; // Push settings button to the right
-            chatHeader.style.alignItems = 'flex-start'; // Align button to the top
+            
+            // On mobile, we want sidebar toggle on left and settings on right
+            // On desktop, sidebar toggle is hidden, so we just want settings on right
+            const isMobile = window.innerWidth <= 768;
+            chatHeader.style.justifyContent = isMobile ? 'space-between' : 'flex-end';
+            
+            chatHeader.style.alignItems = 'center'; // Vertically center button in header
+            chatHeader.style.paddingTop = '8px';
+            chatHeader.style.paddingRight = '16px';
         }
 
         if (!greetingEl) {
