@@ -516,7 +516,15 @@ body.is-new-chat .chat-main {
   align-items: center;
 }
 
-body.is-new-chat .chat-header,
+body.is-new-chat .chat-header {
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+}
+
 body.is-new-chat .chat-box {
   display: none;
 }
