@@ -144,6 +144,51 @@ async function initializeApp() {
     }
 
     window.dispatchEvent(new Event('app-ready'));
+    setupSwipeGestures();
+}
+
+function setupSwipeGestures() {
+    if (window.innerWidth > 768) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const swipeThreshold = 50;
+    const horizontalThreshold = 1.5;
+
+    document.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button, input, select, textarea, .action-btn, a')) {
+            touchStartX = 0;
+            return;
+        }
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (touchStartX === 0) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        const isModalOpen = Array.from(document.querySelectorAll('.modal')).some(m => {
+            const style = getComputedStyle(m);
+            return style.display !== 'none';
+        });
+        if (isModalOpen) return;
+
+        if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY) * horizontalThreshold) {
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+
+            if (deltaX > 0 && !sidebar.classList.contains('open')) {
+                sidebar.classList.add('open');
+            } else if (deltaX < 0 && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        }
+    }, { passive: true });
 }
 
 function loadMathSupport() {
