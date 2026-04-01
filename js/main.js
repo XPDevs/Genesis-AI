@@ -289,6 +289,9 @@ const uploadStatus = document.getElementById("uploadStatus");
 // NEW: Search toggle button
 const searchToggleBtn = document.getElementById("searchToggleBtn");
 
+// NEW: Live Mode button
+const liveModeBtn = document.getElementById("liveModeBtn");
+
 // State
 let chats = [];
 let activeChatId = null;
@@ -318,22 +321,16 @@ let useWikipedia = false;
 // Function to update send button based on input content
 function updateSendButton() {
     if (!userInput) return;
-    const hasText = userInput.value.trim().length > 0;
-    if (hasText) {
-        // Show send/stop icon
-        if (aiState.isResponding) {
-            // If responding, show stop square
-            sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
-        } else {
-            // Normal send icon
-            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-        }
-        sendBtn.classList.remove('live-mode');
+    // Now the send button only shows send arrow or stop square.
+    // It never shows the microphone (live mode is separate).
+    if (aiState.isResponding) {
+        // If responding, show stop square
+        sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
     } else {
-        // Show microphone icon for live mode
-        sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
-        sendBtn.classList.add('live-mode');
+        // Normal send icon
+        sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
     }
+    sendBtn.classList.remove('live-mode');
 }
 
 function stopGeneration() {
@@ -1270,20 +1267,9 @@ async function sendMessage() {
   if (isReadOnlyMode) return;
   if (await isCurrentlyBanned()) { await showBanModal(); return; }
 
-  // If input is empty and we are in live mode (button shows microphone), trigger live mode
+  // Removed the live mode trigger for empty input
   if (userInput.value.trim() === "") {
-    // Trigger live mode
-    if (window.startLiveMode) {
-      window.startLiveMode();
-    } else if (window.initSpeech && typeof window.initSpeech === 'function') {
-      // Fallback: try to initialize speech
-      window.initSpeech({
-        inputArea: document.getElementById("inputArea"),
-        userInput: document.getElementById("userInput"),
-        sendBtn: document.getElementById("sendBtn"),
-        sendMessage: sendMessage
-      });
-    }
+    // Do nothing – live mode is separate
     return;
   }
 
@@ -2084,6 +2070,19 @@ async function startApp() {
 
     // Set initial send button state
     updateSendButton();
+
+    // NEW: Live Mode button handler
+    if (liveModeBtn) {
+        liveModeBtn.onclick = () => {
+            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
+                if (window.stopLiveMode) window.stopLiveMode();
+                liveModeBtn.classList.remove('active');
+            } else {
+                if (window.startLiveMode) window.startLiveMode();
+                liveModeBtn.classList.add('active');
+            }
+        };
+    }
 }
 
 window.addEventListener('app-ready', startApp);
