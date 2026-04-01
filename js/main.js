@@ -119,7 +119,6 @@ async function initializeApp() {
         if (chatHeader) {
             const actions = document.createElement('div');
             actions.className = 'header-actions';
-            if (searchToggleBtn) actions.appendChild(searchToggleBtn);
             actions.appendChild(settingsBtn);
             chatHeader.appendChild(actions);
             chatHeader.classList.add('chat-header');
@@ -228,7 +227,6 @@ function injectCSS() {
             gap: 8px;
         }
         #settingsBtn, #searchToggleBtn {
-            /* Style to be a small, circular icon button */
             width: 40px;
             height: 40px;
             padding: 0;
@@ -241,6 +239,12 @@ function injectCSS() {
             background: rgba(128, 128, 128, 0.1);
             cursor: pointer;
             transition: all 0.2s;
+        }
+        .input-area {
+            padding: 14px 12px 14px 22px; /* Thicker input area for desktop */
+        }
+        #searchToggleBtn {
+            margin-top: 10px; /* Position underneath the box */
         }
         #searchToggleBtn.active {
             background: #2563eb;
@@ -2070,6 +2074,11 @@ async function startApp() {
 
     // Initialize search toggle
     if (searchToggleBtn) {
+        // Move Search button underneath the input area
+        const inputContainer = document.querySelector('.input-container');
+        if (inputContainer) {
+            inputContainer.appendChild(searchToggleBtn);
+        }
         // Load saved preference
         const savedSearchPref = await DB.get("useWikipedia", false);
         useWikipedia = savedSearchPref;
