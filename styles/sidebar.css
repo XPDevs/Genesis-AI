@@ -1,0 +1,486 @@
+/* --- Sidebar Root Variables --- */
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 68px;
+  --transition-speed: 0.3s;
+}
+
+/* --- Base Sidebar --- */
+.sidebar {
+  width: 280px;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+#newChatBtn {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-grow: 1;
+}
+
+#newChatBtn:hover {
+  background: var(--active-chat);
+}
+
+#settingsBtn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+
+#settingsBtn:hover {
+  background: var(--active-chat);
+}
+
+#settingsBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* --- Chat List & Items --- */
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0 12px;
+}
+
+.chat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 24px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.chat-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+body.dark .chat-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.chat-item.active {
+  background: var(--active-chat);
+}
+
+.dots-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  font-size: 18px;
+  padding: 0;
+}
+
+.chat-item:hover .dots-btn {
+  opacity: 1;
+}
+
+.dots-btn:hover {
+  background: var(--active-chat);
+}
+
+.chat-options {
+  display: flex;
+  align-items: center;
+}
+
+/* --- Dropdown Menus --- */
+.dropdown {
+  position: absolute;
+  right: 12px;
+  top: 45px;
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: none;
+  flex-direction: column;
+  min-width: 150px;
+  z-index: 1000;
+  padding: 6px;
+}
+
+.dropdown button {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 12px 16px;
+  width: 100%;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dropdown button:hover {
+  background: var(--active-chat);
+}
+
+.dropdown button.delete-opt {
+  color: #ff4d4d;
+}
+
+/* --- Genesis Sidebar Redesign (JS Injected Styles moved here) --- */
+.sidebar-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    margin-top: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.genesis-sidebar {
+  width: var(--sidebar-width);
+  transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.genesis-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.genesis-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 15px 0;
+}
+
+.genesis-sidebar.collapsed .sidebar-footer {
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 0;
+}
+
+.genesis-sidebar.collapsed #userIcon {
+    width: 40px;
+    height: 40px;
+}
+
+.genesis-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.genesis-logo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.genesis-sidebar.collapsed .genesis-logo span {
+  display: none;
+}
+
+.sidebar-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.genesis-sidebar.collapsed .sidebar-controls {
+  display: none;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(128, 128, 128, 0.1);
+  opacity: 1;
+}
+
+.search-container {
+  padding: 0 15px 15px 15px;
+  flex-shrink: 0;
+}
+
+.genesis-sidebar.collapsed .search-container {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.search-icon-overlay {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  pointer-events: none;
+  display: flex;
+}
+
+.genesis-sidebar.collapsed .search-input-wrapper {
+  display: none;
+}
+
+.collapsed-stack {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-bottom: 10px;
+}
+
+.genesis-sidebar.collapsed .collapsed-stack {
+  display: flex;
+}
+
+.genesis-sidebar.collapsed #chatList {
+  display: none;
+}
+
+/* Logo Expand Hover */
+.expand-icon {
+  display: none;
+  position: absolute;
+  left: 0; top: 0;
+  width: 32px; height: 32px;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.genesis-sidebar.collapsed .genesis-logo:hover img {
+  opacity: 0;
+}
+
+.genesis-sidebar.collapsed .genesis-logo:hover .expand-icon {
+  display: flex;
+}
+
+/* Bottom Buttons Collapsed & Ordering */
+#chatList { flex: 1; }
+
+#settingsBtn { 
+  order: 10; 
+  margin-top: auto;
+  font-size: 14px; 
+  padding: 0 12px;
+  width: calc(100% - 30px);
+  height: 40px;
+  margin: 5px 15px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  gap: 12px;
+}
+#settingsBtn::after { content: none; display: none; }
+#settingsBtn:hover { background: var(--input-bg); }
+
+#userIcon { 
+  order: 11; 
+  margin: 0 15px 15px 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.genesis-sidebar.collapsed #settingsBtn {
+  margin: auto auto 10px auto;
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+  font-size: 0;
+  gap: 0;
+}
+.genesis-sidebar.collapsed #settingsBtn::after { display: none; }
+.genesis-sidebar.collapsed #userIcon {
+  margin: 0 auto 20px auto;
+  width: 32px;
+  height: 32px;
+}
+
+/* --- Mobile Sidebar Overrides --- */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 280px;
+        position: fixed;
+        left: -280px;
+        top: 0;
+        bottom: 0;
+        z-index: 1001;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar-header {
+        padding: calc(31px + env(safe-area-inset-top)) 16px 16px 16px;
+        height: auto;
+    }
+
+    #settingsBtn {
+        order: 10;
+        margin-top: auto;
+        width: calc(100% - 30px);
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0 12px;
+        margin: 5px 15px;
+        gap: 12px;
+        font-size: 14px;
+    }
+    #settingsBtn::after { display: none; }
+
+    #userIcon {
+        order: 11;
+        margin: 0 15px 15px 15px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .genesis-sidebar {
+        position: fixed;
+        z-index: 1000;
+        height: 100%;
+        width: 80%;
+        max-width: 300px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        left: 0;
+        background: var(--sidebar);
+    }
+
+    .genesis-sidebar.open,
+    .genesis-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .collapse-btn {
+        display: none !important;
+    }
+
+    /* Ensure content is visible on mobile when open, even if logically collapsed */
+    .genesis-sidebar.collapsed {
+        width: 80% !important;
+        max-width: 300px !important;
+    }
+
+    .genesis-sidebar.collapsed .sidebar-controls,
+    .genesis-sidebar.collapsed .search-input-wrapper,
+    .genesis-sidebar.collapsed #chatList,
+    .genesis-sidebar.collapsed .genesis-logo span {
+        display: flex !important;
+    }
+
+    .genesis-sidebar.collapsed .collapsed-stack {
+        display: none !important;
+    }
+
+    .genesis-sidebar.collapsed #settingsBtn {
+        margin: auto auto 5px auto !important;
+        width: 40px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+        font-size: 0 !important;
+        gap: 0 !important;
+    }
+    .genesis-sidebar.collapsed #userIcon {
+        margin: 5px auto 15px auto !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+}

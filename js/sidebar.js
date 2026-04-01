@@ -1,30 +1,4 @@
 function setupSidebarUI() {
-    // Inject Sidebar CSS
-    const style = document.createElement('style');
-    style.textContent = `
-        .sidebar-footer {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 16px;
-            margin-top: auto;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .genesis-sidebar.collapsed .sidebar-footer {
-            flex-direction: column;
-            justify-content: center;
-            gap: 16px;
-            padding: 16px 0;
-        }
-        .genesis-sidebar.collapsed #userIcon {
-            width: 40px;
-            height: 40px;
-        }
-    `;
-    document.head.appendChild(style);
-
     const chatList = document.getElementById("chatList");
     const sidebar = chatList ? chatList.parentElement : null;
     if (!sidebar) return;

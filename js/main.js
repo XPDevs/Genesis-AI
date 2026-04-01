@@ -286,6 +286,9 @@ const devCurrentModalName = document.getElementById("devCurrentModalName");
 const devCurrentModalMode = document.getElementById("devCurrentModalMode");
 const uploadStatus = document.getElementById("uploadStatus");
 
+// NEW: Search toggle button
+const searchToggleBtn = document.getElementById("searchToggleBtn");
+
 // State
 let chats = [];
 let activeChatId = null;
@@ -308,6 +311,30 @@ let aiState = {
     originalSendIcon: null,
     currentAiMessage: null
 };
+
+// Wikipedia Search flag (default false)
+let useWikipedia = false;
+
+// Function to update send button based on input content
+function updateSendButton() {
+    if (!userInput) return;
+    const hasText = userInput.value.trim().length > 0;
+    if (hasText) {
+        // Show send/stop icon
+        if (aiState.isResponding) {
+            // If responding, show stop square
+            sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+        } else {
+            // Normal send icon
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
+        }
+        sendBtn.classList.remove('live-mode');
+    } else {
+        // Show microphone icon for live mode
+        sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+        sendBtn.classList.add('live-mode');
+    }
+}
 
 function stopGeneration() {
     if (!aiState.isResponding) return;
@@ -377,6 +404,8 @@ function stopGeneration() {
         currentUploadFile = null; 
         if(uploadBtn) uploadBtn.style.color = ""; 
     }
+    
+    updateSendButton(); // Re-evaluate button state
 }
 
 // Shared Chat Constants
@@ -1139,7 +1168,6 @@ async function findResponses(input, history) {
   const decodedInput = window.tokenizer.decode(input);
   const lowerInput = decodedInput.toLowerCase();
 
-
   // Calculator Integration
   if (typeof window.calc === 'function') {
       const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
@@ -1168,71 +1196,67 @@ async function findResponses(input, history) {
   });
 
   if (foundMatches.length === 0) {
-    try {
-      const prefixes = [
-  // Original
-  "how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are",
-  // Action & Procedure
-  "how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for",
-  // Descriptions & Definitions
-  "meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of",
-  // Comparisons & Quantifiers
-  "difference between", "compare", "list of", "examples of", "pros and cons of",
-  // Identity & Discovery
-  "who was", "where are", "origin of", "source of", "background on", "is there a"
-];
-      const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
+    // Only attempt Wikipedia if the flag is enabled
+    if (useWikipedia) {
+        try {
+          const prefixes = [
+            "how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are",
+            "how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for",
+            "meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of",
+            "difference between", "compare", "list of", "examples of", "pros and cons of",
+            "who was", "where are", "origin of", "source of", "background on", "is there a"
+          ];
+          const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
-      const modelVer = (responses.ver || "").toLowerCase();
-      let allowWiki = true;
+          const modelVer = (responses.ver || "").toLowerCase();
+          let allowWiki = true;
 
-      if (modelVer.includes("1.0")) {
-          allowWiki = false;
-      } else if (modelVer.includes("coder")) {
-          const codingTerms = ["code", "coding", "program", "programming", "dev", "developer", "software", "script", "function", "variable", "class", "object", "api", "database", "sql", "html", "css", "javascript", "python", "java", "c++", "c#", "linux", "terminal", "git", "github", "error", "bug", "debug", "compile", "runtime", "framework", "library", "react", "node", "npm", "pip", "docker", "aws", "cloud", "http", "rest", "json", "xml"];
-          allowWiki = codingTerms.some(t => lowerInput.includes(t));
-      }
-
-      if (isQuestion && allowWiki) {
-        playThinkingSound();
-        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(decodedInput)}&format=json&origin=*`;
-        const searchRes = await fetch(searchUrl);
-        const searchData = await searchRes.json();
-
-        if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
-          const topResult = searchData.query.search[0];
-          const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
-          const contentRes = await fetch(contentUrl);
-          const contentData = await contentRes.json();
-          const pages = contentData.query.pages;
-          const pageId = Object.keys(pages)[0];
-
-          if (pages[pageId] && pages[pageId].extract) {
-            let fullText = pages[pageId].extract;
-            // Remove Wikipedia-style headings (e.g. == History ==) and normalize whitespace
-            fullText = fullText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-            
-            const summary = window.summariseConversation(fullText, 5);
-            
-            // Format with intro, bullet points, and outro if enough content exists
-            const sentences = summary.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [summary];
-            let formattedSummary = summary;
-
-            if (sentences.length >= 3) {
-                const intro = sentences[0];
-                const outro = sentences[sentences.length - 1];
-                const facts = sentences.slice(1, -1);
-                formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n\n')}\n\n${outro}`;
-            } else {
-                formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
-            }
-            
-            return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
+          if (modelVer.includes("1.0")) {
+              allowWiki = false;
+          } else if (modelVer.includes("coder")) {
+              const codingTerms = ["code", "coding", "program", "programming", "dev", "developer", "software", "script", "function", "variable", "class", "object", "api", "database", "sql", "html", "css", "javascript", "python", "java", "c++", "c#", "linux", "terminal", "git", "github", "error", "bug", "debug", "compile", "runtime", "framework", "library", "react", "node", "npm", "pip", "docker", "aws", "cloud", "http", "rest", "json", "xml"];
+              allowWiki = codingTerms.some(t => lowerInput.includes(t));
           }
+
+          if (isQuestion && allowWiki) {
+            playThinkingSound();
+            const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(decodedInput)}&format=json&origin=*`;
+            const searchRes = await fetch(searchUrl);
+            const searchData = await searchRes.json();
+
+            if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
+              const topResult = searchData.query.search[0];
+              const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
+              const contentRes = await fetch(contentUrl);
+              const contentData = await contentRes.json();
+              const pages = contentData.query.pages;
+              const pageId = Object.keys(pages)[0];
+
+              if (pages[pageId] && pages[pageId].extract) {
+                let fullText = pages[pageId].extract;
+                fullText = fullText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                
+                const summary = window.summariseConversation(fullText, 5);
+                
+                const sentences = summary.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [summary];
+                let formattedSummary = summary;
+
+                if (sentences.length >= 3) {
+                    const intro = sentences[0];
+                    const outro = sentences[sentences.length - 1];
+                    const facts = sentences.slice(1, -1);
+                    formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n\n')}\n\n${outro}`;
+                } else {
+                    formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
+                }
+                
+                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Wikipedia fetch failed:", e);
         }
-      }
-    } catch (e) {
-      console.error("Wikipedia fetch failed:", e);
     }
     return { role: "ai", text: window.tokenizer.encode("I’m not quite sure I follow. Could you give me a bit more detail?") };
   }
@@ -1246,6 +1270,24 @@ async function sendMessage() {
   if (isReadOnlyMode) return;
   if (await isCurrentlyBanned()) { await showBanModal(); return; }
 
+  // If input is empty and we are in live mode (button shows microphone), trigger live mode
+  if (userInput.value.trim() === "") {
+    // Trigger live mode
+    if (window.startLiveMode) {
+      window.startLiveMode();
+    } else if (window.initSpeech && typeof window.initSpeech === 'function') {
+      // Fallback: try to initialize speech
+      window.initSpeech({
+        inputArea: document.getElementById("inputArea"),
+        userInput: document.getElementById("userInput"),
+        sendBtn: document.getElementById("sendBtn"),
+        sendMessage: sendMessage
+      });
+    }
+    return;
+  }
+
+  // If AI is responding, stop generation
   if (aiState.isResponding) {
       stopGeneration();
       return;
@@ -1257,7 +1299,9 @@ async function sendMessage() {
   if (!aiState.originalSendIcon) aiState.originalSendIcon = sendBtn.innerHTML;
   aiState.isResponding = true;
   const requestId = ++aiState.currentRequestId;
+  // Change send button to stop square
   sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+  sendBtn.classList.remove('live-mode');
   userInput.value = "";
 
   const continueSend = async (imgSrc) => {
@@ -1313,6 +1357,7 @@ async function sendMessage() {
                   if(uploadBtn) uploadBtn.style.color = "";
                   aiState.isResponding = false;
                   sendBtn.innerHTML = aiState.originalSendIcon;
+                  updateSendButton(); // Restore button based on input content
               }, delay);
           });
       };
@@ -1331,6 +1376,7 @@ async function sendMessage() {
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
               aiState.isResponding = false;
               sendBtn.innerHTML = aiState.originalSendIcon;
+              updateSendButton();
           };
           document.head.appendChild(script);
       }
@@ -1377,6 +1423,7 @@ async function sendMessage() {
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               aiState.isResponding = false;
               sendBtn.innerHTML = aiState.originalSendIcon;
+              updateSendButton();
           });
       };
 
@@ -1394,6 +1441,7 @@ async function sendMessage() {
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1";
               aiState.isResponding = false;
               sendBtn.innerHTML = aiState.originalSendIcon;
+              updateSendButton();
           };
           document.head.appendChild(script);
       }
@@ -1436,11 +1484,12 @@ async function sendMessage() {
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               aiState.isResponding = false;
               sendBtn.innerHTML = aiState.originalSendIcon;
+              updateSendButton();
           });
       };
 
       if (window.authenticateText) { runTxtAuth(); } 
-      else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon; }
+      else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon; updateSendButton(); }
       return;
   }
 
@@ -1508,6 +1557,7 @@ async function sendMessage() {
                 userInput.focus(); 
             }
             aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
+            updateSendButton(); // Restore button based on input content
         }, timeout);
     }, 1500);
     
@@ -1682,12 +1732,13 @@ if (uploadBtn && imgUploadInput) {
 
 if (userInput && suggestionBox) {
     userInput.addEventListener('input', () => {
+        updateSendButton(); // Update button state on input
         const val = userInput.value;
         if (val.endsWith('@')) {
             suggestionBox.innerHTML = `
-                <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>🔒</span> ImgAuth</div>
-                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus();"><span>🎨</span> Generate Image</div>
-                <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus();"><span>📝</span> Check Text</div>
+                <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>🔒</span> ImgAuth</div>
+                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>🎨</span> Generate Image</div>
+                <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>📝</span> Check Text</div>
             `;
             suggestionBox.style.display = 'block';
         } else {
@@ -2009,6 +2060,30 @@ async function startApp() {
     }
     renderChatList();
     await renderMessages();
+
+    // Initialize search toggle
+    if (searchToggleBtn) {
+        // Load saved preference
+        const savedSearchPref = await DB.get("useWikipedia", false);
+        useWikipedia = savedSearchPref;
+        if (useWikipedia) {
+            searchToggleBtn.classList.add('active');
+        } else {
+            searchToggleBtn.classList.remove('active');
+        }
+        searchToggleBtn.onclick = async () => {
+            useWikipedia = !useWikipedia;
+            await DB.set("useWikipedia", useWikipedia);
+            if (useWikipedia) {
+                searchToggleBtn.classList.add('active');
+            } else {
+                searchToggleBtn.classList.remove('active');
+            }
+        };
+    }
+
+    // Set initial send button state
+    updateSendButton();
 }
 
 window.addEventListener('app-ready', startApp);
