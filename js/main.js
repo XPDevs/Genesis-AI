@@ -305,7 +305,8 @@ let aiState = {
     typingInterval: null,
     thinkingTimeout: null,
     resetTimeout: null,
-    originalSendIcon: null
+    originalSendIcon: null,
+    currentAiMessage: null
 };
 
 function stopGeneration() {
@@ -337,6 +338,20 @@ function stopGeneration() {
         aiState.loadingDiv.remove();
         aiState.loadingDiv = null;
     }
+
+    // Truncate message in history if it was still typing
+    if (aiState.currentAiMessage && aiState.currentAiMessage.text) {
+        const chat = chats.find(c => c.id === activeChatId);
+        if (chat && chat.messages.includes(aiState.currentAiMessage)) {
+            // Find the message element in the DOM to see how much was typed
+            const latestMsg = chatBox.querySelector('.message.ai.latest span');
+            if (latestMsg) {
+                aiState.currentAiMessage.text = latestMsg.textContent;
+                saveChats();
+            }
+        }
+    }
+    aiState.currentAiMessage = null;
     
     // Show stop message
     const stopMsg = document.createElement("div");
@@ -893,7 +908,7 @@ function renderTextWithMath(element, text) {
     }
 }
 
-function appendMessage(text, role, isNew = false, imageUrl = null, footerText = null) {
+function appendMessage(text, role, isNew = false, imageUrl = null, footerText = null, messageObj = null) {
   let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); 
@@ -1028,6 +1043,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     const existingLatest = chatBox.querySelectorAll('.message.ai.latest');
     existingLatest.forEach(el => el.classList.remove('latest'));
     div.classList.add('latest');
+    if (isNew) aiState.currentAiMessage = messageObj;
   }
 
   div.appendChild(actionsDiv);
@@ -1035,18 +1051,30 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   chatBox.scrollTop = chatBox.scrollHeight;
 
   if (role === "ai" && isNew) {
-    if (hasHTML || hasMath) {
+    if (hasHTML || (hasMath && !processedText.includes('\n'))) {
         if (hasMath && window.katex) {
             renderTextWithMath(textSpan, processedText);
         } else {
             textSpan.innerHTML = processedText;
         }
+        aiState.currentAiMessage = null; // Finished rendering immediately
     } else {
     let i = 0;
     const interval = setInterval(() => {
-      textSpan.textContent += processedText[i]; i++;
-      chatBox.scrollTop = chatBox.scrollHeight;
-      if (i === processedText.length) clearInterval(interval);
+      if (i < processedText.length) {
+          textSpan.textContent += processedText[i]; 
+          i++;
+          chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      if (i === processedText.length) {
+          clearInterval(interval);
+          if (hasMath && window.katex) {
+              textSpan.textContent = ""; // Clear typed text before rendering math
+              renderTextWithMath(textSpan, processedText);
+          }
+          aiState.currentAiMessage = null;
+          aiState.typingInterval = null;
+      }
     }, 30);
     aiState.typingInterval = interval;
     }
@@ -1279,8 +1307,7 @@ async function sendMessage() {
                   const botMsg = { role: "ai", text: result };
                   chat.messages.push(botMsg);
                   await saveChats();
-                  appendMessage(botMsg.text, botMsg.role, true);
-                  
+                  appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);                  
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                   currentUploadFile = null;
                   if(uploadBtn) uploadBtn.style.color = "";
@@ -1343,7 +1370,7 @@ async function sendMessage() {
                   const botMsg = { role: "ai", text: "Here is your generated image:", imageUrl: imgUrl, footer: "Would you like to me add anything the image?" };
                   chat.messages.push(botMsg);
                   await saveChats();
-                  appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer);
+                  appendMessage(botMsg.text, botMsg.role, true, botMsg.imageUrl, botMsg.footer, botMsg);
               } else {
                   appendMessage("Failed to generate image. Please try again.", "error");
               }
@@ -1405,8 +1432,7 @@ async function sendMessage() {
               const botMsg = { role: "ai", text: result };
               chat.messages.push(botMsg);
               await saveChats();
-              appendMessage(botMsg.text, botMsg.role, true);
-              
+              appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);              
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               aiState.isResponding = false;
               sendBtn.innerHTML = aiState.originalSendIcon;
@@ -1467,9 +1493,12 @@ async function sendMessage() {
             botMsg.text = window.tokenizer.decode(botMsg.text);
         }
 
+        // Add to history and then append to UI
         chat.messages.push(botMsg);
         await saveChats();
-        appendMessage(botMsg.text, botMsg.role, true); 
+        
+        // Pass botMsg so we can track it in aiState.currentAiMessage
+        appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
 
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         aiState.resetTimeout = setTimeout(() => { 
