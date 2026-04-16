@@ -309,11 +309,8 @@
         sendMessageFn = sendMessage;
 
         createLiveOverlay();
-        // Use existing liveModeBtn instead of creating new one
-        liveModeBtnEl = document.getElementById("liveModeBtn");
-        if (liveModeBtnEl && inputArea) {
-            inputArea.insertBefore(liveModeBtnEl, sendBtn);
-        }
+        liveModeBtnEl = createLiveModeButton(sendBtn);
+        inputArea.insertBefore(liveModeBtnEl, sendBtn);
     };
     window.dispatchEvent(new Event('speech-ready'));
 

@@ -264,95 +264,11 @@ function injectCSS() {
         #searchToggleBtn.active svg {
             stroke: #3b82f6;
         }
-        #searchToggleBtn:hover {
+#searchToggleBtn:hover {
             background: transparent;
         }
         #searchToggleBtn.active:hover {
             background: transparent;
-        }
-        #liveModeBtn {
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            border-radius: 50%;
-            background: #2563eb;
-            border: none;
-            cursor: pointer;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-        #liveModeBtn.active {
-            background: #ff4444;
-        }
-        #sendBtn {
-            min-width: 40px;
-            height: 40px;
-        }
-        .help-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: rgba(128, 128, 128, 0.3);
-            color: var(--text, #fff);
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 6px;
-            transition: all 0.2s;
-        }
-        .help-icon:hover {
-            background: var(--primary, #3b82f6);
-            color: white;
-        }
-        .help-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100000;
-        }
-        .help-overlay.show {
-            display: flex;
-        }
-        .help-overlay-content {
-            background: var(--input-bg, #222);
-            border: 1px solid var(--border, #444);
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 320px;
-            text-align: center;
-        }
-        .help-overlay-content h3 {
-            margin: 0 0 12px 0;
-            color: var(--text, #fff);
-        }
-        .help-overlay-content p {
-            color: var(--text, #fff);
-            opacity: 0.8;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin: 0 0 15px 0;
-        }
-        .help-overlay-close {
-            background: var(--primary, #3b82f6);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
@@ -450,22 +366,14 @@ let useWikipedia = false;
 // Function to update send button based on input content
 function updateSendButton() {
     if (!userInput) return;
-    const liveModeBtn = document.getElementById("liveModeBtn");
-    
+    // Now the send button only shows send arrow or stop square.
+    // It never shows the microphone (live mode is separate).
     if (aiState.isResponding) {
         // If responding, show stop square
         sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
-        if (liveModeBtn) liveModeBtn.style.display = "none";
-        sendBtn.style.display = "flex";
-    } else if (userInput.value.trim() === "") {
-        // Empty input - show live mode, hide send
-        if (liveModeBtn) liveModeBtn.style.display = "flex";
-        sendBtn.style.display = "none";
     } else {
-        // Has text - show send, hide live mode
+        // Normal send icon
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-        if (liveModeBtn) liveModeBtn.style.display = "none";
-        sendBtn.style.display = "flex";
     }
     sendBtn.classList.remove('live-mode');
 }
@@ -1874,7 +1782,6 @@ if (userInput && suggestionBox) {
 
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-userInput.addEventListener("input", updateSendButton);
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
     document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.6";
@@ -2279,16 +2186,13 @@ async function startApp() {
             if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
                 if (window.stopLiveMode) window.stopLiveMode();
                 liveModeBtn.classList.remove('active');
-                updateSendButton(); // Show correct button after stopping
             } else {
                 if (window.startLiveMode) window.startLiveMode();
                 liveModeBtn.classList.add('active');
             }
         };
     }
-    
-    // Set initial button visibility
-    updateSendButton();
+}
 
 window.addEventListener('app-ready', startApp);
 

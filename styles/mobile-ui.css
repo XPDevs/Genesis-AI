@@ -235,25 +235,6 @@ body.dark .action-btn:hover {
   flex-shrink: 0;
 }
 
-#liveModeBtn {
-  background: #2563eb;
-  border: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: white;
-  flex-shrink: 0;
-}
-
-#liveModeBtn.active {
-  background: #ff4444;
-}
-
 #sendBtn.live-mode {
   background: #2563eb; /* Distinct color for live mode? Optional */
 }
