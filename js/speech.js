@@ -172,6 +172,8 @@
             if (overlay) overlay.style.display = 'flex';
         }
         startListening();
+        
+        window.dispatchEvent(new CustomEvent('liveModeStateChange', { detail: { active: true } }));
     }
 
     function stopLiveMode() {
@@ -187,6 +189,8 @@
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
+        
+        window.dispatchEvent(new CustomEvent('liveModeStateChange', { detail: { active: false } }));
         stopListening(false); // false = don't send a message
     }
 

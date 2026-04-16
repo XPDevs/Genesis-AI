@@ -366,16 +366,25 @@ let useWikipedia = false;
 // Function to update send button based on input content
 function updateSendButton() {
     if (!userInput) return;
-    // Now the send button only shows send arrow or stop square.
-    // It never shows the microphone (live mode is separate).
+    const isMobile = window.innerWidth <= 768;
+    
     if (aiState.isResponding) {
-        // If responding, show stop square
+        // If responding, show stop square (same on both mobile and desktop)
         sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+    } else if (isMobile) {
+        // On mobile: if no text, show live button; if has text, show send button
+        if (userInput.value.trim() === '') {
+            sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="6" y1="9" x2="6" y2="15"></line><line x1="18" y1="9" x2="18" y2="15"></line></svg>';
+            sendBtn.classList.add('live-mode');
+        } else {
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
+            sendBtn.classList.remove('live-mode');
+        }
     } else {
-        // Normal send icon
+        // Desktop: always show send icon
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
+        sendBtn.classList.remove('live-mode');
     }
-    sendBtn.classList.remove('live-mode');
 }
 
 function stopGeneration() {
@@ -1780,7 +1789,15 @@ if (userInput && suggestionBox) {
     document.addEventListener('click', (e) => { if (e.target !== userInput && e.target !== suggestionBox) suggestionBox.style.display = 'none'; });
 }
 
-sendBtn.onclick = sendMessage;
+sendBtn.onclick = () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile && userInput.value.trim() === '' && !aiState.isResponding) {
+        // On mobile with empty input, start live mode
+        if (window.startLiveMode) window.startLiveMode();
+    } else {
+        sendMessage();
+    }
+};
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
@@ -2180,8 +2197,8 @@ async function startApp() {
     // Set initial send button state
     updateSendButton();
 
-    // NEW: Live Mode button handler
-    if (liveModeBtn) {
+    // NEW: Live Mode button handler - for desktop separate button
+    if (liveModeBtn && window.innerWidth > 768) {
         liveModeBtn.onclick = () => {
             if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
                 if (window.stopLiveMode) window.stopLiveMode();
@@ -2191,6 +2208,19 @@ async function startApp() {
                 liveModeBtn.classList.add('active');
             }
         };
+    }
+    
+    // Mobile: Update send button when live mode state changes
+    if (window.innerWidth <= 768) {
+        const originalUpdateSendButton = updateSendButton;
+        window.addEventListener('liveModeStateChange', () => {
+            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
+                sendBtn.classList.add('live-mode');
+            } else {
+                sendBtn.classList.remove('live-mode');
+            }
+            updateSendButton();
+        });
     }
 }
 

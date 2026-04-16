@@ -452,19 +452,7 @@ body.is-new-chat .input-container {
 
 /* --- Speech / Live Mode --- */
 #liveModeBtn {
-  margin-right: 8px;
-  background: #2563eb;
-  border: none;
-  cursor: pointer;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-  align-self: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  display: none; /* Hidden on mobile - integrated into send button */
 }
 
 #liveModeBtn.active {
