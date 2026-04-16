@@ -17,14 +17,16 @@
      * Encodes a string into a sequence of UTF-8 hex bytes.
      * Each byte is represented as "\xHH", where HH is a two‑digit hex number.
      * Example: "A" → "\x41", "€" → "\xE2\x82\xAC"
+     * Also handles Unicode escape sequences like \u2014, \u2019, etc.
      * @param {string} text The input string.
      * @returns {string} The encoded string consisting only of "\xHH" sequences.
      */
     function encode(text) {
         if (typeof text !== 'string') return '';
-        // Convert the string to a Uint8Array of UTF-8 bytes
+        try {
+            text = JSON.parse('"' + text + '"');
+        } catch (e) {}
         const bytes = textEncoder.encode(text);
-        // Map each byte to its two‑digit hex representation and join
         return Array.from(bytes).map(byte => '\\x' + byte.toString(16).padStart(2, '0')).join('');
     }
 
