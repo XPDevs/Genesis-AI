@@ -249,7 +249,7 @@ function injectCSS() {
         }
         #searchToggleBtn {
             position: absolute;
-            left: 38px;
+            left: 48px;
             top: 50%;
             transform: translateY(-50%);
             margin: 0;
@@ -257,6 +257,8 @@ function injectCSS() {
             padding: 4px 6px;
         }
         #searchToggleBtn svg {
+            width: 22px;
+            height: 22px;
             stroke: #666;
         }
         #searchToggleBtn.active svg {
@@ -267,6 +269,68 @@ function injectCSS() {
         }
         #searchToggleBtn.active:hover {
             background: transparent;
+        }
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(128, 128, 128, 0.3);
+            color: var(--text, #fff);
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 6px;
+            transition: all 0.2s;
+        }
+        .help-icon:hover {
+            background: var(--primary, #3b82f6);
+            color: white;
+        }
+        .help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+        }
+        .help-overlay.show {
+            display: flex;
+        }
+        .help-overlay-content {
+            background: var(--input-bg, #222);
+            border: 1px solid var(--border, #444);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 320px;
+            text-align: center;
+        }
+        .help-overlay-content h3 {
+            margin: 0 0 12px 0;
+            color: var(--text, #fff);
+        }
+        .help-overlay-content p {
+            color: var(--text, #fff);
+            opacity: 0.8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 0 0 15px 0;
+        }
+        .help-overlay-close {
+            background: var(--primary, #3b82f6);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
@@ -2120,15 +2184,43 @@ async function startApp() {
         };
     }
 
-    // Initialize settings button to open settings modal
-    if (settingsBtn) {
-        settingsBtn.onclick = () => {
-            const settingsModal = document.getElementById("settingsModal");
-            if (settingsModal) {
-                settingsModal.style.display = "flex";
+    // Initialize help icons
+    const helpTexts = {
+        'dark-mode': {
+            title: 'Dark Mode',
+            text: 'Toggle between dark and light theme. Dark mode is easier on the eyes in low-light conditions.'
+        },
+        'auto-theme': {
+            title: 'Auto Theme',
+            text: 'Automatically switches to Light Mode between 10:00 AM and 5:00 PM, and Dark Mode otherwise.'
+        },
+        'web-search': {
+            title: 'Web Search',
+            text: 'Enable to allow the AI to search Wikipedia for answers when it doesn\'t have a built-in response. A globe icon will appear in the input area when enabled.'
+        },
+        'ai-modal': {
+            title: 'AI Modal',
+            text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. SPT 4.6 is the latest default model.'
+        }
+    };
+
+    document.querySelectorAll('.help-icon').forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            const helpKey = e.target.getAttribute('data-help');
+            const helpData = helpTexts[helpKey];
+            if (helpData) {
+                document.getElementById('helpTitle').textContent = helpData.title;
+                document.getElementById('helpText').textContent = helpData.text;
+                document.getElementById('helpOverlay').classList.add('show');
             }
-        };
-    }
+        });
+    });
+
+    document.getElementById('helpOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'helpOverlay') {
+            document.getElementById('helpOverlay').classList.remove('show');
+        }
+    });
 
     // Initialize web search toggle in settings modal
     const webSearchToggle = document.getElementById("webSearchToggle");
