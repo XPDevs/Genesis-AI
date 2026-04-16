@@ -313,8 +313,11 @@
         sendMessageFn = sendMessage;
 
         createLiveOverlay();
-        liveModeBtnEl = createLiveModeButton(sendBtn);
-        inputArea.insertBefore(liveModeBtnEl, sendBtn);
+        // Only create live mode button on desktop (>768px), on mobile it's integrated into send button
+        if (window.innerWidth > 768) {
+            liveModeBtnEl = createLiveModeButton(sendBtn);
+            inputArea.insertBefore(liveModeBtnEl, sendBtn);
+        }
     };
     window.dispatchEvent(new Event('speech-ready'));
 

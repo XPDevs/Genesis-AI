@@ -451,8 +451,10 @@ body.is-new-chat .input-container {
 }
 
 /* --- Speech / Live Mode --- */
-#liveModeBtn {
-  display: none; /* Hidden on mobile - integrated into send button */
+@media (max-width: 768px) {
+  #liveModeBtn {
+    display: none; /* Hidden on mobile - integrated into send button */
+  }
 }
 
 #liveModeBtn.active {
