@@ -552,3 +552,82 @@ body.is-new-chat .input-container {
   color: #fff;
   font-weight: 600;
 }
+
+/* --- Help Overlay --- */
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  backdrop-filter: blur(4px);
+}
+
+.help-overlay.show {
+  display: flex;
+}
+
+.help-overlay-content {
+  background: var(--modal-bg);
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  text-align: center;
+}
+
+.help-overlay-content h3 {
+  margin: 0 0 15px 0;
+  color: var(--primary);
+  font-size: 1.3rem;
+}
+
+.help-overlay-content p {
+  margin: 0 0 20px 0;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.help-overlay-close {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.help-overlay-close:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+
+/* Help Icon in Settings */
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(26, 115, 232, 0.15);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.help-icon:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.1);
+}
