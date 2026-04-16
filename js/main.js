@@ -270,6 +270,28 @@ function injectCSS() {
         #searchToggleBtn.active:hover {
             background: transparent;
         }
+        #liveModeBtn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: none;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        #liveModeBtn.active {
+            background: #ff4444;
+        }
+        #sendBtn {
+            min-width: 40px;
+            height: 40px;
+        }
         .help-icon {
             display: inline-flex;
             align-items: center;
@@ -428,14 +450,22 @@ let useWikipedia = false;
 // Function to update send button based on input content
 function updateSendButton() {
     if (!userInput) return;
-    // Now the send button only shows send arrow or stop square.
-    // It never shows the microphone (live mode is separate).
+    const liveModeBtn = document.getElementById("liveModeBtn");
+    
     if (aiState.isResponding) {
         // If responding, show stop square
         sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+        if (liveModeBtn) liveModeBtn.style.display = "none";
+        sendBtn.style.display = "flex";
+    } else if (userInput.value.trim() === "") {
+        // Empty input - show live mode, hide send
+        if (liveModeBtn) liveModeBtn.style.display = "flex";
+        sendBtn.style.display = "none";
     } else {
-        // Normal send icon
+        // Has text - show send, hide live mode
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
+        if (liveModeBtn) liveModeBtn.style.display = "none";
+        sendBtn.style.display = "flex";
     }
     sendBtn.classList.remove('live-mode');
 }
@@ -1844,6 +1874,7 @@ if (userInput && suggestionBox) {
 
 sendBtn.onclick = sendMessage;
 userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
+userInput.addEventListener("input", updateSendButton);
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
     document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.6";
@@ -2248,13 +2279,16 @@ async function startApp() {
             if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
                 if (window.stopLiveMode) window.stopLiveMode();
                 liveModeBtn.classList.remove('active');
+                updateSendButton(); // Show correct button after stopping
             } else {
                 if (window.startLiveMode) window.startLiveMode();
                 liveModeBtn.classList.add('active');
             }
         };
     }
-}
+    
+    // Set initial button visibility
+    updateSendButton();
 
 window.addEventListener('app-ready', startApp);
 
