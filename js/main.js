@@ -128,10 +128,14 @@ async function initializeApp() {
         if (icon) {
             settingsBtn.innerHTML = icon.outerHTML;
         }
-        // Add icon to search button if it's empty
+        // Add globe icon to search button (blue when active)
         if (searchToggleBtn && !searchToggleBtn.querySelector('svg')) {
-            searchToggleBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
-            searchToggleBtn.title = "Toggle Wikipedia Search";
+            searchToggleBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+            searchToggleBtn.title = "Web Search (Click for Settings)";
+        }
+        // Hide search button by default (will show when search is enabled)
+        if (searchToggleBtn) {
+            searchToggleBtn.style.display = 'none';
         }
     }
 
@@ -244,11 +248,16 @@ function injectCSS() {
             padding: 14px 12px 14px 22px; /* Thicker input area for desktop */
         }
         #searchToggleBtn {
-            margin-top: 10px; /* Position underneath the box */
+            position: absolute;
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
+            background: transparent;
         }
         #searchToggleBtn.active {
-            background: #2563eb;
-            color: white;
+            background: transparent;
+            color: #2563eb;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
@@ -2072,28 +2081,61 @@ async function startApp() {
     renderChatList();
     await renderMessages();
 
-    // Initialize search toggle
+    // Initialize search toggle - show blue globe icon in input area when search is enabled
+    // Clicking the globe icon opens the settings modal
     if (searchToggleBtn) {
-        // Move Search button underneath the input area
-        const inputContainer = document.querySelector('.input-container');
-        if (inputContainer) {
-            inputContainer.appendChild(searchToggleBtn);
-        }
-        // Load saved preference
         const savedSearchPref = await DB.get("useWikipedia", false);
         useWikipedia = savedSearchPref;
         if (useWikipedia) {
             searchToggleBtn.classList.add('active');
+            // Move globe icon to input area when search is on
+            const inputContainer = document.querySelector('.input-container');
+            if (inputContainer) {
+                inputContainer.appendChild(searchToggleBtn);
+                searchToggleBtn.style.display = 'flex';
+            }
         } else {
             searchToggleBtn.classList.remove('active');
+            searchToggleBtn.style.display = 'none';
         }
-        searchToggleBtn.onclick = async () => {
-            useWikipedia = !useWikipedia;
+        // Click handler opens settings modal
+        searchToggleBtn.onclick = () => {
+            const settingsModal = document.getElementById("settingsModal");
+            if (settingsModal) {
+                settingsModal.style.display = "flex";
+            }
+        };
+    }
+
+    // Initialize settings button to open settings modal
+    if (settingsBtn) {
+        settingsBtn.onclick = () => {
+            const settingsModal = document.getElementById("settingsModal");
+            if (settingsModal) {
+                settingsModal.style.display = "flex";
+            }
+        };
+    }
+
+    // Initialize web search toggle in settings modal
+    const webSearchToggle = document.getElementById("webSearchToggle");
+    if (webSearchToggle) {
+        webSearchToggle.checked = await DB.get("useWikipedia", false);
+        webSearchToggle.onchange = async () => {
+            useWikipedia = webSearchToggle.checked;
             await DB.set("useWikipedia", useWikipedia);
-            if (useWikipedia) {
-                searchToggleBtn.classList.add('active');
-            } else {
-                searchToggleBtn.classList.remove('active');
+            if (searchToggleBtn) {
+                const inputContainer = document.querySelector('.input-container');
+                if (useWikipedia) {
+                    searchToggleBtn.classList.add('active');
+                    if (inputContainer && !inputContainer.contains(searchToggleBtn)) {
+                        inputContainer.appendChild(searchToggleBtn);
+                    }
+                    searchToggleBtn.style.display = 'flex';
+                } else {
+                    searchToggleBtn.classList.remove('active');
+                    searchToggleBtn.style.display = 'none';
+                }
             }
         };
     }
