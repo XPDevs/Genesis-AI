@@ -3,249 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesis AI | Master Terms of Use & User Agreement</title>
+    <title>Genesis AI | Terms of Service</title>
     <style>
-        :root {
-            --bg: #ffffff;
-            --text: #1f1f1f;
-            --sidebar: #f0f4f9;
-            --chat-bg: #ffffff;
-            --input-bg: #f0f4f9;
-            --border: #dee2e6;
-            --primary: #1a73e8;
-            --user-msg-bg: #f0f4f9;
-            --active-chat: #e2e7ed;
-            --modal-bg: #ffffff;
-        }
-
-        body.dark {
-            --bg: #131314;
-            --text: #e3e3e3;
-            --sidebar: #1e1f20;
-            --chat-bg: #131314;
-            --input-bg: #1e1f20;
-            --border: #444746;
-            --user-msg-bg: #282a2c;
-            --active-chat: #333537;
-            --modal-bg: #1e1f20;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #131314;
-                --text: #e3e3e3;
-                --sidebar: #1e1f20;
-                --chat-bg: #131314;
-                --input-bg: #1e1f20;
-                --border: #444746;
-                --user-msg-bg: #282a2c;
-                --active-chat: #333537;
-                --modal-bg: #1e1f20;
-            }
-        }
-
         body {
+            background-color: #000;
+            color: #fff;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
             margin: 0;
-            padding: 80px 32px;
-            font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.8;
-            display: block;
-            height: auto;
-            overflow-y: auto;
+            padding: 20px;
         }
-
-        .legal-framework {
-            max-width: 1000px;
-            margin: 0 auto;
+        @media (min-width: 768px) {
+            body { padding: 40px 60px; font-size: 15px; }
         }
-
-        header {
-            border-bottom: 3px solid var(--primary);
-            padding-bottom: 24px;
-            margin-bottom: 48px;
-        }
-
-        h1 {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin: 0 0 12px 0;
-            letter-spacing: -0.04em;
-            text-transform: uppercase;
-        }
-
-        .doc-metadata {
-            font-weight: 700;
-            color: var(--primary);
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.1em;
-            display: flex;
-            gap: 20px;
-        }
-
-        h2 {
-            font-size: 1.7rem;
-            margin-top: 60px;
-            color: var(--text);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            border-left: 6px solid var(--primary);
-            padding-left: 16px;
-        }
-
-        h3 {
-            font-size: 1.25rem;
-            margin-top: 32px;
-            color: var(--text);
-            font-weight: 700;
-            text-decoration: underline;
-        }
-
-        p, li {
-            font-size: 16px;
-            color: var(--text);
-            opacity: 0.9;
-            margin-bottom: 1.4rem;
-            text-align: justify;
-        }
-
-        ul, ol {
-            padding-left: 32px;
-            margin-bottom: 2rem;
-        }
-
-        .clause-highlight {
-            background: var(--sidebar);
-            padding: 32px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            margin: 40px 0;
-        }
-
-        .clause-highlight strong {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-        }
-
-        .uppercase-clause {
-            text-transform: uppercase;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .footer-legal {
-            margin-top: 100px;
-            padding: 60px;
-            background: var(--sidebar);
-            border-radius: 40px;
-            border: 1px solid var(--border);
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: underline;
-            font-weight: 600;
-        }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
     </style>
 </head>
-<body class="dark">
-    <div class="legal-framework">
-        <header>
-            <h1>Terms of Service Agreement</h1>
-            <div class="doc-metadata">
-                <span>Ref: GNS-AI-2026-V3</span>
-                <span>Effective Date: 04 February 2026</span>
-                <span>Jurisdiction: England & Wales</span>
-            </div>
-        </header>
+<body>
+<pre>================================================================================
+                              TERMS OF SERVICE
+================================================================================
 
-        <section>
-            <p>This Terms of Service Agreement ("Agreement") is a formal legally binding instrument executed between the individual or entity accessing the Service ("User") and <strong>James Turner (XPDevs)</strong> ("Proprietor"). By initiating any interaction with the Genesis AI application, its associated infrastructure, or any proprietary logic modules contained therein, the User explicitly affirms their irrevocable consent to the terms, conditions, and covenants set forth in this document.</p>
-            
-            <div class="clause-highlight">
-                <strong>Notice of Binding Arbitration & Waiver:</strong>
-                <p class="uppercase-clause">The User acknowledges that continued use of this Service constitutes a waiver of any right to pursue collective legal action. This Agreement contains stringent limitations on the Proprietor's liability and specific indemnification obligations binding upon the User.</p>
-            </div>
-        </section>
+Document ID: GNS-AI-TOS-2026-V4
+Effective: 16 April 2026
+Jurisdiction: England & Wales
 
-        <h2>Section I: Definitions and Interpretive Scope</h2>
-        <h3>1.1 Definitions</h3>
-        <p>In this Agreement, the following terms shall have the meanings ascribed to them:</p>
-        <ul>
-            <li><strong>"Service"</strong> refers to the Genesis AI platform, including but not limited to the user interface, the modular integration framework, and the underlying logic delivery systems.</li>
-            <li><strong>"Proprietary Assets"</strong> refers to all intellectual property, including compiled binary assets, system logic structures, and internal configurations.</li>
-            <li><strong>"User Input"</strong> refers to any textual data, commands, or prompts submitted by the User to the Service.</li>
-        </ul>
+================================================================================
+                               CONTENTS
+================================================================================
 
-        <h2>Section II: Proprietary Rights and Architecture</h2>
-        <h3>2.1 Intellectual Property Ownership</h3>
-        <p>The User acknowledges that the Service represents the result of significant creative and technical investment by the Proprietor. All components of the <strong>Genesis-AI</strong> architecture, including but not limited to the proprietary logic structures and their associated compiled binary files, are the exclusive property of <strong>James Turner (XPDevs)</strong>. No license is granted to the User except as explicitly provided in Section 2.2.</p>
+1.  Definitions
+2.  Acceptance of Terms
+3.  Intellectual Property
+4.  User Obligations
+5.  Service Limitations
+    5.1 General Limitations
+    5.2 AI Output and Accuracy Disclaimer
+6.  Data and Privacy
+7.  Third-Party Services
+8.  Limitation of Liability
+9.  Indemnification
+10. Termination
+11. Governing Law
+12. Contact Information
 
-        <h3>2.2 Non-Transferable License</h3>
-        <p>The Proprietor grants the User a limited, revocable, non-exclusive, and non-transferable license to access the Service for personal, creative, or legitimate professional use. This license does not encompass the right to distribute, modify, or create derivative works of the Proprietary Assets.</p>
+================================================================================
+                           1. DEFINITIONS
+================================================================================
 
-        <h3>2.3 Reverse Engineering Prohibition</h3>
-        <p>The User is strictly prohibited from attempting to decompile, disassemble, or otherwise attempt to derive the source logic or binary construction of the Service. Any attempt to extract or re-engineer compiled binary assets for external analysis, reproduction, or use in third-party environments shall constitute a material breach of this Agreement and will result in immediate legal action and termination of access.</p>
+For the purposes of this Agreement, the following terms shall have the
+meanings specified below:
 
-        <h2>Section III: Service Performance and Limitations</h2>
-        <h3>3.1 Experimental Status Disclosure</h3>
-        <p>The Service is delivered as an experimental implementation of automated logic systems. The Proprietor provides no representation or warranty regarding the consistency, accuracy, or suitability of the Service for any specific purpose. The User accepts all outputs generated by the Service at their own peril.</p>
+"Agreement" - This Terms of Service document, including all referenced
+sections and any subsequent amendments.
 
-        <h3>3.2 Limitation of Liability</h3>
-        <p class="uppercase-clause">TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL JAMES TURNER (XPDEVS) BE LIABLE FOR ANY CONSEQUENTIAL, INDIRECT, INCIDENTAL, SPECIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA CORRUPTION, OR SYSTEM FAILURE, ARISING FROM THE USE OR INABILITY TO USE THE SERVICE, REGARDLESS OF THE LEGAL THEORY ASSERTED.</p>
+"Service" - The Genesis AI web application, including all user interfaces,
+underlying logic systems, and associated components.
 
-        <h2>Section IV: Conduct and Safety Covenants</h2>
-        <h3>4.1 Affirmative Conduct Obligations</h3>
-        <p>The User covenants and agrees to utilize the Service in strict accordance with all applicable statutes and regulations. The User shall not engage in any activity that compromises the integrity, security, or stability of the Service infrastructure.</p>
+"Proprietor" - James Turner (XPDevs), the legal entity responsible for the
+development, maintenance, and operation of the Service.
 
-        <h3>4.2 Restricted Activity ("Red-Lines")</h3>
-        <p>The User is expressly forbidden from utilizing the Service for the purpose of generating, facilitating, or disseminating content related to:</p>
-        <ol>
-            <li>Criminal activity or instructions for the circumvention of security protocols;</li>
-            <li>Harassment, defamation, or the promotion of systemic discrimination;</li>
-            <li>The creation of deceptive material, including misinformation or unauthorised deep-fakes;</li>
-            <li>Any attempt to harvest personal identifiers or private data from the system or other users.</li>
-        </ol>
+"User" - Any individual or entity that accesses or utilizes the Service.
 
-        <h3>4.3 Image Generation Protocols</h3>
-        <p>Users utilizing the Image Generation feature agree not to generate content that is illegal, sexually explicit, promotes violence, or infringes upon intellectual property rights. The User acknowledges that image generation is processed via third-party infrastructure (Puter.js).</p>
+"User Content" - Any data, text, images, or other materials submitted by the
+User to the Service.
 
-        <h2>Section V: Data Governance</h2>
-        <h3>5.1 Local Client-Side Storage</h3>
-        <p>The Service employs local storage mechanisms to facilitate session continuity and user preference persistence. The User acknowledges that this data resides exclusively on their local hardware. The Proprietor assumes no liability for the loss, corruption, or unauthorised recovery of such data from the User's device.</p>
+"Proprietary Assets" - All intellectual property associated with the Service,
+including binary files, JSON modals, and system logic.
 
-        <h3>5.2 Licensing of User Input</h3>
-        <p>The User grants the Proprietor a perpetual, irrevocable, royalty-free, worldwide license to utilize anonymised User Input for the purposes of system calibration, safety filter enhancement, and the overall improvement of the <strong>Genesis-AI</strong> ecosystem.</p>
+================================================================================
+                      2. ACCEPTANCE OF TERMS
+================================================================================
 
-        <h3>5.3 Third-Party Integrations (Google, Voice, Location)</h3>
-        <p>The User acknowledges that features such as Google Sign-In, Voice Recognition, and Location-based queries (e.g., Weather updates) rely on third-party APIs and browser capabilities. The User assumes all risks associated with the use of these third-party services and agrees that the Proprietor is not responsible for the data handling practices of Google, browser vendors, or hosting providers.</p>
+By accessing or using the Service, the User acknowledges and agrees to be
+bound by the terms and conditions set forth in this Agreement. If the User
+does not agree to these terms, the User must not access or use the Service.
 
-        <h2>Section VI: Indemnification</h2>
-        <p>The User agrees to indemnify, defend, and hold harmless <strong>James Turner (XPDevs)</strong> from any and all third-party claims, liabilities, damages, and costs (including reasonable legal fees) arising from (i) the User's breach of this Agreement, (ii) the User's violation of any law or the rights of a third party, or (iii) the User's misuse of the Service.</p>
+Use of the Service constitutes electronic execution of this Agreement. The
+User warrants that they have the legal capacity to enter into this Agreement.
 
-        <h2>Section VII: Formalities and Jurisdiction</h2>
-        <h3>7.1 Entire Agreement</h3>
-        <p>This instrument constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements, whether written or oral.</p>
+================================================================================
+                      3. INTELLECTUAL PROPERTY
+================================================================================
 
-        <h3>7.2 Severability</h3>
-        <p>If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.</p>
+The Service and all Proprietary Assets are the exclusive intellectual property
+of James Turner (XPDevs). All rights not expressly granted herein are reserved.
 
-        <h3>7.3 Governing Law</h3>
-        <p>This Agreement shall be governed by and construed in accordance with the laws of <strong>England and Wales</strong>. All disputes arising hereunder shall be subject to the exclusive jurisdiction of the Courts of England and Wales located in London.</p>
+The User is granted a limited, non-exclusive, non-transferable license to use
+the Service for personal and professional purposes.
 
-        <div class="footer-legal">
-            <h2>Execution & Contact</h2>
-            <p>Accessing the Service constitutes electronic execution of this Agreement and signifies your total acceptance of its terms. For formal notices or legal service of process, please contact the Proprietor via the official channels:</p>
-            <p>
-                <strong>Proprietor: James Turner (XPDevs)</strong><br>
-                Official Email: <a href="mailto:xpdevs.github.io.com@gmail.com">xpdevs.github.io.com@gmail.com</a><br>
-                Infrastructure Repository: <a href="https://xpdevs.github.io">https://xpdevs.github.io</a>
-            </p>
-        </div>
-    </div>
+The following activities are strictly prohibited:
+
+- Distribution of the Service or Proprietary Assets
+- Modification of the Service or Proprietary Assets
+- Reverse engineering or decompilation
+- Creation of derivative works
+- Use for commercial purposes beyond personal use
+
+All trademarks, service marks, and trade names associated with Genesis AI are
+the property of the Proprietor.
+
+================================================================================
+                        4. USER OBLIGATIONS
+================================================================================
+
+The User agrees to:
+
+- Use the Service in compliance with all applicable laws and regulations
+- Refrain from generating content that is illegal, harmful, threatening,
+  abusive, or otherwise objectionable
+- Not attempt to gain unauthorized access to any part of the Service or
+  its underlying systems
+- Not use the Service to generate or disseminate malicious code, viruses,
+  or other harmful materials
+- Not engage in activities that interfere with or disrupt the Service
+- Not harvest or collect personal data from other users
+
+PROHIBITED CONTENT:
+
+The following categories of content are strictly prohibited:
+
+- Criminal activity or instructions for committing crimes
+- Violence or threats of physical harm
+- Harassment, defamation, or hate speech
+- Sexual content or explicit material
+- Fraud, scams, or deceptive practices
+- Misinformation or disinformation
+- Content that infringes intellectual property rights
+- Terrorism or extremist content
+- Child exploitation material
+- Spam or unsolicited communications
+
+================================================================================
+                      5. SERVICE LIMITATIONS
+================================================================================
+
+5.1 GENERAL LIMITATIONS:
+
+The Service is provided on an "AS IS" and "AS AVAILABLE" basis. The Proprietor
+makes no warranties, express or implied, regarding the Service's reliability,
+accuracy, or availability.
+
+The Service is experimental in nature and may produce unexpected or incorrect
+outputs. The Proprietor does not guarantee that the Service will be
+uninterrupted or error-free.
+
+The User accepts all risks associated with using the Service, including any
+reliance on the accuracy or reliability of outputs.
+
+The Proprietor reserves the right to modify, suspend, or discontinue any part
+of the Service at any time without prior notice.
+
+================================================================================
+                    5.2 AI OUTPUT AND ACCURACY DISCLAIMER
+================================================================================
+
+The User acknowledges that the Service utilizes experimental artificial 
+intelligence logic and rule-based systems. Content generated by the AI may 
+occasionally be inaccurate, incomplete, or biased. All outputs are for 
+informational purposes only and must not be used as professional, legal, 
+medical, or financial advice. The Proprietor is not liable for any decisions 
+made based on AI outputs. The User is responsible for verifying all 
+information before use. THE SERVICE IS PROVIDED "AS IS" WITHOUT ANY 
+WARRANTIES, EXPRESS OR IMPLIED.
+
+================================================================================
+                       6. DATA AND PRIVACY
+================================================================================
+
+The Service processes data locally within the User's browser. User Content is
+not transmitted to external servers except where necessary for specific
+features.
+
+MINIMAL DATA COLLECTION:
+
+- Chat messages are stored locally in IndexedDB
+- User preferences are stored in LocalStorage
+- Theme settings are stored in LocalStorage
+- Profile information (if Google Sign-In used) is stored locally
+- No analytics or tracking is performed
+
+The Proprietor does not maintain any central database of User communications
+or personal data. All processing occurs on the User's device.
+
+For detailed information regarding data handling, please refer to the Privacy
+Policy document available at /legal/privacy-policy.html
+
+================================================================================
+                     7. THIRD-PARTY SERVICES
+================================================================================
+
+The Service integrates with third-party services for specific features.
+Each third-party service has its own privacy practices:
+
+IMAGE GENERATION:
+- Provider: Puter.js
+- Data transmitted: Text prompts only
+- Users acknowledge this feature requires external transmission
+
+GOOGLE SIGN-IN:
+- Provider: Google LLC
+- Data transmitted: Authentication tokens
+- Subject to Google's Privacy Policy
+
+VOICE RECOGNITION:
+- Provider: Browser Vendor (via Web Speech API)
+- Data processed: Audio input (processed locally by browser)
+- Subject to browser vendor's privacy policy
+
+WEB HOSTING:
+- Provider: GitHub Pages
+- Standard server logs may be recorded
+- Subject to GitHub's Privacy Policy
+
+The Proprietor is not responsible for the data practices of third-party
+providers. Users should review the respective privacy policies of these
+providers.
+
+================================================================================
+                    8. LIMITATION OF LIABILITY
+================================================================================
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL JAMES TURNER
+(XPDEVS) BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+OR PUNITIVE DAMAGES ARISING FROM OR RELATED TO:
+
+- THE USE OF OR INABILITY TO USE THE SERVICE
+- ANY UNAUTHORIZED ACCESS TO OR USE OF OUR SERVERS
+- ANY INTERRUPTION OR CESSATION OF TRANSMISSION TO OR FROM THE SERVICE
+- ANY BUGS, VIRUSES, TROJAN HORSES, OR THE LIKE WHICH MAY BE TRANSMITTED
+  TO OR THROUGH THE SERVICE
+- ANY ERRORS, OMISSIONS, OR INACCURACIES IN ANY CONTENT OR INFORMATION
+
+THIS LIMITATION APPLIES REGARDLESS OF WHETHER THE LIABILITY IS BASED ON
+BREACH OF CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR ANY
+OTHER THEORY.
+
+THE USER EXPRESSLY ACKNOWLEDGES THAT THE PROPRIETOR SHALL NOT BE LIABLE
+FOR USER SUBMISSIONS OR THE DEFAMATORY, OFFENSIVE, OR ILLEGAL CONDUCT OF
+ANY THIRD PARTY.
+
+================================================================================
+                        9. INDEMNIFICATION
+================================================================================
+
+The User agrees to indemnify, defend, and hold harmless the Proprietor and
+its officers, directors, employees, agents, and affiliates from any and
+all claims, damages, liabilities, costs, and expenses (including reasonable
+legal fees) arising from:
+
+- The User's breach of this Agreement
+- The User's violation of any law or the rights of a third party
+- The User's misuse of the Service
+- The User's User Content
+- The User's access to or use of the Service
+
+The Proprietor reserves the right, at the User's expense, to assume the
+exclusive defense and control of any matter for which the User is required
+to indemnify the Proprietor, and the User agrees to cooperate with the
+Proprietor's defense of these claims.
+
+================================================================================
+                          10. TERMINATION
+================================================================================
+
+The Proprietor reserves the right to terminate or suspend the User's access
+to the Service at any time, without prior notice, for any reason including
+but not limited to:
+
+- Violation of this Agreement
+- Violation of any applicable laws or regulations
+- Request by law enforcement or other governmental agencies
+- Discontinuation of the Service
+- Security concerns
+
+Upon termination, the User's right to use the Service immediately ceases.
+The Proprietor shall not be liable to the User or any third party for
+termination of access to the Service.
+
+================================================================================
+                        11. GOVERNING LAW
+================================================================================
+
+This Agreement shall be governed by and construed in accordance with the
+laws of England and Wales, without regard to its conflict of law provisions.
+
+Any disputes arising under this Agreement shall be subject to the exclusive
+jurisdiction of the courts of England and Wales, and the User hereby consents
+to the jurisdiction of such courts.
+
+SEVERABILITY:
+
+If any provision of this Agreement is held to be invalid or unenforceable,
+the remaining provisions shall continue in full force and effect. The
+invalid provision shall be modified to the minimum extent necessary to
+make it valid and enforceable while preserving the original intent.
+
+WAIVER:
+
+The failure of the Proprietor to enforce any right or provision of this
+Agreement shall not constitute a waiver of such right or provision.
+
+ENTIRE AGREEMENT:
+
+This Agreement, together with the Privacy Policy and any other legal
+notices published by the Proprietor, shall constitute the entire agreement
+between the User and the Proprietor regarding the Service.
+
+================================================================================
+                       12. CONTACT INFORMATION
+================================================================================
+
+For legal inquiries, notices, or questions regarding this Agreement,
+please contact:
+
+PROPRIETOR:        James Turner (XPDevs)
+OFFICIAL EMAIL:   xpdevs.github.io.com@gmail.com
+WEBSITE:          https://xpdevs.github.io
+
+================================================================================
+                         DOCUMENT CONTROL
+================================================================================
+
+Document ID:    GNS-AI-TOS-2026-V4
+Effective Date: 16 April 2026
+Jurisdiction:   England & Wales
+Classification:  Public
+Last Updated:    16 April 2026
+
+This document is the official Terms of Service for Genesis AI.
+
+================================================================================</pre>
 </body>
 </html>

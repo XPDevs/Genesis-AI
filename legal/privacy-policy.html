@@ -3,207 +3,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesis AI | Master Privacy Policy</title>
+    <title>Genesis AI | Privacy Policy</title>
     <style>
-        :root {
-            --bg: #ffffff;
-            --text: #1f1f1f;
-            --sidebar: #f0f4f9;
-            --chat-bg: #ffffff;
-            --input-bg: #f0f4f9;
-            --border: #dee2e6;
-            --primary: #1a73e8;
-            --user-msg-bg: #f0f4f9;
-            --active-chat: #e2e7ed;
-            --modal-bg: #ffffff;
-        }
-
-        body.dark {
-            --bg: #131314;
-            --text: #e3e3e3;
-            --sidebar: #1e1f20;
-            --chat-bg: #131314;
-            --input-bg: #1e1f20;
-            --border: #444746;
-            --user-msg-bg: #282a2c;
-            --active-chat: #333537;
-            --modal-bg: #1e1f20;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #131314;
-                --text: #e3e3e3;
-                --sidebar: #1e1f20;
-                --chat-bg: #131314;
-                --input-bg: #1e1f20;
-                --border: #444746;
-                --user-msg-bg: #282a2c;
-                --active-chat: #333537;
-                --modal-bg: #1e1f20;
-            }
-        }
-
         body {
+            background-color: #000;
+            color: #fff;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
             margin: 0;
-            padding: 80px 32px;
-            font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.8;
-            display: block;
-            height: auto;
-            overflow-y: auto;
+            padding: 20px;
         }
-
-        .legal-framework {
-            max-width: 1000px;
-            margin: 0 auto;
+        @media (min-width: 768px) {
+            body { padding: 40px 60px; font-size: 15px; }
         }
-
-        header {
-            border-bottom: 3px solid var(--primary);
-            padding-bottom: 24px;
-            margin-bottom: 48px;
-        }
-
-        h1 {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin: 0 0 12px 0;
-            letter-spacing: -0.04em;
-            text-transform: uppercase;
-        }
-
-        .doc-metadata {
-            font-weight: 700;
-            color: var(--primary);
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.1em;
-            display: flex;
-            gap: 20px;
-        }
-
-        h2 {
-            font-size: 1.7rem;
-            margin-top: 60px;
-            color: var(--text);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            border-left: 6px solid var(--primary);
-            padding-left: 16px;
-        }
-
-        h3 {
-            font-size: 1.25rem;
-            margin-top: 32px;
-            color: var(--text);
-            font-weight: 700;
-            text-decoration: underline;
-        }
-
-        p, li {
-            font-size: 16px;
-            color: var(--text);
-            opacity: 0.9;
-            margin-bottom: 1.4rem;
-            text-align: justify;
-        }
-
-        .policy-statement {
-            background: var(--sidebar);
-            padding: 32px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            margin: 40px 0;
-            font-style: italic;
-        }
-
-        .footer-legal {
-            margin-top: 100px;
-            padding: 60px;
-            background: var(--sidebar);
-            border-radius: 40px;
-            border: 1px solid var(--border);
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: underline;
-            font-weight: 600;
-        }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
     </style>
 </head>
-<body class="dark">
-    <div class="legal-framework">
-        <header>
-            <h1>Privacy Policy</h1>
-            <div class="doc-metadata">
-                <span>Ref: GNS-PRIV-2026-V2</span>
-                <span>Effective Date: 04 February 2026</span>
-                <span>Jurisdiction: England & Wales</span>
-            </div>
-        </header>
+<body>
+<pre>================================================================================
+                             PRIVACY POLICY
+================================================================================
 
-        <section>
-            <p>This Privacy Policy outlines the practices and procedures observed by <strong>James Turner (XPDevs)</strong> ("Proprietor") regarding the governance of information during your engagement with the Genesis AI application ("Service").</p>
-            
-            <div class="policy-statement">
-                The primary architectural directive of Genesis AI is the preservation of user privacy through absolute client-side execution. With the exception of specific opt-in features (Image Generation), no textual dialogue, prompt data, or generated responses are transmitted to, or stored upon, any external infrastructure managed by the Proprietor.
-            </div>
-        </section>
+Document ID: GNS-AI-PRIV-2026-V3
+Effective: 16 April 2026
+Jurisdiction: England & Wales
 
-        <h2>Section I: Data Sovereignty and Local Storage</h2>
-        <h3>1.1 Absence of Centralised Collection</h3>
-        <p>The Service operates as a self-contained environment within the User's web browser. All logic processing, dialogue generation, and interaction history are handled exclusively on the User's local hardware. The Proprietor does not maintain databases of user conversations, nor is any such data extracted during Service operation.</p>
+================================================================================
+                               CONTENTS
+================================================================================
 
-        <h3>1.2 Local Persistence Mechanisms</h3>
-        <p>To ensure session continuity, the Service utilizes local storage protocols on the User's device. This data remains under the exclusive control of the User. The Proprietor possesses no technical means to remotely access, recover, or audit this information. The security of this data is commensurate with the security of the User's own device and browser configuration.</p>
+1.  Introduction
+2.  Data We Collect
+3.  How We Use Data
+4.  Data Storage and Security
+5.  Third-Party Sharing
+    5.1 External API Data Flow
+6.  User Rights
+7.  Cookies and Tracking
+8.  Children's Privacy
+    8.1 Child-Friendly Summary
+9.  Policy Changes
+10. Contact Information
 
-        <h3>1.3 Edge-Based Content Moderation</h3>
-        <p>Content safety protocols and internal filters are executed entirely within the local client environment. Textual analysis performed to ensure compliance with the Terms of Service does not result in the transmission of input data to external monitoring systems. Restricted content is intercepted and purged locally before being processed by the system logic.</p>
+================================================================================
+                           1. INTRODUCTION
+================================================================================
 
-        <h2>Section II: Passive Infrastructure Interaction</h2>
-        <h3>2.1 Hosting and Network Logs</h3>
-        <p>The Service is distributed via third-party hosting infrastructure (GitHub Pages). While the Service itself does not collect data, the hosting provider may automatically record standard network metadata (such as IP addresses and browser headers) for the purposes of delivery and security. This activity is governed by the privacy instruments of the hosting entity.</p>
+This Privacy Policy ("Policy") governs the collection, use, storage, and
+disclosure of information by James Turner (XPDevs) ("Proprietor") in
+connection with the Genesis AI web application ("Service").
 
-        <h3>2.2 Preference Persistence</h3>
-        <p>Basic operational preferences, such as interface themes and state configurations, are retained via local mechanisms. These are utilized solely to enhance the immediate user experience and are not repurposed for profiling, tracking, or marketing activities.</p>
+CORE PRINCIPLE:
 
-        <h2>Section III: Integrated Features and Third-Party Processing</h2>
-        <h3>3.1 Google Authentication</h3>
-        <p>Users may optionally utilize Google Sign-In for profile personalization. The Service retrieves and locally stores basic profile information (Name, Profile Picture) solely for display purposes within the user interface. This data is not transmitted to the Proprietor and remains stored locally on the User's device.</p>
+Genesis AI is designed with privacy as a foundational principle. The Service
+operates predominantly on a client-side basis, meaning that User data is
+processed locally within the User's browser and is not transmitted to
+external servers unless specifically required for opt-in features.
 
-        <h3>3.2 Voice Recognition</h3>
-        <p>Voice input functionality relies on the User's browser-native Web Speech API. Audio data is processed by the browser vendor (e.g., Google, Apple) in accordance with their respective privacy policies. The Service does not record or transmit audio data to the Proprietor.</p>
+The Proprietor does not maintain any central database of User communications
+or personal data. All processing occurs locally on the User's device.
 
-        <h3>3.3 Image Generation</h3>
-        <p>The Image Generation feature utilizes the <strong>Puter.js</strong> cloud infrastructure. Prompts submitted specifically for image generation are transmitted to Puter.js for processing. The Proprietor does not retain logs of these prompts, but Users acknowledge that this specific feature requires external transmission.</p>
+By using the Service, the User acknowledges and agrees to the practices
+described in this Policy.
 
-        <h3>3.4 Location Data</h3>
-        <p>The Service does not actively track User location. However, location data may be inferred by third-party hosting providers (GitHub Pages) via IP address logging, or processed locally if explicitly provided by the User within the conversation context for specific features such as weather updates.</p>
+================================================================================
+                        2. DATA WE COLLECT
+================================================================================
 
-        <h2>Section IV: User Empowerment and Deletion</h2>
-        <h3>4.1 Right to Erasure</h3>
-        <p>The User maintains absolute authority over their local data. The Service provides dedicated functions to purge all stored history and preference data. Manual clearance of browser storage will also result in the permanent and irrecoverable erasure of all local Service records.</p>
+The following table outlines the types of data that may be collected or
+processed through the Service:
 
-        <h2>Section V: Amendments and Enforceability</h2>
-        <h3>5.1 Policy Evolution</h3>
-        <p>The Proprietor reserves the right to amend this Privacy Policy as the Service architecture evolves. Continued use of the Service following such amendments constitutes acknowledgement of the updated practices.</p>
+DATA TYPE            | SOURCE            | STORAGE LOCATION    | TRANSMITTED?
+---------------------|-------------------|---------------------|---------------
+Chat Messages        | User Input        | IndexedDB           | No
+User Preferences     | User Settings     | LocalStorage        | No
+Theme Settings       | User Selection    | LocalStorage        | No
+Chat History         | User Activity     | IndexedDB           | No
+Profile Information  | Google Sign-In    | LocalStorage        | No (optional)
+Voice Input          | Browser API       | Browser Memory      | No
 
-        <h3>5.2 Jurisdictional Compliance</h3>
-        <p>This Policy is designed to adhere to the high standards of data protection expected within the jurisdiction of England and Wales. Any inquiries regarding data practices should be directed to the Proprietor.</p>
+LOCAL STORAGE ONLY:
 
-        <div class="footer-legal">
-            <h2>Contact & Enquiries</h2>
-            <p>For matters concerning the architectural privacy of the Service, please contact the Proprietor:</p>
-            <p>
-                <strong>James Turner (XPDevs)</strong><br>
-                Official Email: <a href="mailto:xpdevs.github.io.com@gmail.com">xpdevs.github.io.com@gmail.com</a><br>
-                Engineering Repository: <a href="https://xpdevs.github.io">https://xpdevs.github.io</a>
-            </p>
-        </div>
-    </div>
+The Proprietor does not collect, store, or transmit User data to any
+external servers for the core chat functionality. All data remains on
+the User's device.
+
+OPT-IN FEATURES:
+
+Only the following features involve external data transmission:
+
+- Image Generation (@img command): Text prompts sent to Puter.js
+- Google Sign-In: Authentication tokens sent to Google
+
+================================================================================
+                       3. HOW WE USE DATA
+================================================================================
+
+Data collected through the Service is used for the following purposes:
+
+SERVICE DELIVERY:
+To provide chat functionality and respond to User queries using the local
+modal and pattern matching engine.
+
+SESSION PERSISTENCE:
+To maintain conversation history across browser sessions so users can
+resume conversations later.
+
+USER PREFERENCES:
+To remember theme settings (light/dark mode), interface preferences, and
+other user-configurable options.
+
+FEATURE FUNCTIONALITY:
+To enable optional features such as Google Sign-In authentication and
+to provide access to third-party services when explicitly requested.
+
+NO ANALYTICS:
+
+The Service does not employ analytics, tracking, or profiling. No User
+data is used for advertising, marketing, or commercial purposes.
+
+================================================================================
+                    4. DATA STORAGE AND SECURITY
+================================================================================
+
+4.1 LOCAL STORAGE
+
+All User data, including chat messages and preferences, is stored locally
+on the User's device using browser storage mechanisms:
+
+- IndexedDB: For chat messages and conversation history
+- LocalStorage: For user preferences and theme settings
+
+The Proprietor does not have access to this data. The data cannot be
+retrieved or viewed by the Proprietor through any technical means.
+
+4.2 SECURITY MEASURES
+
+Data stored locally is protected by the security measures inherent to
+the User's browser and device. This includes:
+
+- Browser sandboxing
+- Encryption provided by the browser
+- Device-level security (passwords, biometrics, etc.)
+
+Users are responsible for maintaining the security of their devices
+and browsers. The Proprietor cannot protect data stored on the User's
+device beyond what the browser provides.
+
+4.3 DATA RETENTION
+
+User data is retained locally until:
+
+- The User manually deletes it using the Service's "Clear All Chats" function
+- The User clears their browser storage/cache
+- The user manually removes specific chats
+
+There is no automatic data expiration. Data persists indefinitely until
+the User chooses to delete it.
+
+4.4 DATA DELETION
+
+To delete all local data:
+- Use the Service's built-in "Clear All Chats" feature
+- Or clear browser storage in your browser settings
+
+Once deleted, data cannot be recovered.
+
+================================================================================
+                      5. THIRD-PARTY SHARING
+================================================================================
+
+While core chat logic occurs locally, specific features (such as Image 
+Generation or Wikipedia Lookups) require sending your specific prompt to 
+external providers. Only the minimum data required to fulfill the request 
+is shared. No personal identification, account details, or session history 
+are ever transmitted to these third-party services.
+
+The following table identifies features that involve data transmission
+to third parties:
+
+FEATURE             | THIRD PARTY    | DATA TRANSMITTED        | PRIVACY POLICY
+--------------------|----------------|-------------------------|------------------
+Image Generation    | Puter.js       | Text prompts            | Puter.js Terms
+Google Sign-In     | Google LLC     | Authentication tokens   | Google Privacy
+Voice Input        | Browser Vendor | Audio (processed locally)| Browser Policy
+Web Hosting        | GitHub Pages   | Standard server logs    | GitHub Privacy
+
+5.1 IMAGE GENERATION (@img)
+
+When you use the @img command to generate images, text prompts are
+transmitted to Puter.js for processing. The Proprietor does not retain
+logs of these prompts. Users acknowledge that this specific feature
+requires external transmission.
+
+5.2 GOOGLE SIGN-IN
+
+Users may optionally use Google Sign-In for profile personalization.
+The Service retrieves and locally stores basic profile information
+(Name, Profile Picture) solely for display purposes. This data is
+not transmitted to the Proprietor.
+
+5.3 VOICE RECOGNITION
+
+Voice input functionality relies on the User's browser-native Web
+Speech API. Audio data is processed by the browser vendor (e.g.,
+Google, Apple) in accordance with their respective privacy policies.
+The Service does not record or transmit audio data to the Proprietor.
+
+5.4 WEB HOSTING
+
+The Service is distributed via GitHub Pages. While the Service itself
+does not collect data, the hosting provider may automatically record
+standard network metadata (IP addresses, browser headers) for delivery
+and security purposes.
+
+5.5 NO SALE OF DATA
+
+The Proprietor does not sell, rent, or trade User data to any third
+parties. User data is never used for advertising or marketing purposes.
+
+================================================================================
+                         6. USER RIGHTS
+================================================================================
+
+Under this Policy and applicable data protection laws, Users retain
+the following rights:
+
+6.1 RIGHT OF ACCESS
+
+Users may view all data stored locally through the Service interface.
+This includes:
+- All chat messages and conversation history
+- User preferences and settings
+- Theme configuration
+
+6.2 RIGHT TO DELETION
+
+Users may delete all local data at any time:
+- Using the "Clear All Chats" function in the Service
+- By clearing browser storage/cookies in browser settings
+- By deleting individual chats
+
+Once deleted, data cannot be recovered.
+
+6.3 RIGHT TO OPT-OUT
+
+Users may disable optional features at any time:
+- Disable Google Sign-In by signing out
+- Disable Voice Input by not using the feature
+- Disable Web Search in settings
+
+6.4 DATA PORTABILITY
+
+Users may export their chat data where functionality is provided.
+Contact the Proprietor for assistance with data export.
+
+6.5 EXERCISE OF RIGHTS
+
+To exercise any of these rights, users can:
+- Use the built-in Service controls (Settings > Clear Data)
+- Contact the Proprietor at xpro.devs.github.io.com@gmail.com
+
+================================================================================
+                     7. COOKIES AND TRACKING
+================================================================================
+
+7.1 COOKIES
+
+The Service does not use cookies for:
+- Authentication (sessions are handled via LocalStorage)
+- Tracking or analytics
+- Advertising or marketing
+- Personalization beyond local preferences
+
+7.2 THIRD-PARTY TRACKING
+
+The Service does not include:
+- Google Analytics or similar tracking scripts
+- Facebook Pixel or social media trackers
+- Advertising networks
+- Any external scripts that track user behavior
+
+7.3 BROWSER STORAGE
+
+Basic browser storage (LocalStorage, IndexedDB) may be used solely for:
+- Essential functionality (session persistence)
+- User preference storage (theme, settings)
+- Chat message storage
+
+This storage is local to the User's device and is not accessible to
+the Proprietor or any third parties.
+
+================================================================================
+                      8. CHILDREN'S PRIVACY
+================================================================================
+
+8.1 AGE RESTRICTION
+
+The Service is not intended for use by individuals under the age of 13.
+The Proprietor does not knowingly collect personal information from
+children under 13.
+
+8.2 PARENTAL CONTROLS
+
+If you are a parent or guardian and believe your child has provided
+personal data to the Service without your consent, please contact the
+Proprietor immediately to have such data removed.
+
+8.3 MINOR USERS
+
+Users between the ages of 13 and 18 should consult with their parents
+or guardians before using the Service and before providing any personal
+information.
+
+================================================================================
+                    8.1 CHILD-FRIENDLY SUMMARY
+================================================================================
+
+We care about your safety. Because Genesis-AI runs entirely on your device, 
+we do not see, store, or track your conversations. If you are under 13, 
+please do not use the Service. If you are between 13 and 18, we recommend 
+exploring the AI with a parent or guardian. We do not use cookies to track 
+who you are or what you do.
+
+================================================================================
+                       9. POLICY CHANGES
+================================================================================
+
+9.1 RIGHT TO AMEND
+
+The Proprietor reserves the right to modify this Policy at any time.
+Material changes will be communicated via the Service.
+
+9.2 NOTIFICATION
+
+When the Policy is updated:
+- The "Effective Date" at the top of this document will be changed
+- Significant changes may be announced through the Service interface
+- Continued use of the Service following any modifications constitutes
+  acceptance of the updated Policy
+
+9.3 PREVIOUS VERSIONS
+
+Previous versions of this Policy may be available upon request from the
+Proprietor.
+
+================================================================================
+                      10. CONTACT INFORMATION
+================================================================================
+
+For inquiries regarding this Privacy Policy, data handling practices,
+or to exercise your rights, please contact:
+
+DATA CONTROLLER:    James Turner (XPDevs)
+OFFICIAL EMAIL:    xpro.devs.github.io.com@gmail.com
+WEBSITE:           https://xpdevs.github.io
+
+For Data Protection inquiries, please include "Privacy" in the subject line.
+
+================================================================================
+                         DOCUMENT CONTROL
+================================================================================
+
+Document ID:    GNS-AI-PRIV-2026-V3
+Effective Date: 16 April 2026
+Jurisdiction:   England & Wales
+Classification:  Public
+Last Updated:    16 April 2026
+
+This document is the official Privacy Policy for Genesis AI.
+
+================================================================================</pre>
 </body>
 </html>
