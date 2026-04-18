@@ -340,16 +340,45 @@ body.dark .action-btn:hover {
   color: var(--text);
 }
 
-#deleteAllChatsBtn {
-  background: #ff4d4d;
+.setting-item {
+  margin-bottom: 10px;
+}
+
+.setting-item button,
+#deleteAllChatsBtn,
+#exportDataBtn,
+#deleteAccountBtn {
+  background: var(--primary);
   color: #fff;
   border: none;
-  padding: 12px;
+  padding: 12px 20px;
   border-radius: 20px;
   cursor: pointer;
   width: 100%;
   font-weight: 500;
-  margin-bottom: 10px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+#deleteAllChatsBtn {
+  background: #ff4d4d;
+}
+
+#exportDataBtn {
+  background: #28a745;
+}
+
+#deleteAccountBtn {
+  background: #dc3545;
+  margin-top: 10px;
+}
+
+.setting-item button:hover,
+#deleteAllChatsBtn:hover,
+#exportDataBtn:hover,
+#deleteAccountBtn:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
 }
 
 #deleteAllChatsBtn:hover {
