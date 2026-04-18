@@ -1167,6 +1167,60 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   }
 }
 
+// --- FUZZY MATCHING (Levenshtein Distance) ---
+function levenshteinDistance(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function findFuzzyMatch(input, keys, maxDistance = 3) {
+  const lowerInput = input.toLowerCase();
+  let bestMatch = null;
+  let bestDistance = Infinity;
+  
+  for (const key of keys) {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey.length < 3 || lowerInput.length < 3) continue;
+    
+    if (lowerKey.includes(lowerInput) || lowerInput.includes(lowerKey)) {
+      const dist = Math.abs(lowerKey.length - lowerInput.length);
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestMatch = { key, text: responses[key], distance: dist };
+      }
+    } else {
+      const dist = levenshteinDistance(lowerInput, lowerKey);
+      if (dist <= maxDistance && dist < bestDistance) {
+        bestDistance = dist;
+        bestMatch = { key, text: responses[key], distance: dist };
+      }
+    }
+  }
+  
+  return bestMatch;
+}
+
 // --- LOGIC MODULES ---
 let bannedWords = [];
 async function loadBannedWords() {
@@ -1301,7 +1355,7 @@ async function findResponses(input, history) {
                     formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
                 }
                 
-                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
+return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
               }
             }
           }
@@ -1309,7 +1363,13 @@ async function findResponses(input, history) {
           console.error("Wikipedia fetch failed:", e);
         }
     }
-    return { role: "ai", text: window.tokenizer.encode("I’m not quite sure I follow. Could you give me a bit more detail?") };
+    // Fuzzy matching fallback - find similar keys using Levenshtein distance
+    const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
+    const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
+    if (fuzzyMatch) {
+      return { role: "ai", text: window.tokenizer.encode(fuzzyMatch.text) };
+    }
+    return { role: "ai", text: window.tokenizer.encode("I'm not quite sure I follow. Could you give me a bit more detail?") };
   }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
   if (orderedMessages.length === 1) return { role: "ai", text: window.tokenizer.encode(orderedMessages[0]) };
