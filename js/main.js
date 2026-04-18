@@ -284,6 +284,23 @@ function injectCSS() {
         #chatBox {
             flex-grow: 1;
             overflow-y: auto;
+            direction: ltr;
+        }
+        /* Custom scrollbar on the right side */
+        #chatBox::-webkit-scrollbar {
+            width: 8px;
+            position: absolute;
+            right: 0;
+        }
+        #chatBox::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chatBox::-webkit-scrollbar-thumb {
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 4px;
+        }
+        #chatBox::-webkit-scrollbar-thumb:hover {
+            background: rgba(128, 128, 128, 0.5);
         }
     `;
     document.head.appendChild(style);
@@ -1323,6 +1340,14 @@ async function findResponses(input, history) {
               return { role: "ai", text: window.tokenizer.encode(`The answer is: ${result}`) };
           }
       }
+  }
+
+  // "Who am I" - Get user's name from userInfo
+  const whoAmIPatterns = ["who am i", "who am i?", "who am i?", "what is my name", "do you know me", "what's my name", "whats my name"];
+  if (whoAmIPatterns.some(p => lowerInput.includes(p))) {
+      const userInfo = await DB.get("userInfo", {});
+      const fullName = userInfo.name || "User";
+      return { role: "ai", text: window.tokenizer.encode(`You are ${fullName}.`) };
   }
 
   const foundMatches = [];
