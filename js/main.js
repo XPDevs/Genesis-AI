@@ -216,6 +216,58 @@ function loadMathSupport() {
     document.head.appendChild(script);
 }
 
+// --- EXPORT FUNCTIONS ---
+async function exportChatAsMarkdown(chat) {
+    let md = `# ${chat.title}\n\n`;
+    chat.messages.forEach(msg => {
+        const role = msg.role === 'user' ? '**You**' : '**Genesis**';
+        md += `${role}: ${msg.text}\n\n`;
+    });
+    return md;
+}
+
+async function exportChatAsPDF(chat) {
+    const printWindow = window.open('', '_blank');
+    let html = `<!DOCTYPE html><html><head><title>${chat.title}</title>`;
+    html += `<style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+        .user { color: #007bff; font-weight: bold; }
+        .ai { color: #28a745; font-weight: bold; }
+        .message { margin-bottom: 15px; }
+    </style></head><body>`;
+    html += `<h1>${chat.title}</h1>`;
+    chat.messages.forEach(msg => {
+        const role = msg.role === 'user' ? 'You' : 'Genesis';
+        html += `<div class="message"><span class="${msg.role}">${role}:</span> ${msg.text}</div>`;
+    });
+    html += `</body></html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function exportAccountData() {
+    return {
+        userInfo: DB.get("userInfo", {}),
+        chats: DB.get("chats", []),
+        banInfo: DB.get("genesisBanInfo", {}),
+        exportDate: new Date().toISOString()
+    };
+}
+
+async function downloadExport(accountData) {
+    const dataStr = JSON.stringify(accountData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `genesis-export-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 function injectCSS() {
     const style = document.createElement('style');
     style.textContent = `
@@ -1350,6 +1402,46 @@ async function findResponses(input, history) {
       return { role: "ai", text: window.tokenizer.encode(`You are ${fullName}.`) };
   }
 
+  // "@export" - Export chat as PDF or Markdown
+  if (decodedInput.includes("@export")) {
+      const isPDF = lowerInput.includes("pdf");
+      const isMarkdown = lowerInput.includes("markdown") || lowerInput.includes("md");
+      
+      const activeChat = chats.find(c => c.id === activeChatId);
+      if (!activeChat || activeChat.messages.length === 0) {
+          return { role: "ai", text: window.tokenizer.encode("No chat to export. Start a conversation first!") };
+      }
+      
+      if (isPDF) {
+          exportChatAsPDF(activeChat);
+          return { role: "ai", text: window.tokenizer.encode("Opening chat in PDF format for printing. Use your browser's Print dialog to save as PDF.") };
+      } else if (isMarkdown) {
+          const md = await exportChatAsMarkdown(activeChat);
+          const blob = new Blob([md], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${activeChat.title.replace(/[^a-z0-9]/gi, '_')}.md`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          return { role: "ai", text: window.tokenizer.encode("Chat exported as Markdown!") };
+      }
+      // Default to markdown
+      const md = await exportChatAsMarkdown(activeChat);
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${activeChat.title.replace(/[^a-z0-9]/gi, '_')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return { role: "ai", text: window.tokenizer.encode("Chat exported as Markdown!") };
+  }
+
   const foundMatches = [];
   const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
   let tempInput = lowerInput;
@@ -2075,6 +2167,43 @@ document.getElementById("deleteAllConfirm").onclick = async () => {
     chatBox.innerHTML = ""; 
     document.getElementById("deleteAllModal").style.display = "none"; 
 };
+
+const exportDataBtn = document.getElementById("exportDataBtn");
+if (exportDataBtn) {
+    exportDataBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const banInfo = await DB.get("genesisBanInfo", {});
+        
+        const data = {
+            exportDate: new Date().toISOString(),
+            user: {
+                name: userInfo.name || null,
+                email: userInfo.email || null,
+                googleId: userInfo.googleId || null,
+                picture: userInfo.picture || null
+            },
+            stats: {
+                totalChats: chats.length,
+                totalWarnings: banInfo.consecutiveViolations || 0,
+                banHistoryCount: banInfo.banHistoryCount || 0
+            },
+            chats: chats
+        };
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `genesis-data-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        if (accountModal) accountModal.style.display = "none";
+    };
+}
 
 const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 if (deleteAccountBtn) {
