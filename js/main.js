@@ -1167,6 +1167,44 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   }
 }
 
+// --- WIKIPEDIA API ---
+async function fetchWikipediaSummary(topic) {
+    const encodedTopic = encodeURIComponent(topic);
+    const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&titles=${encodedTopic}&redirects=1&origin=*`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': 'GenesisAI/1.0 (bot@example.com)'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const page = pages[pageId];
+
+        if (pageId === "-1" || page.missing) {
+            console.warn(`Warning: No Wikipedia page for '${topic}'`);
+            return null;
+        }
+
+        if (page.invalid) {
+            console.warn(`Warning: Invalid title for '${topic}'`);
+            return null;
+        }
+
+        return page.extract || null;
+    } catch (error) {
+        console.error(`Failed to download '${topic}':`, error);
+        return null;
+    }
+}
+
 // --- FUZZY MATCHING (Levenshtein Distance) ---
 function levenshteinDistance(a, b) {
   if (a.length === 0) return b.length;
@@ -1325,24 +1363,11 @@ async function findResponses(input, history) {
 
           if (isQuestion && allowWiki) {
             playThinkingSound();
-            const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(decodedInput)}&format=json&origin=*`;
-            const searchRes = await fetch(searchUrl);
-            const searchData = await searchRes.json();
-
-            if (searchData.query && searchData.query.search && searchData.query.search.length > 0) {
-              const topResult = searchData.query.search[0];
-              const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
-              const contentRes = await fetch(contentUrl);
-              const contentData = await contentRes.json();
-              const pages = contentData.query.pages;
-              const pageId = Object.keys(pages)[0];
-
-              if (pages[pageId] && pages[pageId].extract) {
-                let fullText = pages[pageId].extract;
-                fullText = fullText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                
-                const summary = window.summariseConversation(fullText, 5);
-                
+            const wikiSummary = await fetchWikipediaSummary(decodedInput);
+            
+            if (wikiSummary) {
+                const cleanText = wikiSummary.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                const summary = window.summariseConversation(cleanText, 5);
                 const sentences = summary.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [summary];
                 let formattedSummary = summary;
 
@@ -1355,8 +1380,7 @@ async function findResponses(input, history) {
                     formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
                 }
                 
-return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
-              }
+                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
             }
           }
         } catch (e) {
@@ -1850,15 +1874,28 @@ if (userInput && suggestionBox) {
 }
 
 sendBtn.onclick = () => {
+    // If AI is responding, always stop first
+    if (aiState.isResponding) {
+        stopGeneration();
+        return;
+    }
     const isMobile = window.innerWidth <= 768;
-    if (isMobile && userInput.value.trim() === '' && !aiState.isResponding) {
+    if (isMobile && userInput.value.trim() === '') {
         // On mobile with empty input, start live mode
         if (window.startLiveMode) window.startLiveMode();
     } else {
         sendMessage();
     }
 };
-userInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
+userInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") {
+        if (aiState.isResponding) {
+            stopGeneration();
+        } else {
+            sendMessage();
+        }
+    }
+});
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
     document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.6";
