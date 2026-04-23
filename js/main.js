@@ -704,7 +704,7 @@ async function showBanModal() {
 
 // --- BINARY DECODER (V4.5 OPTIMIZED) ---
 // Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.bin";
+const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json";
 let jsonURL = defaultModel;
 
 function decodeBinary(buffer) {
@@ -1982,9 +1982,9 @@ if (userInput && suggestionBox) {
         const val = userInput.value;
         if (val.endsWith('@')) {
             suggestionBox.innerHTML = `
-                <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>🔒</span> ImgAuth</div>
-                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>🎨</span> Generate Image</div>
-                <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span>📝</span> Check Text</div>
+                <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> ImgAuth</div>
+                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> Generate Image</div>
+                <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> Check Text</div>
             `;
             suggestionBox.style.display = 'block';
         } else {
