@@ -322,6 +322,29 @@ function injectCSS() {
         #searchToggleBtn.active:hover {
             background: transparent;
         }
+        #shortenToggleBtn {
+            position: absolute;
+            left: 76px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
+            background: transparent;
+            padding: 4px 6px;
+        }
+        #shortenToggleBtn svg {
+            width: 22px;
+            height: 22px;
+            stroke: #666;
+        }
+        #shortenToggleBtn.active svg {
+            stroke: #f59e0b;
+        }
+        #shortenToggleBtn:hover {
+            background: transparent;
+        }
+        #shortenToggleBtn.active:hover {
+            background: transparent;
+        }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
             display: flex;
@@ -1479,7 +1502,6 @@ async function findResponses(input, history) {
           }
 
           if (isQuestion && allowWiki) {
-            playThinkingSound();
             const wikiSummary = await fetchWikipediaSummary(decodedInput);
             
             if (wikiSummary) {
@@ -2383,6 +2405,8 @@ async function startApp() {
             }
         }
         
+        const shortenToggleBtn = document.getElementById("shortenToggleBtn");
+    if (searchToggleBtn) {
         const savedSearchPref = await DB.get("useWikipedia", false);
         useWikipedia = savedSearchPref;
         if (useWikipedia) {
@@ -2390,10 +2414,23 @@ async function startApp() {
             searchToggleBtn.style.display = 'flex';
         } else {
             searchToggleBtn.classList.remove('active');
-            searchToggleBtn.style.display = 'flex'; // Always show, just grey
+            searchToggleBtn.style.display = 'flex';
         }
-        // Click handler opens settings modal
         searchToggleBtn.onclick = () => {
+            const settingsModal = document.getElementById("settingsModal");
+            if (settingsModal) {
+                settingsModal.style.display = "flex";
+            }
+        };
+    }
+
+    if (shortenToggleBtn) {
+        shortenToggleBtn.style.display = 'flex';
+        const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
+        if (shortenedEnabled) {
+            shortenToggleBtn.classList.add('active');
+        }
+        shortenToggleBtn.onclick = () => {
             const settingsModal = document.getElementById("settingsModal");
             if (settingsModal) {
                 settingsModal.style.display = "flex";
@@ -2464,6 +2501,13 @@ async function startApp() {
     if (shortenedAnswersToggle) {
         shortenedAnswersToggle.onchange = async () => {
             await DB.set("shortenedAnswers", shortenedAnswersToggle.checked ? "true" : "false");
+            if (shortenToggleBtn) {
+                if (shortenedAnswersToggle.checked) {
+                    shortenToggleBtn.classList.add('active');
+                } else {
+                    shortenToggleBtn.classList.remove('active');
+                }
+            }
         };
     }
 

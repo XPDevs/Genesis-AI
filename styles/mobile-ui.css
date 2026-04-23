@@ -219,6 +219,28 @@ body.dark .action-btn:hover {
   height: 20px;
 }
 
+.shorten-toggle {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shorten-toggle.active svg {
+  color: #f59e0b;
+}
+
+.shorten-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* Action Button (Send/Stop/Live) */
 #sendBtn {
   background: var(--primary);
@@ -241,6 +263,29 @@ body.dark .action-btn:hover {
 
 #sendBtn:hover {
   opacity: 0.9;
+}
+
+#shortenToggleBtn {
+  display: flex;
+  position: absolute;
+  left: 76px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+#shortenToggleBtn.active svg {
+  stroke: #f59e0b;
+}
+
+#shortenToggleBtn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* Ensure button icons fit */
