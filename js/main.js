@@ -1781,6 +1781,11 @@ async function sendMessage() {
         // Decode the AI's response before displaying
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
+            const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
+            if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation) {
+                const originalLength = botMsg.text.length;
+                botMsg.text = window.summariseConversation(botMsg.text, Math.max(2, Math.floor(originalLength * 0.3 / 50)));
+            }
         }
 
         // Add to history and then append to UI
@@ -2130,6 +2135,12 @@ async function applyTheme() {
         themeToggle.parentElement.style.opacity = isAuto ? "0.5" : "1";
     }
 
+    const shortenedAnswersToggle = document.getElementById("shortenedAnswersToggle");
+    if (shortenedAnswersToggle) {
+        const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
+        shortenedAnswersToggle.checked = shortenedEnabled;
+    }
+
     let isDark;
     if (isAuto) {
         const hour = new Date().getHours();
@@ -2407,6 +2418,10 @@ async function startApp() {
         'ai-modal': {
             title: 'AI Modal',
             text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. SPT 4.6 is the latest default model.'
+        },
+        'shortened-answers': {
+            title: 'Shortened Answers',
+            text: 'When enabled, AI responses will be shortened by approximately 30% using intelligent text summarization. This reduces response length while preserving key information.'
         }
     };
 
@@ -2442,6 +2457,13 @@ async function startApp() {
                     searchToggleBtn.classList.remove('active');
                 }
             }
+        };
+    }
+
+    const shortenedAnswersToggle = document.getElementById("shortenedAnswersToggle");
+    if (shortenedAnswersToggle) {
+        shortenedAnswersToggle.onchange = async () => {
+            await DB.set("shortenedAnswers", shortenedAnswersToggle.checked ? "true" : "false");
         };
     }
 
