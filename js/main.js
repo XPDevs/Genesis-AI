@@ -432,38 +432,6 @@ let aiState = {
 // Wikipedia Search flag (default false)
 let useWikipedia = false;
 
-// Shortened Answers setting (default false)
-let useShortenedAnswers = false;
-
-// --- TEXT SHORTENING ---
-function shortenText(text, percentage = 0.3) {
-    if (!text || text.length < 50) return text;
-    
-    const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-    if (sentences.length <= 2) return text;
-    
-    const targetCount = Math.max(1, Math.ceil(sentences.length * (1 - percentage)));
-    const selected = [];
-    const step = Math.max(1, Math.floor(sentences.length / targetCount));
-    
-    for (let i = 0; i < sentences.length && selected.length < targetCount; i += step) {
-        selected.push(sentences[i]);
-    }
-    
-    if (selected.length === 0) return text;
-    
-    selected.sort((a, b) => {
-        const idxA = sentences.indexOf(a);
-        const idxB = sentences.indexOf(b);
-        return idxA - idxB;
-    });
-    
-    return selected.join(' ').trim();
-}
-
-// Shortened Answers setting (default false)
-let useShortenedAnswers = false;
-
 // Function to update send button based on input content
 function updateSendButton() {
     if (!userInput) return;
@@ -1815,11 +1783,6 @@ async function sendMessage() {
             botMsg.text = window.tokenizer.decode(botMsg.text);
         }
 
-        // Apply shortened answers if enabled
-        if (useShortenedAnswers && botMsg && botMsg.text) {
-            botMsg.text = shortenText(botMsg.text, 0.3);
-        }
-
         // Add to history and then append to UI
         chat.messages.push(botMsg);
         await saveChats();
@@ -2479,17 +2442,6 @@ async function startApp() {
                     searchToggleBtn.classList.remove('active');
                 }
             }
-        };
-    }
-
-    // Initialize shortened answers toggle in settings modal
-    const shortenedAnswersToggle = document.getElementById("shortenedAnswersToggle");
-    if (shortenedAnswersToggle) {
-        shortenedAnswersToggle.checked = await DB.get("shortenedAnswers", false);
-        useShortenedAnswers = shortenedAnswersToggle.checked;
-        shortenedAnswersToggle.onchange = async () => {
-            useShortenedAnswers = shortenedAnswersToggle.checked;
-            await DB.set("shortenedAnswers", useShortenedAnswers);
         };
     }
 
