@@ -45,6 +45,7 @@ style.textContent = `
     align-items: center;
     z-index: 10000;
     backdrop-filter: blur(4px);
+    padding: 20px;
   }
 
   #feature-modal .modal-overlay {
@@ -57,7 +58,7 @@ style.textContent = `
     background: var(--modal-bg, #1e1e1e);
     padding: 30px;
     border-radius: 28px;
-    min-width: 320px;
+    width: 100%;
     max-width: 400px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
     color: var(--text, #fff);
@@ -103,7 +104,33 @@ style.textContent = `
     filter: brightness(0.9);
     transform: translateY(-1px);
   }
+
+  @media (max-width: 480px) {
+    #feature-modal {
+      padding: 16px;
+      align-items: flex-end;
+    }
+
+    #feature-modal .modal-content {
+      padding: 24px;
+      border-radius: 24px 24px 0 0;
+      max-width: none;
+    }
+
+    #feature-modal h2 {
+      font-size: 20px;
+    }
+
+    #feature-modal p {
+      font-size: 14px;
+    }
+
+    #feature-modal-ok {
+      width: 100%;
+      padding: 14px 20px;
+    }
+  }
 `;
 document.head.appendChild(style);
 
-document.addEventListener('DOMContentLoaded', showFeatureModal);
+window.showFeatureModal = showFeatureModal;

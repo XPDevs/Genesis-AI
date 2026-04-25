@@ -157,6 +157,11 @@ async function initializeApp() {
 
     window.dispatchEvent(new Event('app-ready'));
     setupSwipeGestures();
+
+    // Show feature modal after everything is loaded
+    if (typeof showFeatureModal === 'function') {
+        showFeatureModal();
+    }
 }
 
 function setupSwipeGestures() {
