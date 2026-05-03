@@ -1485,7 +1485,32 @@ async function findResponses(input, history) {
 
           if (isQuestion && allowWiki) {
             playThinkingSound();
+            // Show spinner with icon while fetching from Wikipedia
+            const chatBox = document.getElementById('chatBox');
+            const spinnerDiv = document.createElement("div");
+            spinnerDiv.className = "message ai wiki-loading";
+            spinnerDiv.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <svg class="spinner spinner-md spinner-primary" viewBox="0 0 100 100" style="width: 24px; height: 24px;">
+                  <circle cx="50%" cy="50%" r="50%" fill="none" stroke="currentColor" stroke-width="6px" stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" values="-90;810" keyTimes="0;1" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="stroke-dashoffset" values="0%;0%;-157.080%" calcMode="spline" keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0" keyTimes="0;0.5;1" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="stroke-dasharray" values="0% 314.159%;157.080% 157.080%;0% 314.159%" calcMode="spline" keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0" keyTimes="0;0.5;1" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+                <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+                <span style="opacity: 0.7; font-size: 0.9em;">Searching Wikipedia...</span>
+              </div>
+            `;
+            if (chatBox) {
+              chatBox.appendChild(spinnerDiv);
+              chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
             const wikiSummary = await fetchWikipediaSummary(decodedInput);
+            
+            // Remove spinner
+            if (spinnerDiv.parentNode) spinnerDiv.remove();
             
             if (wikiSummary) {
                 const cleanText = wikiSummary.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
@@ -1502,7 +1527,7 @@ async function findResponses(input, history) {
                     formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
                 }
                 
-                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`) };
+                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`), isWikipedia: true };
             }
           }
         } catch (e) {
@@ -1787,9 +1812,9 @@ async function sendMessage() {
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
             const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
-            if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation) {
+            if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation && botMsg.isWikipedia) {
                 const originalLength = botMsg.text.length;
-                botMsg.text = window.summariseConversation(botMsg.text, Math.max(2, Math.floor(originalLength * 0.3 / 50)));
+                botMsg.text = window.summariseConversation(botMsg.text, Math.max(2, Math.floor(originalLength * 0.5 / 50)));
             }
         }
 
@@ -1975,9 +2000,11 @@ if (uploadBtn && imgUploadInput) {
     imgUploadInput.onchange = (e) => {
         if(e.target.files.length > 0) {
             currentUploadFile = e.target.files[0];
-            uploadBtn.style.color = "#00C851"; // Green to indicate file selected
+            uploadBtn.style.color = "#00C851";
             userInput.focus();
         }
+        // Reset the file input so the same file can be selected again
+        e.target.value = '';
     };
 }
 
@@ -2426,7 +2453,7 @@ async function startApp() {
         },
         'shortened-answers': {
             title: 'Shortened Answers',
-            text: 'When enabled, AI responses will be shortened by approximately 30% using intelligent text summarization. This reduces response length while preserving key information.'
+            text: 'When enabled, Wikipedia-sourced responses will be shortened by approximately 50% using intelligent text summarization. Only applies to answers fetched from Wikipedia.'
         }
     };
 

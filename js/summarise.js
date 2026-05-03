@@ -9,7 +9,7 @@ window.summariseConversation = function(data, maxSentences = 5) {
 
     // 1. Structural Analysis
     const sentences = data.match(/[^.!?]+[.!?]+/g) || [data];
-    if (sentences.length <= 2) return `(Genesis-AI): ${data}`;
+    if (sentences.length <= 2) return `${data}`;
 
     // 2. Advanced Keyword Extraction (TF-Lite Logic)
     const stopWords = new Set(["the", "and", "this", "that", "with", "from", "they", "would", "could", "should", "there"]);
