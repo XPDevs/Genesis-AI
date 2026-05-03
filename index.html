@@ -75,6 +75,15 @@
   #settingsBtn:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
   }
+
+  /* Wiki spinner animation */
+  @keyframes wikiSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .wiki-spinner {
+    animation: wikiSpin 2s linear infinite;
+  }
 </style>
 </head>
 <body>

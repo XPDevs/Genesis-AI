@@ -1491,14 +1491,14 @@ async function findResponses(input, history) {
             spinnerDiv.className = "message ai wiki-loading";
             spinnerDiv.innerHTML = `
               <div style="display: flex; align-items: center; gap: 10px;">
-                <svg class="spinner spinner-md spinner-primary" viewBox="0 0 100 100" style="width: 24px; height: 24px;">
-                  <circle cx="50%" cy="50%" r="50%" fill="none" stroke="currentColor" stroke-width="6px" stroke-linecap="round">
-                    <animateTransform attributeName="transform" type="rotate" values="-90;810" keyTimes="0;1" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="stroke-dashoffset" values="0%;0%;-157.080%" calcMode="spline" keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0" keyTimes="0;0.5;1" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="stroke-dasharray" values="0% 314.159%;157.080% 157.080%;0% 314.159%" calcMode="spline" keySplines="0.61, 1, 0.88, 1; 0.12, 0, 0.39, 0" keyTimes="0;0.5;1" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                </svg>
-                <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+                <div style="width: 24px; height: 24px; position: relative;">
+                  <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px; position: absolute; top:0; left: 0; z-index: 1;">
+                  <svg viewBox="0 0 24 24" width="24" height="24" style="position: absolute; top:0; left: 0; z-index: 2; animation: wikiSpin 1.5s linear infinite; transform-origin: center;">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+                      <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+                    </circle>
+                  </svg>
+                </div>
                 <span style="opacity: 0.7; font-size: 0.9em;">Searching Wikipedia...</span>
               </div>
             `;
