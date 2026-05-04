@@ -1343,6 +1343,27 @@ async function loadBannedWords() {
 }
 loadBannedWords();
 
+function showWarningModal(message, onDismiss) {
+    const existing = document.getElementById('warningModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'warningModal';
+    modal.className = 'modal warning-modal';
+    modal.innerHTML = `
+        <div class="modal-content warning-modal-content">
+            <h2>Content Warning</h2>
+            <p>${message}</p>
+            <button id="warningModalOk" class="confirm">OK</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.getElementById('warningModalOk').onclick = () => {
+        modal.remove();
+        if (onDismiss) onDismiss();
+    };
+}
+
 function violatesRules(text) {
   if (!bannedWords.length) return false;
   const lowerText = text.toLowerCase();
@@ -1512,18 +1533,54 @@ async function findResponses(input, history) {
             
             if (wikiSummary) {
                 const cleanText = wikiSummary.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                const summary = window.summariseConversation(cleanText, 5);
-                const sentences = summary.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [summary];
-                let formattedSummary = summary;
-
-                if (sentences.length >= 3) {
-                    const intro = sentences[0];
-                    const outro = sentences[sentences.length - 1];
-                    const facts = sentences.slice(1, -1);
-                    formattedSummary = `${intro}\n\n${facts.map(s => `• ${s}`).join('\n\n')}\n\n${outro}`;
-                } else {
-                    formattedSummary = sentences.map(s => `• ${s}`).join('\n\n');
+                const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+                
+                const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
+                
+                let targetPercent = 0.4;
+                let targetSentences = Math.max(1, Math.ceil(sentences.length * targetPercent));
+                
+                if (isUserSummary) {
+                    targetPercent = 0.3;
+                    targetSentences = Math.max(2, Math.ceil(sentences.length * targetPercent));
                 }
+                
+                let summaryText;
+                if (sentences.length <= 2) {
+                    summaryText = cleanText;
+                } else {
+                    const scoredSentences = sentences.map((text, i) => {
+                        let score = 0;
+                        const clean = text.toLowerCase();
+                        if (i === 0) score += 10;
+                        if (i === sentences.length - 1) score += 5;
+                        if (/\d+/.test(text)) score += 3;
+                        if (/[A-Z]{2,}/.test(text)) score += 2;
+                        const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built"];
+                        markers.forEach(m => { if (clean.includes(m)) score += 2; });
+                        return { text: text.trim(), score, index: i };
+                    });
+                    
+                    const topSentences = scoredSentences
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, targetSentences)
+                        .sort((a, b) => a.index - b.index)
+                        .map(s => s.text);
+                    
+                    summaryText = topSentences.join(' ');
+                }
+                
+                const wordCount = summaryText.split(/\s+/).length;
+                let shortSentence = '';
+                if (wordCount > 100) {
+                    shortSentence = '\n\nHere is a comprehensive overview based on Wikipedia.';
+                } else if (wordCount > 50) {
+                    shortSentence = '\n\nHere is a brief summary from Wikipedia.';
+                } else {
+                    shortSentence = '\n\nHere is a quick summary.';
+                }
+                
+                const formattedSummary = `${summaryText}${shortSentence}`;
                 
                 return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`), isWikipedia: true };
             }
@@ -1602,8 +1659,18 @@ async function sendMessage() {
       }
 
       const loadingDiv = document.createElement("div");
-      loadingDiv.className = "message loading-container";
-      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Scanning image...</span>`;
+      loadingDiv.className = "message ai wiki-loading";
+      loadingDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+              <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+          <span style="opacity: 0.7; font-size: 0.9em;">Scanning image...</span>
+        </div>
+      `;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
       aiState.loadingDiv = loadingDiv;
 
@@ -1671,8 +1738,18 @@ async function sendMessage() {
       await renderMessages(); await saveChats();
 
       const loadingDiv = document.createElement("div");
-      loadingDiv.className = "message loading-container";
-      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Generating image...</span>`;
+      loadingDiv.className = "message ai wiki-loading";
+      loadingDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+              <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+          <span style="opacity: 0.7; font-size: 0.9em;">Generating image...</span>
+        </div>
+      `;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
       aiState.loadingDiv = loadingDiv;
 
@@ -1736,8 +1813,18 @@ async function sendMessage() {
       await renderMessages(); await saveChats();
 
       const loadingDiv = document.createElement("div");
-      loadingDiv.className = "message loading-container";
-      loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Analyzing text...</span>`;
+      loadingDiv.className = "message ai wiki-loading";
+      loadingDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+              <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+          <span style="opacity: 0.7; font-size: 0.9em;">Analyzing text...</span>
+        </div>
+      `;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
       aiState.loadingDiv = loadingDiv;
 
@@ -1763,9 +1850,30 @@ async function sendMessage() {
   }
 
   if (await violatesRules(text)) {
+    stopGeneration();
     const info = await loadBanInfo(); info.consecutiveViolations = (info.consecutiveViolations || 0) + 1; await saveBanInfo(info);
     if (info.consecutiveViolations >= 5) { await applyBan(); return; }
-    return appendMessage('This message violates AI safety and use policies. Please try again.', 'error');
+    const currentChat = activeChatId ? chats.find(c => c.id === activeChatId) : null;
+    const isFirstMessage = !currentChat || currentChat.messages.filter(m => m.role === "user").length === 0;
+    if (isFirstMessage) {
+        showWarningModal('This message violates AI safety and use policies. Please try again.', () => {
+            userInput.disabled = false;
+            aiState.isResponding = false;
+            updateSendButton();
+        });
+        return;
+    }
+    showWarningModal('This message violates AI safety and use policies. Please try again.', () => {
+        userInput.disabled = false;
+        aiState.isResponding = false;
+        updateSendButton();
+    });
+    appendMessage('This message violates AI safety and use policies. Please try again.', 'error');
+    userInput.disabled = false;
+    aiState.isResponding = false;
+    sendBtn.innerHTML = aiState.originalSendIcon;
+    updateSendButton();
+    return;
   }
 
   const info = await loadBanInfo(); info.consecutiveViolations = 0; await saveBanInfo(info);
@@ -1811,8 +1919,9 @@ async function sendMessage() {
             botMsg.text = window.tokenizer.decode(botMsg.text);
             const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
             if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation && botMsg.isWikipedia) {
-                const originalLength = botMsg.text.length;
-                botMsg.text = window.summariseConversation(botMsg.text, Math.max(2, Math.floor(originalLength * 0.5 / 50)));
+                const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
+                const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
+                botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
             }
         }
 
