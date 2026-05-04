@@ -11,7 +11,7 @@ function showFeatureModal() {
     <div class="modal-overlay"></div>
     <div class="modal-content">
       <h2>New Feature: Shortened Answers</h2>
-      <p>We've added a new "Shortened answers" setting in Settings. When enabled, responses will be more concise and to the point, cutting out unnecessary details while still providing the information you need.</p>
+      <p>We've added a new "Shortened answers" setting in Settings. When enabled, Wikipedia-sourced responses will be reduced to 60% of their original length with intelligent summarization and a short concluding sentence based on the content length.</p>
       <p>Try it out and let us know what you think!</p>
       <div class="modal-actions">
         <button id="feature-modal-ok" class="confirm">Got it</button>

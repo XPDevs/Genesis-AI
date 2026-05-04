@@ -1348,12 +1348,14 @@ function showWarningModal(message, onDismiss) {
     if (existing) existing.remove();
     const modal = document.createElement('div');
     modal.id = 'warningModal';
-    modal.className = 'modal warning-modal';
+    modal.className = 'modal';
     modal.innerHTML = `
         <div class="modal-content warning-modal-content">
-            <h2>Content Warning</h2>
+            <h3>Content Warning</h3>
             <p>${message}</p>
-            <button id="warningModalOk" class="confirm">OK</button>
+            <div class="modal-actions">
+                <button id="warningModalOk" class="confirm">OK</button>
+            </div>
         </div>
     `;
     document.body.appendChild(modal);
@@ -1753,9 +1755,21 @@ async function sendMessage() {
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
       aiState.loadingDiv = loadingDiv;
 
+      const imgGenTimeout = setTimeout(async () => {
+          if (requestId !== aiState.currentRequestId) return;
+          loadingDiv.remove();
+          aiState.loadingDiv = null;
+          appendMessage("Image generation took too long and timed out. Please try again with a simpler prompt.", "error");
+          userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+          aiState.isResponding = false;
+          sendBtn.innerHTML = aiState.originalSendIcon;
+          updateSendButton();
+      }, 5 * 60 * 1000);
+
       const runGen = () => {
           window.generateImage(prompt).then(async imgUrl => {
               if (requestId !== aiState.currentRequestId) return;
+              clearTimeout(imgGenTimeout);
               loadingDiv.remove();
               aiState.loadingDiv = null;
               if (imgUrl && imgUrl.trim()) {
@@ -2560,7 +2574,7 @@ async function startApp() {
         },
         'shortened-answers': {
             title: 'Shortened Answers',
-            text: 'When enabled, Wikipedia-sourced responses will be shortened by approximately 50% using intelligent text summarization. Only applies to answers fetched from Wikipedia.'
+            text: 'When enabled, Wikipedia-sourced responses will be reduced to 60% of their original length using intelligent text summarization, plus a short concluding sentence. Only applies to answers fetched from Wikipedia.'
         }
     };
 

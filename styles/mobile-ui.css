@@ -652,8 +652,38 @@ body.is-new-chat .input-container {
 }
 
 /* --- Warning Modal --- */
-.warning-modal {
-  z-index: 10001 !important;
+.warning-modal-content {
+  border-left: 4px solid #dc3545;
+}
+
+.warning-modal-content h3 {
+  margin: 0 0 15px 0;
+  color: #dc3545;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.warning-modal-content p {
+  margin: 0 0 20px 0;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* --- Mobile-specific Warning Modal --- */
+@media (max-width: 768px) {
+  .warning-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .warning-modal-content {
+    border-radius: 28px 28px 0 0;
+    max-width: none;
+    width: 100%;
+    min-width: auto;
+    padding: 30px 24px 24px;
+    margin: 0;
+  }
 }
 
 .warning-modal-content {

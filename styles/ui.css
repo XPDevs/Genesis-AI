@@ -619,23 +619,20 @@ body.is-new-chat .input-container {
 }
 
 /* --- Warning Modal --- */
-.warning-modal {
-  z-index: 10001 !important;
-}
-
 .warning-modal-content {
-  text-align: center;
-  max-width: 420px;
-  border: 1px solid #ff4d4d;
+  border-left: 4px solid #dc3545;
 }
 
-.warning-modal-content h2 {
-  color: #ff4d4d;
-  margin-bottom: 12px;
+.warning-modal-content h3 {
+  margin: 0 0 15px 0;
+  color: #dc3545;
+  font-size: 1.3rem;
+  font-weight: 700;
 }
 
 .warning-modal-content p {
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
+  line-height: 1.6;
   opacity: 0.9;
 }
 
