@@ -6,7 +6,6 @@
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
 <title>Genesis AI</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>const MAINTENANCE_MODE = 0;</script>
 
 <style>
   /* Immediate black-out and hide elements to prevent flash */
@@ -20,89 +19,6 @@
   }
   body { visibility: hidden; }
   .sidebar, .chat-main { display: none; }
-
-  /* Maintenance Mode Styles */
-  body.maintenance-mode #maintenanceOverlay {
-    display: flex;
-  }
-  #maintenanceOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #ffffff;
-    z-index: 999999999;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-  }
-  body.maintenance-mode, html.maintenance-mode {
-    background-color: #ffffff !important;
-    overflow: auto !important;
-  }
-  body.maintenance-mode {
-    visibility: visible !important;
-  }
-  .maintenance-container {
-    text-align: center;
-    max-width: 520px;
-    padding: 40px 24px;
-  }
-  .maintenance-icon {
-    width: 160px;
-    height: 160px;
-    margin-bottom: 36px;
-  }
-  .maintenance-title {
-    font-family: "Inter", "Segoe UI", Roboto, sans-serif;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #1f1f1f;
-    margin: 0 0 12px 0;
-  }
-  .maintenance-message {
-    font-family: "Inter", "Segoe UI", Roboto, sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    color: #1f1f1f;
-    line-height: 1.6;
-    margin: 0 0 40px 0;
-    opacity: 0.8;
-  }
-  .maintenance-brand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-  .maintenance-status-btn {
-    display: inline-block;
-    margin-bottom: 36px;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-family: "Inter", "Segoe UI", Roboto, sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    color: #fff;
-    background: var(--primary, #1a73e8);
-    text-decoration: none;
-    transition: filter 0.2s ease;
-  }
-  .maintenance-status-btn:hover {
-    filter: brightness(0.9);
-  }
-  .maintenance-logo {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-  }
-  .maintenance-brand-text {
-    font-family: "Inter", "Segoe UI", Roboto, sans-serif;
-    font-size: 12px;
-    font-weight: 400;
-    color: #1f1f1f;
-    opacity: 0.5;
-  }
-
 
   /* Responsive Toggle visibility */
   #sidebarToggle {
@@ -171,26 +87,6 @@
 </style>
 </head>
 <body>
-  <!-- Maintenance Mode Overlay -->
-  <div id="maintenanceOverlay">
-    <div class="maintenance-container">
-      <img src="maintenance-icon.png" alt="" class="maintenance-icon">
-      <h1 class="maintenance-title">Under Maintenance</h1>
-      <p class="maintenance-message">Genesis AI is currently undergoing scheduled maintenance. We appreciate your patience and will be back shortly.</p>
-      <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" class="maintenance-status-btn">View Status Page</a>
-      <div class="maintenance-brand">
-        <img src="icon.png" alt="XPDevs" class="maintenance-logo">
-        <span class="maintenance-brand-text">Genesis-AI</span>
-      </div>
-    </div>
-  </div>
-  <script>
-    if (MAINTENANCE_MODE === 1) {
-      document.documentElement.classList.add('maintenance-mode');
-      document.body.classList.add('maintenance-mode');
-    }
-  </script>
-
   <div class="sidebar">
     <div class="sidebar-header">
       <button id="newChatBtn">+ New Chat</button>
@@ -247,8 +143,7 @@
         Genesis may display inaccurate info, including about people, so double-check its responses.  
         <br>
         <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank">Status</a>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a>
       </div>
     </div>
   </div>
@@ -465,8 +360,6 @@
   };
 
 (async () => {
-  if (MAINTENANCE_MODE === 1) return;
-
   // 1. Identify platform
   const isMobile = window.innerWidth <= 768;
   
@@ -495,8 +388,7 @@ await Promise.all([
   loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/TXTAuth.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/v2.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/image-gen.js'),
+
   loadScript('https://xpdevs.github.io/Genesis-AI/js/modal_popup_fet.js')
 ]);
 
