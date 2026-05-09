@@ -99,7 +99,7 @@ async function initializeApp() {
 
     // Load tokenizer first as it's a core dependency
     const tokenizerScript = document.createElement('script');
-    tokenizerScript.src = 'https://xpdevs.github.io/Genesis-AI/js/token.js?v=' + Date.now();
+    tokenizerScript.src = 'js/token.js?v=' + Date.now();
     document.head.appendChild(tokenizerScript);
 
     loadMathSupport();
@@ -1404,7 +1404,7 @@ function typeChatTitle(newTitle, callback) {
 }
 
 async function findResponses(input, history) {
-  // Decode the input from UTF-8 hex format
+  // Decode any hex escape sequences in the input
   const decodedInput = window.tokenizer.decode(input);
   const lowerInput = decodedInput.toLowerCase();
 
@@ -1417,7 +1417,7 @@ async function findResponses(input, history) {
           const result = window.calc(decodedInput);
           if (result !== "Error" && result !== "Invalid input") {
               // Encode the response before returning
-              return { role: "ai", text: window.tokenizer.encode(`The answer is: ${result}`) };
+              return { role: "ai", text: `The answer is: ${result}` };
           }
       }
   }
@@ -1427,7 +1427,7 @@ async function findResponses(input, history) {
   if (whoAmIPatterns.some(p => lowerInput.includes(p))) {
       const userInfo = await DB.get("userInfo", {});
       const fullName = userInfo.name || "User";
-      return { role: "ai", text: window.tokenizer.encode(`You are ${fullName}.`) };
+      return { role: "ai", text: `You are ${fullName}.` };
   }
 
   // "@export" - Export chat as PDF or Markdown
@@ -1437,12 +1437,12 @@ async function findResponses(input, history) {
       
       const activeChat = chats.find(c => c.id === activeChatId);
       if (!activeChat || activeChat.messages.length === 0) {
-          return { role: "ai", text: window.tokenizer.encode("No chat to export. Start a conversation first!") };
+          return { role: "ai", text: "No chat to export. Start a conversation first!" };
       }
       
       if (isPDF) {
           exportChatAsPDF(activeChat);
-          return { role: "ai", text: window.tokenizer.encode("Opening chat in PDF format for printing. Use your browser's Print dialog to save as PDF.") };
+          return { role: "ai", text: "Opening chat in PDF format for printing. Use your browser's Print dialog to save as PDF." };
       } else if (isMarkdown) {
           const md = await exportChatAsMarkdown(activeChat);
           const blob = new Blob([md], { type: 'text/markdown' });
@@ -1454,7 +1454,7 @@ async function findResponses(input, history) {
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          return { role: "ai", text: window.tokenizer.encode("Chat exported as Markdown!") };
+          return { role: "ai", text: "Chat exported as Markdown!" };
       }
       // Default to markdown
       const md = await exportChatAsMarkdown(activeChat);
@@ -1467,7 +1467,7 @@ async function findResponses(input, history) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      return { role: "ai", text: window.tokenizer.encode("Chat exported as Markdown!") };
+      return { role: "ai", text: "Chat exported as Markdown!" };
   }
 
   const foundMatches = [];
@@ -1584,7 +1584,7 @@ async function findResponses(input, history) {
                 
                 const formattedSummary = `${summaryText}${shortSentence}`;
                 
-                return { role: "ai", text: window.tokenizer.encode(`\n\n${formattedSummary}\n\n`), isWikipedia: true };
+                return { role: "ai", text: `\n\n${formattedSummary}\n\n`, isWikipedia: true };
             }
           }
         } catch (e) {
@@ -1595,14 +1595,14 @@ async function findResponses(input, history) {
     const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
     const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
-      return { role: "ai", text: window.tokenizer.encode(fuzzyMatch.text) };
+      return { role: "ai", text: fuzzyMatch.text };
     }
-    return { role: "ai", text: window.tokenizer.encode("I'm not quite sure I follow. Could you give me a bit more detail?") };
+    return { role: "ai", text: "I'm not quite sure I follow. Could you give me a bit more detail?" };
   }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-  if (orderedMessages.length === 1) return { role: "ai", text: window.tokenizer.encode(orderedMessages[0]) };
+  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
   const last = orderedMessages.pop();
-  return { role: "ai", text: window.tokenizer.encode(orderedMessages.join(", ") + " and " + last) };
+  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
 }
 
 async function sendMessage() {
@@ -1922,9 +1922,7 @@ async function sendMessage() {
         loadingDiv.remove();
         aiState.loadingDiv = null;
 
-        // Encode user input before sending to the AI
-        const encodedText = window.tokenizer.encode(text);
-        const botMsg = await findResponses(encodedText, chat.messages);
+        const botMsg = await findResponses(text, chat.messages);
 
         if (requestId !== aiState.currentRequestId) return;
 
