@@ -2047,7 +2047,6 @@ if (userInput && suggestionBox) {
         if (val.endsWith('@')) {
             suggestionBox.innerHTML = `
                 <div class="suggestion-item" onclick="userInput.value += 'ImgAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> ImgAuth</div>
-                <div class="suggestion-item" onclick="userInput.value += 'img '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> Generate Image</div>
                 <div class="suggestion-item" onclick="userInput.value += 'TxtAuth '; suggestionBox.style.display='none'; userInput.focus(); updateSendButton();"><span></span> Check Text</div>
             `;
             suggestionBox.style.display = 'block';
