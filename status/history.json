@@ -6,6 +6,7 @@
     "Genesis-AI Website": "Operational"
   },
   "daily_history": [
+    "maintenance",
     "operational",
     "operational",
     "operational",
@@ -38,6 +39,13 @@
     "degraded"
   ],
   "incidents": [
+    {
+      "date": "2026-05-09",
+      "title": "Emergency Maintenance",
+      "description": "Genesis AI is currently undergoing emergency maintenance due to a major website issue. Services may be temporarily unavailable.",
+      "time": "15:30",
+      "type": "maintenance"
+    },
     {
       "date": "2026-02-03",
       "title": "Message Delivery Failure",
