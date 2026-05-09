@@ -1,58 +1,87 @@
 /**
- * Genesis-AI: Tokenizer Module
- * Encodes and decodes text to/from a UTF-8 hex representation.
- * Supports all Unicode characters, including those outside the BMP
- * (e.g., emojis, rare symbols) by encoding them as their UTF-8 byte sequences.
+ * Genesis-AI: Tokenizer Module (Decode‑Only)
+ * 
+ * Decodes standard hex escape sequences in a string:
+ *   - \xHH  → UTF‑8 byte (multiple consecutive bytes form a character)
+ *   - \uXXXX → Unicode code point (supports BMP)
+ *   - \u{H...} → Any Unicode code point (supports astral planes)
+ * 
+ * All other text is preserved as‑is.
  */
 
 (function() {
     'use strict';
 
-    // Use built‑in TextEncoder/TextDecoder for robust UTF‑8 handling.
-    // They are available in all modern browsers and Node.js.
-    const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder('utf-8', { fatal: false });
 
     /**
-     * Encodes a string into a sequence of UTF-8 hex bytes.
-     * Each byte is represented as "\xHH", where HH is a two‑digit hex number.
-     * Example: "A" → "\x41", "€" → "\xE2\x82\xAC"
-     * Also handles Unicode escape sequences like \u2014, \u2019, etc.
-     * @param {string} text The input string.
-     * @returns {string} The encoded string consisting only of "\xHH" sequences.
-     */
-    function encode(text) {
-        if (typeof text !== 'string') return '';
-        try {
-            text = JSON.parse('"' + text + '"');
-        } catch (e) {}
-        const bytes = textEncoder.encode(text);
-        return Array.from(bytes).map(byte => '\\x' + byte.toString(16).padStart(2, '0')).join('');
-    }
-
-    /**
-     * Decodes a UTF-8 hex representation back into a string.
-     * The input must consist entirely of "\xHH" sequences (no extra characters).
-     * If the input does not start with "\x", it is returned unchanged.
-     * @param {string} encodedText The encoded string (e.g., "\x41\x42").
+     * Decodes a string by replacing all \xHH, \uXXXX, and \u{H...} escapes
+     * with their actual characters. Non‑escape text stays the same.
+     * 
+     * @param {string} input The input string (may contain hex escapes).
      * @returns {string} The decoded string.
      */
-    function decode(encodedText) {
-        if (typeof encodedText !== 'string' || !encodedText.startsWith('\\x')) {
-            return encodedText; // Return as is if not in the expected format.
+    function decode(input) {
+        if (typeof input !== 'string') return '';
+
+        let result = '';
+        let i = 0;
+        const len = input.length;
+
+        while (i < len) {
+            if (input[i] === '\\' && i + 1 < len) {
+                const next = input[i + 1];
+
+                // ---- \xHH (UTF-8 byte) ----
+                if (next === 'x' && i + 3 < len && /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
+                    const bytes = [];
+                    // Collect consecutive \xHH sequences
+                    while (i + 3 < len && input[i] === '\\' && input[i + 1] === 'x' &&
+                           /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
+                        const hex = input.substr(i + 2, 2);
+                        bytes.push(parseInt(hex, 16));
+                        i += 4;
+                    }
+                    result += textDecoder.decode(new Uint8Array(bytes));
+                    continue;
+                }
+
+                // ---- \uXXXX (BMP Unicode) ----
+                if (next === 'u' && i + 5 < len && /[0-9a-fA-F]{4}/.test(input.substr(i + 2, 4))) {
+                    const hex = input.substr(i + 2, 4);
+                    const codePoint = parseInt(hex, 16);
+                    result += String.fromCodePoint(codePoint);
+                    i += 6;
+                    continue;
+                }
+
+                // ---- \u{H...} (any Unicode, ES6) ----
+                if (next === 'u' && i + 3 < len && input[i + 2] === '{') {
+                    let end = i + 3;
+                    while (end < len && input[end] !== '}') end++;
+                    if (end < len) {
+                        const hex = input.substring(i + 3, end);
+                        if (/^[0-9a-fA-F]+$/.test(hex)) {
+                            const codePoint = parseInt(hex, 16);
+                            result += String.fromCodePoint(codePoint);
+                            i = end + 1;
+                            continue;
+                        }
+                    }
+                }
+
+                // Not a recognized escape – treat as literal backslash
+                result += input[i];
+                i++;
+            } else {
+                result += input[i];
+                i++;
+            }
         }
-        // Split by "\x", discard the first empty element, parse hex → bytes
-        const hexes = encodedText.split('\\x').slice(1);
-        const bytes = new Uint8Array(hexes.length);
-        for (let i = 0; i < hexes.length; i++) {
-            // Parse each two‑digit hex number as a byte (0‑255)
-            bytes[i] = parseInt(hexes[i], 16);
-        }
-        // Decode the byte array as UTF-8
-        return textDecoder.decode(bytes);
+        return result;
     }
 
-    // Expose the tokenizer to the global window object
-    window.tokenizer = { encode, decode };
-    console.log("Tokenizer Module Loaded (UTF‑8 enabled)");
+    // Expose only the decode function
+    window.tokenizer = { decode };
+    console.log("Tokenizer Module Loaded (decodes \\xHH, \\uXXXX, \\u{H...})");
 })();
