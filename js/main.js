@@ -709,7 +709,7 @@ async function showBanModal() {
 
 // --- BINARY DECODER (V4.5 OPTIMIZED) ---
 // Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
-const defaultModel = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json";
+const defaultModel = "https://github.com/XPDevs/Genesis-AI/releases/download/Models/Genesis-SPT-4.6.json";
 let jsonURL = defaultModel;
 
 function decodeBinary(buffer) {
