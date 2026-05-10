@@ -1,4 +1,4 @@
-const FEATURE_MODAL_KEY = 'shortened_answers_modal_dismissed';
+const FEATURE_MODAL_KEY = 'genesis_5_announcement_dismissed';
 
 function showFeatureModal() {
   if (localStorage.getItem(FEATURE_MODAL_KEY)) {
@@ -10,9 +10,9 @@ function showFeatureModal() {
   modal.innerHTML = `
     <div class="modal-overlay"></div>
     <div class="modal-content">
-      <h2>New Feature: Shortened Answers</h2>
-      <p>We've added a new "Shortened answers" setting in Settings. When enabled, Wikipedia-sourced responses will be reduced to 60% of their original length with intelligent summarization and a short concluding sentence based on the content length.</p>
-      <p>Try it out and let us know what you think!</p>
+      <h2>Genesis 5.0 Released</h2>
+      <p>Genesis 4.5 has been removed. The new model 5.0 is now available with 45,000 parameters, up from 5,000 parameters in the previous model 4.6.</p>
+      <p>Genesis 4.6 will still be available until the next major release.</p>
       <div class="modal-actions">
         <button id="feature-modal-ok" class="confirm">Got it</button>
       </div>

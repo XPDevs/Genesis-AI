@@ -707,7 +707,7 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY DECODER (V4.5 OPTIMIZED) ---
+// --- BINARY DECODER ---
 // Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
 const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json";
 let jsonURL = defaultModel;
