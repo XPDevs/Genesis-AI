@@ -1,8 +1,9 @@
 // --- DATABASE UTILITY (IndexedDB) ---
 const DB = {
     dbName: "GenesisAI",
-    dbVersion: 1,
+    dbVersion: 2,
     storeName: "settings",
+    modelStore: "models",
     db: null,
 
     async init() {
@@ -12,6 +13,9 @@ const DB = {
                 const db = e.target.result;
                 if (!db.objectStoreNames.contains(this.storeName)) {
                     db.createObjectStore(this.storeName);
+                }
+                if (!db.objectStoreNames.contains(this.modelStore)) {
+                    db.createObjectStore(this.modelStore);
                 }
             };
             request.onsuccess = (e) => {
@@ -38,6 +42,28 @@ const DB = {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], "readwrite");
             const store = transaction.objectStore(this.storeName);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getModel(key) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.modelStore], "readonly");
+            const store = transaction.objectStore(this.modelStore);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async setModel(key, value) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.modelStore], "readwrite");
+            const store = transaction.objectStore(this.modelStore);
             const request = store.put(value, key);
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
@@ -754,11 +780,21 @@ function hideModelLoading() {
   }
 }
 
-async function loadModel() {
+async function loadModel(force = false) {
   jsonURL = await DB.get("selectedModel", defaultModel);
+  
+  if (!force) {
+    const cached = await DB.getModel(jsonURL);
+    if (cached) {
+      console.log("Loading model from cache:", jsonURL);
+      responses = cached;
+      return;
+    }
+  }
+
   showModelLoading(0);
   try {
-    const r = await fetch(jsonURL + "?v=" + Date.now());
+    const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
     const contentLength = r.headers.get("Content-Length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
@@ -778,7 +814,9 @@ async function loadModel() {
       allBytes.set(chunk, pos);
       pos += chunk.length;
     }
-    responses = JSON.parse(new TextDecoder().decode(allBytes));
+    const modelData = JSON.parse(new TextDecoder().decode(allBytes));
+    responses = modelData;
+    await DB.setModel(jsonURL, modelData);
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
@@ -2284,6 +2322,19 @@ document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
     modelSelect.value = await DB.get("selectedModel", defaultModel);
 };
+
+const redownloadModelBtn = document.getElementById("redownloadModelBtn");
+if (redownloadModelBtn) {
+    redownloadModelBtn.onclick = async () => {
+        const currentModel = modelSelect ? modelSelect.value : await DB.get("selectedModel", defaultModel);
+        await loadModel(true);
+        const modelNameDisplay = document.getElementById("modelNameDisplay");
+        const modelParamsDisplay = document.getElementById("modelParamsDisplay");
+        if (modelNameDisplay) modelNameDisplay.textContent = responses.ver || "Unknown";
+        if (modelParamsDisplay) modelParamsDisplay.textContent = Object.keys(responses).length;
+        alert("Model re-downloaded successfully!");
+    };
+}
 
 async function applyTheme() {
     // Default to auto if not set, unless legacy theme exists
