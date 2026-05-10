@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <title>Genesis AI</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -76,6 +77,77 @@
     background-color: rgba(255, 255, 255, 0.1) !important;
   }
 
+  #maintenanceOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    z-index: 999999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', -apple-system, sans-serif;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #maintenanceOverlay .maint-icon-big {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 32px;
+  }
+  #maintenanceOverlay .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  #maintenanceOverlay .brand-row img {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+  }
+  #maintenanceOverlay .brand-row span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #6e6e73;
+  }
+  #maintenanceOverlay .maint-heading {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #1f1f1f;
+    margin: 0 0 8px 0;
+  }
+  #maintenanceOverlay .maint-desc {
+    color: #6e6e73;
+    font-size: 16px;
+    margin: 0 0 32px 0;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+  #maintenanceOverlay a {
+    background: #1a73e8;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+  #maintenanceOverlay a:hover {
+    filter: brightness(0.9);
+    transform: translateY(-1px);
+  }
+
   /* Wiki spinner animation */
   @keyframes wikiSpin {
     0% { transform: rotate(0deg); }
@@ -87,6 +159,17 @@
 </style>
 </head>
 <body>
+  <div id="maintenanceOverlay">
+    <img src="maintenance-icon.png" alt="" class="maint-icon-big">
+    <h1 class="maint-heading">Under Maintenance</h1>
+    <p class="maint-desc">Genesis-AI is currently under maintenance. We appreciate your patience and will be back soon.</p>
+    <div class="brand-row">
+      <img src="icon.png" alt="">
+      <span>Genesis-AI</span>
+    </div>
+    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">View Status &rarr;</a>
+  </div>
+
   <div class="sidebar">
     <div class="sidebar-header">
       <button id="newChatBtn">+ New Chat</button>
@@ -143,7 +226,8 @@
         Genesis may display inaccurate info, including about people, so double-check its responses.  
         <br>
         <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank">Status</a>
       </div>
     </div>
   </div>
@@ -337,6 +421,8 @@
   </div>
 
 <script>
+  const MAINTENANCE_MODE = 0;
+
   const loadStyle = (href) => {
     return new Promise((resolve) => {
       const link = document.createElement('link');
@@ -360,6 +446,14 @@
   };
 
 (async () => {
+  if (MAINTENANCE_MODE === 1) {
+    const overlay = document.getElementById('maintenanceOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    document.documentElement.style.backgroundColor = '#fff';
+    document.body.style.visibility = 'visible';
+    return;
+  }
+
   // 1. Identify platform
   const isMobile = window.innerWidth <= 768;
   
