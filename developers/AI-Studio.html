@@ -153,7 +153,6 @@
                 <label class="block text-sm font-medium text-gray-300">Base Model</label>
                 <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="Genesis-SPT-4.6">Genesis SPT-4.6</option>
-                    <option value="Genesis-SPT-4.5">Genesis SPT-4.5</option>
                     <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
                 </select>
             </div>
@@ -460,7 +459,6 @@
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Model</label>
                             <select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
                                 <option value="spt-4.6-json" selected>Genesis SPT-4.6 (JSON)</option>
-                                <option value="spt-4.5-bin">Genesis SPT-4.5 (Binary)</option>
                                 <option value="spt-1.0-json">Genesis SPT-1.0 (JSON)</option>
                             </select>
                         </div>
@@ -554,31 +552,31 @@
                 <p class="text-gray-400">Explore the different AI models (modals) available on the Genesis platform.</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Genesis SPT-4.6 -->
+                    <!-- Genesis SPT-5.0 -->
                     <div class="card-bg p-6 rounded-xl border border-indigo-500/50 ring-2 ring-indigo-500/20">
                         <div class="flex justify-between items-start mb-4">
-                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.6</h4>
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-5.0</h4>
                             <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Latest</span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4">The newest and most capable JSON model. Optimized for complex reasoning and broader knowledge coverage. Human-readable and easy to edit.</p>
+                        <p class="text-gray-400 text-sm mb-4">Our most advanced model yet with 45,000 parameters — 9x larger than SPT-4.6. Delivers significantly deeper reasoning and broader knowledge coverage.</p>
                         <div class="space-y-2 text-xs text-gray-500">
                             <p><span class="text-gray-300">Format:</span> Standard JSON</p>
-                            <p><span class="text-gray-300">Parameters:</span> 5079</p>
-                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-4.6.json</code></p>
+                            <p><span class="text-gray-300">Parameters:</span> 45000</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json</code></p>
                         </div>
                     </div>
 
-                    <!-- Genesis SPT-4.5 -->
+                    <!-- Genesis SPT-4.6 -->
                     <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
                         <div class="flex justify-between items-start mb-4">
-                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.5</h4>
-                            <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">Binary (.bin)</span>
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.6</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">JSON</span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4">A high-performance binary model. Optimized for speed and general knowledge. Uses a custom binary format for efficient client-side decoding.</p>
+                        <p class="text-gray-400 text-sm mb-4">A capable JSON model with 5,079 parameters. Optimized for complex reasoning and general knowledge tasks.</p>
                         <div class="space-y-2 text-xs text-gray-500">
-                            <p><span class="text-gray-300">Format:</span> Custom Binary</p>
-                            <p><span class="text-gray-300">Parameters:</span> 1446</p>
-                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-4.5-240126P1105M.bin</code></p>
+                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+                            <p><span class="text-gray-300">Parameters:</span> 5079</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json</code></p>
                         </div>
                     </div>
 
@@ -592,7 +590,7 @@
                         <div class="space-y-2 text-xs text-gray-500">
                             <p><span class="text-gray-300">Format:</span> Standard JSON</p>
                             <p><span class="text-gray-300">Size:</span> ~450 KB</p>
-                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">modals/Genesis-SPT-1.0.json</code></p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json</code></p>
                         </div>
                     </div>
                 </div>
@@ -777,7 +775,7 @@ generateContent(mySecretKey, "Write a headline for a new productivity app.")
                         <h5 class="text-lg font-semibold text-gray-300 mb-2">2. Fetching and Using the Modal</h5>
                         <div class="code-block text-xs">
 <pre>async function loadGenesisModel() {
-    const response = await fetch('https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin');
+    const response = await fetch('https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json');
     const buffer = await response.arrayBuffer();
     const knowledgeBase = decodeBinary(buffer);
     
@@ -858,6 +856,95 @@ function violatesRules(text) {
   return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
 }</pre>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-700 my-8 pt-8">
+                            <h4 class="text-xl font-semibold text-white mb-4">Genesis SPT-5.0 Tokenizer Module</h4>
+                            <p class="text-gray-400 text-sm mb-4">Models such as SPT-5.0 encode text using hex escape sequences (<code class="text-indigo-400">\xHH</code>, <code class="text-indigo-400">\uXXXX</code>) to ensure safe transport. The <code class="text-indigo-400">tokenizer.decode()</code> function is required to decode model output correctly. Include this script before loading the model:</p>
+                            <div class="code-block text-xs max-h-96 overflow-y-auto">
+<pre>/**
+ * Genesis-AI: Tokenizer Module (Decode‑Only)
+ * 
+ * Decodes standard hex escape sequences in a string:
+ *   - \xHH  → UTF‑8 byte (multiple consecutive bytes form a character)
+ *   - \uXXXX → Unicode code point (supports BMP)
+ *   - \u{H...} → Any Unicode code point (supports astral planes)
+ * 
+ * All other text is preserved as‑is.
+ */
+
+(function() {
+    'use strict';
+
+    const textDecoder = new TextDecoder('utf-8', { fatal: false });
+
+    function decode(input) {
+        if (typeof input !== 'string') return '';
+
+        let result = '';
+        let i = 0;
+        const len = input.length;
+
+        while (i < len) {
+            if (input[i] === '\\' && i + 1 < len) {
+                const next = input[i + 1];
+
+                // \xHH (UTF-8 byte)
+                if (next === 'x' && i + 3 < len && /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
+                    const bytes = [];
+                    while (i + 3 < len && input[i] === '\\' && input[i + 1] === 'x' &&
+                           /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
+                        const hex = input.substr(i + 2, 2);
+                        bytes.push(parseInt(hex, 16));
+                        i += 4;
+                    }
+                    result += textDecoder.decode(new Uint8Array(bytes));
+                    continue;
+                }
+
+                // \uXXXX (BMP Unicode)
+                if (next === 'u' && i + 5 < len && /[0-9a-fA-F]{4}/.test(input.substr(i + 2, 4))) {
+                    const hex = input.substr(i + 2, 4);
+                    result += String.fromCodePoint(parseInt(hex, 16));
+                    i += 6;
+                    continue;
+                }
+
+                // \u{H...} (any Unicode)
+                if (next === 'u' && i + 3 < len && input[i + 2] === '{') {
+                    let end = i + 3;
+                    while (end < len && input[end] !== '}') end++;
+                    if (end < len) {
+                        const hex = input.substring(i + 3, end);
+                        if (/^[0-9a-fA-F]+$/.test(hex)) {
+                            result += String.fromCodePoint(parseInt(hex, 16));
+                            i = end + 1;
+                            continue;
+                        }
+                    }
+                }
+
+                result += input[i];
+                i++;
+            } else {
+                result += input[i];
+                i++;
+            }
+        }
+        return result;
+    }
+
+    window.tokenizer = { decode };
+    console.log("Tokenizer Module Loaded (decodes \\xHH, \\uXXXX, \\u{H...})");
+})();</pre>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-900/30 border border-yellow-700/50 rounded-xl">
+                                <p class="text-yellow-200 text-sm font-semibold flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    Required for SPT-5.0
+                                </p>
+                                <p class="text-gray-400 text-xs mt-2">Models such as SPT-5.0 encode their output with hex escapes and require <code class="text-gray-300">tokenizer.decode()</code> to produce readable text. Load this module before fetching the model and call <code class="text-gray-300">tokenizer.decode(output)</code> on every response string.</p>
                             </div>
                         </div>
                     </div>
@@ -1276,14 +1363,9 @@ function violatesRules(text) {
             try {
                 let url = "";
                 if (modelSelect.value === 'spt-4.6-json') {
-                    url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json';
+                    url = 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json';
                     const res = await fetch(url);
                     activeModelData = await res.json();
-                } else if (modelSelect.value === 'spt-4.5-bin') {
-                    url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin';
-                    const res = await fetch(url);
-                    const buffer = await res.arrayBuffer();
-                    activeModelData = decodeBinary(buffer);
                 } else {
                     url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json';
                     const res = await fetch(url);
@@ -1396,7 +1478,7 @@ function violatesRules(text) {
             const sys = document.getElementById('system-prompt').value;
             const topp = document.getElementById('topp-slider').value;
             const topk = document.getElementById('topk-slider').value;
-            const modelName = model === 'spt-4.6-json' ? 'genesis-spt-4.6' : model === 'spt-4.5-bin' ? 'genesis-spt-4.5' : 'genesis-spt-1.0';
+            const modelName = model === 'spt-4.6-json' ? 'genesis-spt-4.6' : 'genesis-spt-1.0';
             
             // Collect Examples
             const examples = [];
@@ -1410,7 +1492,7 @@ function violatesRules(text) {
 
 const config = {
     apiUrl: "https://xpdevs.github.io/Genesis-AI/developers/api/generate",
-    modelUrl: "${model === 'spt-4.6-json' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.6.json' : model === 'spt-4.5-bin' ? 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-4.5-240126P1105M.bin' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
+    modelUrl: "${model === 'spt-4.6-json' ? 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
     topP: ${topp},
