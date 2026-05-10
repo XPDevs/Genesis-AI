@@ -707,115 +707,18 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-// --- BINARY DECODER ---
-// Matches XPDevs Nano-Compiler v2.0 (json2bin.c)
 const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json";
 let jsonURL = defaultModel;
 
-function decodeBinary(buffer) {
-    const bytes = new Uint8Array(buffer);
-    const view = new DataView(buffer);
-    const XOR_KEY = 0xAA; 
-    const decoder = new TextDecoder('utf-8');
-    let jsonString = "";
-    
-    // 1. Signature Check (Match #define SIG_SMALL 0x53494E47)
-    // We check the first 4 bytes for the "GNIS" signature
-    let i = 0;
-    try {
-        const sig = view.getUint32(0, true); // true = little-endian
-        if (sig === 0x53494E47) {
-            i = 4; // Skip "GNIS" header
-            console.log("Valid Signature.");
-        } else {
-            console.warn("Signature mismatch, attempting skip-less parse.");
-            i = 0;
-        }
-    } catch (e) {
-        i = 0;
-    }
-
-    // 2. Token-based Reconstruction
-    while (i < bytes.length) {
-        const b = bytes[i];
-        
-        switch(b) {
-            case 0x01: jsonString += "{"; break; // T_START
-            case 0x02: jsonString += "}"; break; // T_END
-            case 0x03: jsonString += ":"; break; // T_SEP
-            case 0x04: // T_NEXT
-                // Prevent trailing commas: only add comma if next token is NOT } (0x02) or ] (0x06)
-                if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) {
-                    jsonString += ",";
-                }
-                break;
-            case 0x05: jsonString += "["; break; // T_ARR_S
-            case 0x06: jsonString += "]"; break; // T_ARR_E
-            case 0x07: // T_STR (String Start)
-                i++; 
-                let start = i;
-                
-                // Find the 0x00 null terminator used in json2bin.c
-                while (i < bytes.length && bytes[i] !== 0x00) {
-                    i++;
-                }
-                
-                const chunk = bytes.slice(start, i);
-                const decrypted = new Uint8Array(chunk.length);
-                for (let j = 0; j < chunk.length; j++) {
-                    decrypted[j] = chunk[j] ^ XOR_KEY;
-                }
-                
-                // The C compiler preserves the string content as it appears in the JSON file,
-                // including escape characters like \". Using JSON.stringify would re-escape
-                // these, corrupting the data (e.g., \" becomes \\").
-                // The correct approach is to simply wrap the decoded string in quotes,
-                // mirroring the behavior of the nano_decompile function in json2bin.c.
-                const stringContent = decoder.decode(decrypted);
-                jsonString += '"' + stringContent + '"';
-                break;
-            default:
-                // Ignore unexpected bytes (like padding)
-                break;
-        }
-        i++;
-    }
-    
-    return jsonString.trim();
-}  
-
-// 3. Model Loading Logic
 async function loadModel() {
   jsonURL = await DB.get("selectedModel", defaultModel);
   try {
     const r = await fetch(jsonURL + "?v=" + Date.now());
     if (!r.ok) throw new Error("File not found!");
-    const buffer = await r.arrayBuffer();
-    try {
-      const decoded = decodeBinary(buffer);
-      
-      // Safety: Ensure the result is valid JSON before parsing
-      if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-          throw new Error("Reconstructed string is invalid!");
-      }
-      
-      responses = JSON.parse(decoded);
-      console.log("Binary modal loaded.");
-    } catch (e) {
-      console.warn("Binary reconstruction failed: " + e.message);
-      
-      // Fallback: Check if the file was just raw JSON all along
-      try {
-          const rawText = new TextDecoder().decode(buffer).trim();
-          responses = JSON.parse(rawText);
-          console.log("Fallback successful.");
-      } catch (innerErr) {
-          throw new Error("File is not in either supported format.");
-      }
-    }
+    const rawText = await r.text();
+    responses = JSON.parse(rawText);
   } catch (err) {
-    console.error("Reconstruction Error:", err);
-    // Legacy Safety Fallback to 1.0 JSON (with cache busting)
+    console.error("Model load error:", err);
     try {
       const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
       const data = await r.json();
@@ -2053,15 +1956,8 @@ function handleCustomModelUpload(event) {
                 const rawText = new TextDecoder().decode(buffer).trim();
                 newResponses = JSON.parse(rawText);
                 console.log("Genesis-AI: Custom JSON modal loaded for session.");
-            } else if (file.name.endsWith('.bin')) {
-                const decoded = decodeBinary(buffer);
-                if (!decoded || (!decoded.startsWith("{") && !decoded.startsWith("["))) {
-                    throw new Error("Reconstructed string from .bin is not valid JSON.");
-                }
-                newResponses = JSON.parse(decoded);
-                console.log("Genesis-AI: Custom Binary modal loaded for session.");
             } else {
-                throw new Error("Unsupported file type. Please use .json or .bin");
+                throw new Error("Unsupported file type. Please use .json");
             }
 
             if (typeof newResponses !== 'object' || newResponses === null) {
