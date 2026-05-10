@@ -710,14 +710,78 @@ async function showBanModal() {
 const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json";
 let jsonURL = defaultModel;
 
+let modelLoadingEl = null;
+
+function showModelLoading(pct) {
+  if (!modelLoadingEl) {
+    modelLoadingEl = document.createElement('div');
+    modelLoadingEl.id = 'model-loading';
+    modelLoadingEl.innerHTML = '<div id="model-loading-bar"><div id="model-loading-fill"></div></div><div id="model-loading-text">Loading model...</div>';
+    const s = document.createElement('style');
+    s.id = 'model-loading-style';
+    s.textContent = `
+      #model-loading {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 2147483646;
+        display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+        pointer-events: none;
+      }
+      #model-loading-bar {
+        width: 200px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden;
+      }
+      #model-loading-fill {
+        height: 100%; width: 0%; background: var(--primary, #007bff); border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+      #model-loading-text {
+        margin-top: 8px; font-size: 13px; color: var(--text-secondary, #aaa);
+      }
+    `;
+    document.head.appendChild(s);
+    document.body.appendChild(modelLoadingEl);
+  }
+  const fill = modelLoadingEl.querySelector('#model-loading-fill');
+  const text = modelLoadingEl.querySelector('#model-loading-text');
+  if (fill) fill.style.width = pct + '%';
+  if (text) text.textContent = 'Loading model... ' + pct + '%';
+}
+
+function hideModelLoading() {
+  if (modelLoadingEl) {
+    modelLoadingEl.remove();
+    modelLoadingEl = null;
+    const s = document.getElementById('model-loading-style');
+    if (s) s.remove();
+  }
+}
+
 async function loadModel() {
   jsonURL = await DB.get("selectedModel", defaultModel);
+  showModelLoading(0);
   try {
     const r = await fetch(jsonURL + "?v=" + Date.now());
     if (!r.ok) throw new Error("File not found!");
-    const rawText = await r.text();
-    responses = JSON.parse(rawText);
+    const contentLength = r.headers.get("Content-Length");
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    let loaded = 0;
+    const reader = r.body.getReader();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.length;
+      if (total) showModelLoading(Math.round((loaded / total) * 100));
+    }
+    const allBytes = new Uint8Array(loaded);
+    let pos = 0;
+    for (const chunk of chunks) {
+      allBytes.set(chunk, pos);
+      pos += chunk.length;
+    }
+    responses = JSON.parse(new TextDecoder().decode(allBytes));
+    hideModelLoading();
   } catch (err) {
+    hideModelLoading();
     console.error("Model load error:", err);
     try {
       const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
