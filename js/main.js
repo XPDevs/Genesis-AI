@@ -2121,7 +2121,7 @@ userInput.addEventListener("keypress", e => {
 });
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-4.6";
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
     document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
     // Add upload status element if it doesn't exist
     if (modelSelect && !document.getElementById("customModelStatus")) {
