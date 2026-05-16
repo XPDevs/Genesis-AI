@@ -426,14 +426,9 @@ function injectCSS() {
         @media (max-width: 768px) {
             .scroll-bottom-btn {
                 bottom: 90px;
-                left: 50%;
-                right: auto;
-                transform: translateX(-50%);
+                right: 16px;
                 width: 36px;
                 height: 36px;
-            }
-            .scroll-bottom-btn:hover {
-                transform: translateX(-50%) scale(1.1);
             }
         }
     `;
@@ -1299,38 +1294,71 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
 // --- WIKIPEDIA API ---
 async function fetchWikipediaSummary(topic) {
-    const encodedTopic = encodeURIComponent(topic);
-    const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&titles=${encodedTopic}&redirects=1&origin=*`;
+    const questionPrefixes = [
+        "how to", "what is", "who is", "where is", "when is", "why is",
+        "tell me about", "define", "explain", "what are", "who are",
+        "how do i", "how can i", "steps to", "guide for", "tutorial on",
+        "method to", "process for", "meaning of", "describe", "summarize",
+        "overview of", "details on", "concept of", "basics of",
+        "difference between", "compare", "list of", "examples of",
+        "pros and cons of", "who was", "where are", "origin of",
+        "source of", "background on", "is there a", "whats", "what is a",
+        "what is an", "what does", "how does", "how is", "can you",
+        "do you know", "have you heard", "what about"
+    ];
+
+    let searchTopic = topic.trim();
+    for (const prefix of questionPrefixes) {
+        const regex = new RegExp('^' + prefix + '\\s*', 'i');
+        if (regex.test(searchTopic)) {
+            searchTopic = searchTopic.replace(regex, '').trim();
+            break;
+        }
+    }
+
+    searchTopic = searchTopic.replace(/[?.,!;:]+$/g, '').trim();
+    if (!searchTopic || searchTopic.length < 2) searchTopic = topic.replace(/[?.,!;:]+$/g, '').trim();
 
     try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': 'GenesisAI/1.0 (bot@example.com)'
-            }
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTopic)}&srlimit=5&srprop=snippet&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
         });
+        if (!searchRes.ok) throw new Error(`Search HTTP ${searchRes.status}`);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const searchData = await searchRes.json();
+        let results = searchData.query?.search;
+
+        if (!results || results.length === 0) {
+            const fallbackUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=5&srprop=snippet&format=json&origin=*`;
+            const fbRes = await fetch(fallbackUrl, {
+                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+            });
+            const fbData = await fbRes.json();
+            results = fbData.query?.search;
+            if (!results || results.length === 0) return null;
         }
 
-        const data = await response.json();
-        const pages = data.query.pages;
+        const bestPage = results[0];
+        const pageTitle = bestPage.title;
+
+        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const extRes = await fetch(extractUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
+
+        const extData = await extRes.json();
+        const pages = extData.query.pages;
         const pageId = Object.keys(pages)[0];
         const page = pages[pageId];
 
-        if (pageId === "-1" || page.missing) {
-            console.warn(`Warning: No Wikipedia page for '${topic}'`);
-            return null;
-        }
+        if (pageId === "-1" || page.missing || page.invalid) return null;
 
-        if (page.invalid) {
-            console.warn(`Warning: Invalid title for '${topic}'`);
-            return null;
-        }
-
-        return page.extract || null;
+        const extract = page.extract || '';
+        return extract ? `${pageTitle}\n\n${extract}` : null;
     } catch (error) {
-        console.error(`Failed to download '${topic}':`, error);
+        console.error(`Wikipedia failed for '${topic}':`, error);
         return null;
     }
 }
@@ -1721,7 +1749,7 @@ async function findResponses(input, history) {
                   </circle>
                 </svg>
                 <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-                <span style="opacity: 0.7; font-size: 0.9em;">Searching Wikipedia...</span>
+                <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
               </div>
             `;
             if (chatBox) {
@@ -1735,57 +1763,48 @@ async function findResponses(input, history) {
             if (spinnerDiv.parentNode) spinnerDiv.remove();
             
             if (wikiSummary) {
-                const cleanText = wikiSummary.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                const lines = wikiSummary.split('\n');
+                let pageTitle = '';
+                let cleanText = wikiSummary;
+                if (lines.length > 1 && !lines[0].includes('.') && lines[0].trim().length < 100) {
+                    pageTitle = lines[0].trim();
+                    cleanText = lines.slice(1).join('\n');
+                }
+                cleanText = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
                 const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
                 
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
-                let targetPercent = 0.4;
-                let targetSentences = Math.max(1, Math.ceil(sentences.length * targetPercent));
-                
-                if (isUserSummary) {
-                    targetPercent = 0.3;
-                    targetSentences = Math.max(2, Math.ceil(sentences.length * targetPercent));
-                }
-                
                 let summaryText;
-                if (sentences.length <= 2) {
+                if (sentences.length <= 3) {
                     summaryText = cleanText;
                 } else {
-                    const scoredSentences = sentences.map((text, i) => {
+                    const maxSentences = isUserSummary ? 4 : 8;
+                    const scored = sentences.map((text, i) => {
                         let score = 0;
                         const clean = text.toLowerCase();
                         if (i === 0) score += 10;
-                        if (i === sentences.length - 1) score += 5;
+                        if (i === 1) score += 3;
                         if (/\d+/.test(text)) score += 3;
                         if (/[A-Z]{2,}/.test(text)) score += 2;
-                        const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built"];
+                        const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
                         markers.forEach(m => { if (clean.includes(m)) score += 2; });
                         return { text: text.trim(), score, index: i };
                     });
                     
-                    const topSentences = scoredSentences
+                    const topSentences = scored
                         .sort((a, b) => b.score - a.score)
-                        .slice(0, targetSentences)
+                        .slice(0, maxSentences)
                         .sort((a, b) => a.index - b.index)
                         .map(s => s.text);
                     
                     summaryText = topSentences.join(' ');
+                    if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                 }
                 
-                const wordCount = summaryText.split(/\s+/).length;
-                let shortSentence = '';
-                if (wordCount > 100) {
-                    shortSentence = '\n\nHere is a comprehensive overview based on Wikipedia.';
-                } else if (wordCount > 50) {
-                    shortSentence = '\n\nHere is a brief summary from Wikipedia.';
-                } else {
-                    shortSentence = '\n\nHere is a quick summary.';
-                }
+                let sourceLine = pageTitle ? `\n\n— From Wikipedia: ${pageTitle}` : '\n\n— From Wikipedia';
                 
-                const formattedSummary = `${summaryText}${shortSentence}`;
-                
-                return { role: "ai", text: `\n\n${formattedSummary}\n\n`, isWikipedia: true };
+                return { role: "ai", text: `\n\n${summaryText}${sourceLine}\n\n`, isWikipedia: true };
             }
           }
         } catch (e) {
