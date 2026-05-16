@@ -480,9 +480,6 @@ const uploadStatus = document.getElementById("uploadStatus");
 // NEW: Search toggle button
 const searchToggleBtn = document.getElementById("searchToggleBtn");
 
-// NEW: Live Mode button
-const liveModeBtn = document.getElementById("liveModeBtn");
-
 // State
 let chats = [];
 let activeChatId = null;
@@ -518,18 +515,13 @@ function updateSendButton() {
         // If responding, show stop square (same on both mobile and desktop)
         sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
     } else if (isMobile) {
-        // On mobile: if no text, show live button; if has text, show send button
         if (userInput.value.trim() === '') {
-            sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="6" y1="9" x2="6" y2="15"></line><line x1="18" y1="9" x2="18" y2="15"></line></svg>';
-            sendBtn.classList.add('live-mode');
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
         } else {
             sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-            sendBtn.classList.remove('live-mode');
         }
     } else {
-        // Desktop: always show send icon
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-        sendBtn.classList.remove('live-mode');
     }
 }
 
@@ -593,10 +585,8 @@ function stopGeneration() {
     if (aiState.originalSendIcon) sendBtn.innerHTML = aiState.originalSendIcon;
     sendBtn.disabled = false;
     sendBtn.style.opacity = "1";
-    if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
-        userInput.focus();
-    }
-    
+    userInput.focus();
+
     if (currentUploadFile) { 
         currentUploadFile = null; 
         if(uploadBtn) uploadBtn.style.color = ""; 
@@ -1231,52 +1221,8 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     if (isNew && window.shouldSpeakResponse) {
         if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(processedText);
-        const ball = document.getElementById('pulsing-ball');
-        const captionEl = document.getElementById('live-caption-text');
-
-        // Split text into sentences for chunked captioning
-        const sentences = processedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [processedText];
-        let currentSentenceIdx = -1;
-
-        utterance.onboundary = (event) => {
-             if (event.name === 'word') {
-                let charCount = 0;
-                let newIndex = 0;
-                for (let i = 0; i < sentences.length; i++) {
-                    charCount += sentences[i].length;
-                    if (event.charIndex < charCount) {
-                        newIndex = i;
-                        break;
-                    }
-                }
-                if (newIndex !== currentSentenceIdx) {
-                    currentSentenceIdx = newIndex;
-                    if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
-                        let text = sentences[currentSentenceIdx];
-                        if (sentences[currentSentenceIdx + 1]) text += " " + sentences[currentSentenceIdx + 1];
-                        captionEl.textContent = text;
-                    }
-                }
-             }
-        };
-
-        utterance.onstart = () => {
-            if (ball) ball.classList.add('speaking');
-            if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
-                let text = sentences[0];
-                if (sentences[1]) text += " " + sentences[1];
-                captionEl.textContent = text;
-                captionEl.className = 'ai-caption';
-            }
-        };
-        utterance.onend = () => {
-            if (ball) ball.classList.remove('speaking');
-            // This global function is defined in speech.js to restart the listening loop
-            if (window.startListeningAfterSpeech) window.startListeningAfterSpeech();
-        };
-
         window.speechSynthesis.speak(utterance);
-        window.shouldSpeakResponse = false; // Reset the flag
+        window.shouldSpeakResponse = false;
     }
 
     const existingLatest = chatBox.querySelectorAll('.message.ai.latest');
@@ -1977,9 +1923,7 @@ async function sendMessage() {
   if (isReadOnlyMode) return;
   if (await isCurrentlyBanned()) { await showBanModal(); return; }
 
-  // Removed the live mode trigger for empty input
   if (userInput.value.trim() === "") {
-    // Do nothing – live mode is separate
     return;
   }
 
@@ -1997,7 +1941,6 @@ async function sendMessage() {
   const requestId = ++aiState.currentRequestId;
   // Change send button to stop square
   sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
-  sendBtn.classList.remove('live-mode');
   userInput.value = "";
 
   const continueSend = async (imgSrc) => {
@@ -2228,9 +2171,7 @@ async function sendMessage() {
         aiState.resetTimeout = setTimeout(() => { 
             if (requestId !== aiState.currentRequestId) return;
             userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; 
-            if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
-                userInput.focus(); 
-            }
+            userInput.focus();
             aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
             updateSendButton(); // Restore button based on input content
         }, timeout);
@@ -2426,8 +2367,7 @@ sendBtn.onclick = () => {
     }
     const isMobile = window.innerWidth <= 768;
     if (isMobile && userInput.value.trim() === '') {
-        // On mobile with empty input, start live mode
-        if (window.startLiveMode) window.startLiveMode();
+        userInput.focus();
     } else {
         sendMessage();
     }
@@ -3010,32 +2950,6 @@ async function startApp() {
 
     // Set initial send button state
     updateSendButton();
-
-    // NEW: Live Mode button handler - for desktop separate button
-    if (liveModeBtn && window.innerWidth > 768) {
-        liveModeBtn.onclick = () => {
-            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
-                if (window.stopLiveMode) window.stopLiveMode();
-                liveModeBtn.classList.remove('active');
-            } else {
-                if (window.startLiveMode) window.startLiveMode();
-                liveModeBtn.classList.add('active');
-            }
-        };
-    }
-    
-    // Mobile: Update send button when live mode state changes
-    if (window.innerWidth <= 768) {
-        const originalUpdateSendButton = updateSendButton;
-        window.addEventListener('liveModeStateChange', () => {
-            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
-                sendBtn.classList.add('live-mode');
-            } else {
-                sendBtn.classList.remove('live-mode');
-            }
-            updateSendButton();
-        });
-    }
 }
 
 window.addEventListener('app-ready', startApp);
