@@ -1574,6 +1574,32 @@ function showInfoModal(title, message) {
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
+function showExternalLinkModal(url) {
+    const existing = document.getElementById('externalLinkModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'externalLinkModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2 style="margin: 0 0 10px 0;">Leaving Genesis AI</h2>
+            <p style="margin: 0 0 20px 0; line-height: 1.6; opacity: 0.9;">You are about to leave the site. This will open an external website.</p>
+            <div class="modal-actions" style="display:flex;gap:12px;justify-content:center;">
+                <button id="externalLinkNo" class="confirm" style="background:var(--bg-card,#444);">No</button>
+                <button id="externalLinkYes" class="confirm">Yes</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.getElementById('externalLinkNo').onclick = () => modal.remove();
+    document.getElementById('externalLinkYes').onclick = () => {
+        modal.remove();
+        window.open(url, '_blank', 'noopener');
+    };
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
 function showWarningModal(message, onDismiss) {
     const existing = document.getElementById('warningModal');
     if (existing) existing.remove();
@@ -2139,28 +2165,26 @@ async function sendMessage() {
             const msgDivs = chatBox.querySelectorAll('.message');
             const lastMsg = msgDivs[msgDivs.length - 1];
             if (lastMsg) {
+                const wikiHeader = document.createElement('div');
+                wikiHeader.style.cssText = 'margin-bottom:10px;';
                 if (botMsg.wikiImageUrl) {
                     const img = document.createElement('img');
                     img.src = botMsg.wikiImageUrl;
-                    img.style.maxWidth = '100%';
-                    img.style.maxHeight = '300px';
-                    img.style.borderRadius = '12px';
-                    img.style.marginBottom = '10px';
-                    img.style.display = 'block';
-                    img.style.objectFit = 'contain';
+                    img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
                     img.loading = 'lazy';
-                    lastMsg.insertBefore(img, lastMsg.firstChild);
+                    wikiHeader.appendChild(img);
                 }
                 if (botMsg.wikiUrl) {
-                    const wikiBtn = document.createElement('a');
-                    wikiBtn.href = botMsg.wikiUrl;
-                    wikiBtn.target = '_blank';
-                    wikiBtn.rel = 'noopener';
-                    wikiBtn.textContent = 'View on Wikipedia';
-                    wikiBtn.style.cssText = 'display:inline-block;margin-top:10px;padding:6px 14px;border-radius:8px;background:var(--primary);color:#fff;text-decoration:none;font-size:0.85em;transition:opacity .2s;';
-                    wikiBtn.onmouseover = () => wikiBtn.style.opacity = '0.8';
-                    wikiBtn.onmouseout = () => wikiBtn.style.opacity = '1';
-                    lastMsg.appendChild(wikiBtn);
+                    const wikiBtn = document.createElement('button');
+                    wikiBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+                    wikiBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(26,115,232,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(26,115,232,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;';
+                    wikiBtn.onmouseenter = () => wikiBtn.style.background = 'rgba(26,115,232,0.2)';
+                    wikiBtn.onmouseleave = () => wikiBtn.style.background = 'rgba(26,115,232,0.12)';
+                    wikiBtn.onclick = () => showExternalLinkModal(botMsg.wikiUrl);
+                    wikiHeader.appendChild(wikiBtn);
+                }
+                if (wikiHeader.children.length > 0) {
+                    lastMsg.insertBefore(wikiHeader, lastMsg.firstChild);
                 }
             }
         }
