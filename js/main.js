@@ -1675,13 +1675,15 @@ async function findResponses(input, history) {
   // Calculator Integration
   if (typeof window.calc === 'function') {
       const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
-      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(decodedInput) && /[\d]/.test(decodedInput) && /[-+*/^x]/.test(decodedInput);
+      const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
+      const hasMathFunc = /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(cleaned);
+      const isMathExpression = /^[\d\s().+\-*/^x,!%]+$/.test(cleaned) && /[\d]/.test(cleaned) && /[-+*/^!]/.test(cleaned);
+      const hasPiE = /\b(pi|e)\b/i.test(cleaned) && cleaned.length < 30;
       
-      if (isExplicit || isMathExpression) {
+      if (isExplicit || isMathExpression || hasMathFunc || hasPiE) {
           const result = window.calc(decodedInput);
-          if (result !== "Error" && result !== "Invalid input") {
-              // Encode the response before returning
-              return { role: "ai", text: `The answer is: ${result}` };
+          if (result && result.katex) {
+              return { role: "ai", text: `The answer is:\n\n$$ ${result.katex} $$` };
           }
       }
   }
