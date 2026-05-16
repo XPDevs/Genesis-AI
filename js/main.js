@@ -970,6 +970,12 @@ function renderChatList() {
   });
 }
 
+function updatePlaceholder() {
+    const chat = chats.find(c => c.id === activeChatId);
+    const hasReplies = chat && chat.messages && chat.messages.some(m => m.role === 'ai');
+    userInput.placeholder = hasReplies ? 'Reply to Genesis AI' : 'Ask Genesis AI';
+}
+
 async function updateChatView() {
     const chat = chats.find(c => c.id === activeChatId);
     let greetingEl = document.getElementById('greeting');
@@ -1028,6 +1034,7 @@ async function renderMessages() {
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) await updateURL(chat.title);
   await updateChatView();
+  updatePlaceholder();
 }
 
 function renderTextWithMath(element, text) {
@@ -2000,6 +2007,7 @@ async function sendMessage() {
                   const botMsg = { role: "ai", text: result };
                   chat.messages.push(botMsg);
                   await saveChats();
+                  updatePlaceholder();
                   appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);                  
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                   currentUploadFile = null;
@@ -2074,6 +2082,7 @@ async function sendMessage() {
               const botMsg = { role: "ai", text: result };
               chat.messages.push(botMsg);
               await saveChats();
+              updatePlaceholder();
               appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);              
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               aiState.isResponding = false;
@@ -2163,6 +2172,7 @@ async function sendMessage() {
         // Add to history and then append to UI
         chat.messages.push(botMsg);
         await saveChats();
+        updatePlaceholder();
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
