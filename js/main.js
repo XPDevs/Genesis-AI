@@ -1034,7 +1034,7 @@ async function renderMessages() {
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) { await updateChatView(); return; }
-  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer));
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer, msg));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) await updateURL(chat.title);
   await updateChatView();
@@ -1110,6 +1110,40 @@ function renderTextWithMath(element, text) {
                  break;
             }
         }
+    }
+}
+
+function renderWikiHeader(div, msg) {
+    if (!msg || !div) return;
+    const existing = div.querySelector('.wiki-header');
+    if (existing) existing.remove();
+    const wikiHeader = document.createElement('div');
+    wikiHeader.className = 'wiki-header';
+    wikiHeader.style.cssText = 'margin-bottom:10px;';
+    if (msg.wikiImageDataUrl) {
+        const img = document.createElement('img');
+        img.src = msg.wikiImageDataUrl;
+        img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+        img.loading = 'lazy';
+        wikiHeader.appendChild(img);
+    } else if (msg.wikiImageUrl) {
+        const img = document.createElement('img');
+        img.src = msg.wikiImageUrl;
+        img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+        img.loading = 'lazy';
+        wikiHeader.appendChild(img);
+    }
+    if (msg.wikiUrl) {
+        const wikiBtn = document.createElement('button');
+        wikiBtn.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/250px-Wikipedia-logo-v2.svg.png" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;">View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+        wikiBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(26,115,232,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(26,115,232,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;';
+        wikiBtn.onmouseenter = () => wikiBtn.style.background = 'rgba(26,115,232,0.2)';
+        wikiBtn.onmouseleave = () => wikiBtn.style.background = 'rgba(26,115,232,0.12)';
+        wikiBtn.onclick = () => showExternalLinkModal(msg.wikiUrl);
+        wikiHeader.appendChild(wikiBtn);
+    }
+    if (wikiHeader.children.length > 0) {
+        div.insertBefore(wikiHeader, div.firstChild);
     }
 }
 
@@ -1255,6 +1289,10 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
+  if (messageObj && messageObj.isWikipedia) {
+      renderWikiHeader(div, messageObj);
+  }
+
   if (role === "ai" && isNew) {
     if (hasHTML || (hasMath && !processedText.includes('\n'))) {
         if (hasMath && window.katex) {
@@ -1293,6 +1331,22 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 }
 
 // --- WIKIPEDIA API ---
+async function fetchImageAsDataUrl(url) {
+    if (!url) return null;
+    try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        return null;
+    }
+}
+
 async function fetchWikipediaSummary(topic) {
     const questionPrefixes = [
         "how to", "what is", "who is", "where is", "when is", "why is",
@@ -1713,11 +1767,12 @@ async function findResponses(input, history) {
 
           if (wikiResult) {
               const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+              const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
               if (isImageOnly) {
                   if (imageUrl) {
-                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageOnly: true };
+                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageOnly: true };
                   }
-                  return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl };
+                  return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl, wikiImageDataUrl };
               }
               const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
               const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
@@ -1740,7 +1795,7 @@ async function findResponses(input, history) {
                   summaryText = topSentences.join(' ');
                   if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
               }
-              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl };
+              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
           }
           return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -1857,6 +1912,7 @@ async function findResponses(input, history) {
             
             if (wikiResult) {
                 const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+                const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
                 const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
                 const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
                 
@@ -1889,7 +1945,7 @@ async function findResponses(input, history) {
                     if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                 }
                 
-                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl };
+                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
             }
           }
         } catch (e) {
@@ -2167,34 +2223,6 @@ async function sendMessage() {
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
-
-        if (botMsg.isWikipedia) {
-            const msgDivs = chatBox.querySelectorAll('.message');
-            const lastMsg = msgDivs[msgDivs.length - 1];
-            if (lastMsg) {
-                const wikiHeader = document.createElement('div');
-                wikiHeader.style.cssText = 'margin-bottom:10px;';
-                if (botMsg.wikiImageUrl) {
-                    const img = document.createElement('img');
-                    img.src = botMsg.wikiImageUrl;
-                    img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
-                    img.loading = 'lazy';
-                    wikiHeader.appendChild(img);
-                }
-                if (botMsg.wikiUrl) {
-                    const wikiBtn = document.createElement('button');
-                    wikiBtn.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/250px-Wikipedia-logo-v2.svg.png" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;">View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
-                    wikiBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(26,115,232,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(26,115,232,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;';
-                    wikiBtn.onmouseenter = () => wikiBtn.style.background = 'rgba(26,115,232,0.2)';
-                    wikiBtn.onmouseleave = () => wikiBtn.style.background = 'rgba(26,115,232,0.12)';
-                    wikiBtn.onclick = () => showExternalLinkModal(botMsg.wikiUrl);
-                    wikiHeader.appendChild(wikiBtn);
-                }
-                if (wikiHeader.children.length > 0) {
-                    lastMsg.insertBefore(wikiHeader, lastMsg.firstChild);
-                }
-            }
-        }
 
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         aiState.resetTimeout = setTimeout(() => { 
