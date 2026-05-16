@@ -314,6 +314,12 @@ body.dark .action-btn:hover {
   transform: translateY(-1px);
 }
 
+.modal-actions #deleteAccountBtn {
+  width: auto;
+  margin-top: 0;
+  padding: 10px 20px;
+}
+
 /* --- Account Modal --- */
 #accountProfile {
   text-align: center;

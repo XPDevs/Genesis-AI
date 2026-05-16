@@ -184,6 +184,19 @@ async function initializeApp() {
     window.dispatchEvent(new Event('app-ready'));
     setupSwipeGestures();
 
+    // Scroll-to-bottom button logic
+    const scrollBtn = document.getElementById('scrollToBottomBtn');
+    if (scrollBtn && chatBox) {
+        chatBox.addEventListener('scroll', () => {
+            const threshold = 200;
+            const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
+            scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
+        });
+        scrollBtn.addEventListener('click', () => {
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        });
+    }
+
     // Show feature modal after everything is loaded
     if (typeof showFeatureModal === 'function') {
         showFeatureModal();
@@ -384,6 +397,39 @@ function injectCSS() {
         }
         #chatBox::-webkit-scrollbar-thumb:hover {
             background: rgba(128, 128, 128, 0.5);
+        }
+        .scroll-bottom-btn {
+            position: fixed;
+            bottom: 100px;
+            right: max(calc((100% - 800px) / 2 + 20px), 20px);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+            padding: 0;
+            opacity: 0.85;
+        }
+        .scroll-bottom-btn:hover {
+            background: var(--active-chat);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        @media (max-width: 768px) {
+            .scroll-bottom-btn {
+                bottom: 90px;
+                right: 16px;
+                width: 36px;
+                height: 36px;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -1483,6 +1529,16 @@ async function loadBannedWords() {
 }
 loadBannedWords();
 
+function showInfoModal(title, message) {
+    const modal = document.getElementById('infoModal');
+    if (!modal) return;
+    document.getElementById('infoModalTitle').textContent = title;
+    document.getElementById('infoModalMessage').textContent = message;
+    modal.style.display = 'flex';
+    document.getElementById('infoModalOk').onclick = () => { modal.style.display = 'none'; };
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+}
+
 function showWarningModal(message, onDismiss) {
     const existing = document.getElementById('warningModal');
     if (existing) existing.remove();
@@ -1490,10 +1546,10 @@ function showWarningModal(message, onDismiss) {
     modal.id = 'warningModal';
     modal.className = 'modal';
     modal.innerHTML = `
-        <div class="modal-content warning-modal-content">
-            <h3>Content Warning</h3>
-            <p>${message}</p>
-            <div class="modal-actions">
+        <div class="modal-content">
+            <h2 style="margin: 0 0 10px 0;">Content Warning</h2>
+            <p style="margin: 0 0 20px 0; line-height: 1.6; opacity: 0.9;">${message}</p>
+            <div class="modal-actions" style="justify-content: center;">
                 <button id="warningModalOk" class="confirm">OK</button>
             </div>
         </div>
@@ -2332,7 +2388,7 @@ if (redownloadModelBtn) {
         const modelParamsDisplay = document.getElementById("modelParamsDisplay");
         if (modelNameDisplay) modelNameDisplay.textContent = responses.ver || "Unknown";
         if (modelParamsDisplay) modelParamsDisplay.textContent = Object.keys(responses).length;
-        alert("Model re-downloaded successfully!");
+        showInfoModal("Success", "Model re-downloaded successfully!");
     };
 }
 
@@ -2489,9 +2545,114 @@ if (editNameBtn) {
     editNameBtn.onclick = async () => {
         const userInfo = await DB.get("userInfo", {});
         const currentName = userInfo.name || "User";
-        const newName = prompt("Enter your name:", currentName);
-        if (newName && newName.trim() !== "") {
-            await updateUserProfile(newName.trim());
+        document.getElementById('editNameInput').value = currentName;
+        document.getElementById('editNameModal').style.display = 'flex';
+    };
+}
+
+const editNameCancel = document.getElementById('editNameCancel');
+const editNameConfirm = document.getElementById('editNameConfirm');
+const editNameInput = document.getElementById('editNameInput');
+if (editNameCancel) editNameCancel.onclick = () => { document.getElementById('editNameModal').style.display = 'none'; };
+if (editNameConfirm) editNameConfirm.onclick = async () => {
+    const newName = editNameInput ? editNameInput.value.trim() : '';
+    if (newName) {
+        await updateUserProfile(newName);
+    }
+    document.getElementById('editNameModal').style.display = 'none';
+};
+if (editNameInput) editNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && editNameConfirm) editNameConfirm.click();
+});
+
+// --- PFP Change Modal ---
+const pfpModal = document.getElementById('pfpModal');
+const pfpUploadInput = document.getElementById('pfpUploadInput');
+const pfpUploadBtn = document.getElementById('pfpUploadBtn');
+const pfpRemoveBtn = document.getElementById('pfpRemoveBtn');
+const pfpGoogleBtn = document.getElementById('pfpGoogleBtn');
+const pfpCancel = document.getElementById('pfpCancel');
+const pfpPreview = document.getElementById('pfpPreview');
+const pfpRemoveContainer = document.getElementById('pfpRemoveContainer');
+const pfpGoogleContainer = document.getElementById('pfpGoogleContainer');
+
+function updatePfpPreview() {
+    const userInfo = DB.get("userInfo", {});
+    userInfo.then(info => {
+        const name = info.name || "User";
+        const initial = name.charAt(0).toUpperCase();
+        if (info.picture && pfpPreview) {
+            pfpPreview.textContent = "";
+            pfpPreview.style.background = `url('${info.picture}') center/cover no-repeat`;
+        } else if (pfpPreview) {
+            pfpPreview.textContent = initial;
+            pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        }
+        if (pfpRemoveContainer) pfpRemoveContainer.style.display = info.picture ? 'block' : 'none';
+        if (pfpGoogleContainer) pfpGoogleContainer.style.display = info.googleId ? 'block' : 'none';
+    });
+}
+
+// Click avatar in account modal -> open PFP modal
+const accAvatar = document.getElementById('accountAvatar');
+if (accAvatar) {
+    accAvatar.addEventListener('click', async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const name = userInfo.name || "User";
+        const initial = name.charAt(0).toUpperCase();
+        if (pfpPreview) {
+            if (userInfo.picture) {
+                pfpPreview.textContent = "";
+                pfpPreview.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+            } else {
+                pfpPreview.textContent = initial;
+                pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+            }
+        }
+        if (pfpRemoveContainer) pfpRemoveContainer.style.display = userInfo.picture ? 'block' : 'none';
+        if (pfpGoogleContainer) pfpGoogleContainer.style.display = userInfo.googleId ? 'block' : 'none';
+        if (pfpModal) pfpModal.style.display = 'flex';
+    });
+}
+
+if (pfpCancel) pfpCancel.onclick = () => { if (pfpModal) pfpModal.style.display = 'none'; };
+if (pfpModal) pfpModal.onclick = (e) => { if (e.target === pfpModal) pfpModal.style.display = 'none'; };
+
+if (pfpUploadBtn && pfpUploadInput) {
+    pfpUploadBtn.onclick = () => pfpUploadInput.click();
+    pfpUploadInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+            await updateUserProfile((await DB.get("userInfo", {})).name || "User", dataUrl);
+            updatePfpPreview();
+            if (pfpModal) pfpModal.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+}
+
+if (pfpRemoveBtn) {
+    pfpRemoveBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        delete userInfo.picture;
+        await DB.set("userInfo", userInfo);
+        await updateUserProfile(userInfo.name || "User");
+        updatePfpPreview();
+        if (pfpModal) pfpModal.style.display = 'none';
+    };
+}
+
+if (pfpGoogleBtn) {
+    pfpGoogleBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        if (userInfo.googleId && userInfo.picture) {
+            await updateUserProfile(userInfo.name || "User", userInfo.picture);
+            updatePfpPreview();
+            if (pfpModal) pfpModal.style.display = 'none';
         }
     };
 }
