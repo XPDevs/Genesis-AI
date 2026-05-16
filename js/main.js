@@ -1651,6 +1651,73 @@ async function findResponses(input, history) {
       }
   }
 
+  // Explicit Wikipedia search commands
+  const wikiCmdPatterns = [
+      /^(?:search|find|look up)\s+(?:wikipedia|wiki|wkpedia|wp)\s+(?:for\s+)?(.+)/i,
+      /^(?:wikipedia|wiki|wkpedia)\s+(?:search\s+)?(?:for\s+)?(.+)/i,
+      /^look\s+up\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
+      /^find\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i
+  ];
+  for (const pattern of wikiCmdPatterns) {
+      const match = decodedInput.match(pattern);
+      if (match && match[1] && match[1].trim()) {
+          const query = match[1].trim();
+          playThinkingSound();
+          const spinnerDiv = document.createElement("div");
+          spinnerDiv.className = "message ai wiki-loading";
+          spinnerDiv.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 10px;">
+                  <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+                          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+                      </circle>
+                  </svg>
+                  <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+                  <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
+              </div>
+          `;
+          document.getElementById('chatBox')?.appendChild(spinnerDiv);
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          const wikiSummary = await fetchWikipediaSummary(query);
+          if (spinnerDiv.parentNode) spinnerDiv.remove();
+
+          if (wikiSummary) {
+              const lines = wikiSummary.split('\n');
+              let pageTitle = '';
+              let cleanText = wikiSummary;
+              if (lines.length > 1 && !lines[0].includes('.') && lines[0].trim().length < 100) {
+                  pageTitle = lines[0].trim();
+                  cleanText = lines.slice(1).join('\n');
+              }
+              cleanText = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+              const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+              let summaryText;
+              if (sentences.length <= 3) {
+                  summaryText = cleanText;
+              } else {
+                  const scored = sentences.map((text, i) => {
+                      let score = 0;
+                      const c = text.toLowerCase();
+                      if (i === 0) score += 10;
+                      if (i === 1) score += 3;
+                      if (/\d+/.test(text)) score += 3;
+                      if (/[A-Z]{2,}/.test(text)) score += 2;
+                      const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
+                      markers.forEach(m => { if (c.includes(m)) score += 2; });
+                      return { text: text.trim(), score, index: i };
+                  });
+                  const topSentences = scored.sort((a, b) => b.score - a.score).slice(0, 8).sort((a, b) => a.index - b.index).map(s => s.text);
+                  summaryText = topSentences.join(' ');
+                  if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+              }
+              const sourceLine = pageTitle ? `\n\n— From Wikipedia: ${pageTitle}` : '\n\n— From Wikipedia';
+              return { role: "ai", text: `\n\n${summaryText}${sourceLine}\n\n`, isWikipedia: true };
+          }
+          return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
+      }
+  }
+
   // "Who am I" - Get user's name from userInfo
   const whoAmIPatterns = ["who am i", "who am i?", "who am i?", "what is my name", "do you know me", "what's my name", "whats my name"];
   if (whoAmIPatterns.some(p => lowerInput.includes(p))) {
