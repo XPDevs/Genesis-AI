@@ -1674,6 +1674,17 @@ async function findResponses(input, history) {
 
   // Calculator Integration
   if (typeof window.calc === 'function') {
+      // Check for $$...$$ LaTeX math first
+      const latexMatch = decodedInput.match(/\$\$([\s\S]*?)\$\$/);
+      if (latexMatch && typeof window.solveLatex === 'function') {
+          const result = window.solveLatex(latexMatch[1]);
+          if (result && result.katex) {
+              return { role: "ai", text: `$$ ${result.katex} $$` };
+          }
+          if (result && result.error) {
+              return { role: "ai", text: `Cannot solve: ${result.error}` };
+          }
+      }
       const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
       const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
       const hasMathFunc = /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(cleaned);
