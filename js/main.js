@@ -1341,8 +1341,9 @@ async function fetchWikipediaSummary(topic) {
 
         const bestPage = results[0];
         const pageTitle = bestPage.title;
+        const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
 
-        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
         const extRes = await fetch(extractUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
         });
@@ -1356,7 +1357,8 @@ async function fetchWikipediaSummary(topic) {
         if (pageId === "-1" || page.missing || page.invalid) return null;
 
         const extract = page.extract || '';
-        return extract ? `${pageTitle}\n\n${extract}` : null;
+        const imageUrl = page.thumbnail?.source || null;
+        return extract ? { text: extract, title: pageTitle, imageUrl, wikiUrl } : null;
     } catch (error) {
         console.error(`Wikipedia failed for '${topic}':`, error);
         return null;
@@ -1662,7 +1664,6 @@ async function findResponses(input, history) {
       const match = decodedInput.match(pattern);
       if (match && match[1] && match[1].trim()) {
           const query = match[1].trim();
-          playThinkingSound();
           const spinnerDiv = document.createElement("div");
           spinnerDiv.className = "message ai wiki-loading";
           spinnerDiv.innerHTML = `
@@ -1679,22 +1680,16 @@ async function findResponses(input, history) {
           document.getElementById('chatBox')?.appendChild(spinnerDiv);
           chatBox.scrollTop = chatBox.scrollHeight;
 
-          const wikiSummary = await fetchWikipediaSummary(query);
+          const wikiResult = await fetchWikipediaSummary(query);
           if (spinnerDiv.parentNode) spinnerDiv.remove();
 
-          if (wikiSummary) {
-              const lines = wikiSummary.split('\n');
-              let pageTitle = '';
-              let cleanText = wikiSummary;
-              if (lines.length > 1 && !lines[0].includes('.') && lines[0].trim().length < 100) {
-                  pageTitle = lines[0].trim();
-                  cleanText = lines.slice(1).join('\n');
-              }
-              cleanText = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-              const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+          if (wikiResult) {
+              const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+              const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+              const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
               let summaryText;
               if (sentences.length <= 3) {
-                  summaryText = cleanText;
+                  summaryText = clean;
               } else {
                   const scored = sentences.map((text, i) => {
                       let score = 0;
@@ -1711,8 +1706,7 @@ async function findResponses(input, history) {
                   summaryText = topSentences.join(' ');
                   if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
               }
-              const sourceLine = pageTitle ? `\n\n— From Wikipedia: ${pageTitle}` : '\n\n— From Wikipedia';
-              return { role: "ai", text: `\n\n${summaryText}${sourceLine}\n\n`, isWikipedia: true };
+              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl };
           }
           return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -1803,8 +1797,6 @@ async function findResponses(input, history) {
           }
 
           if (isQuestion && allowWiki) {
-            playThinkingSound();
-            // Show spinner with icon while fetching from Wikipedia
             const chatBox = document.getElementById('chatBox');
             const spinnerDiv = document.createElement("div");
             spinnerDiv.className = "message ai wiki-loading";
@@ -1824,38 +1816,32 @@ async function findResponses(input, history) {
               chatBox.scrollTop = chatBox.scrollHeight;
             }
             
-            const wikiSummary = await fetchWikipediaSummary(decodedInput);
+            const wikiResult = await fetchWikipediaSummary(decodedInput);
             
             // Remove spinner
             if (spinnerDiv.parentNode) spinnerDiv.remove();
             
-            if (wikiSummary) {
-                const lines = wikiSummary.split('\n');
-                let pageTitle = '';
-                let cleanText = wikiSummary;
-                if (lines.length > 1 && !lines[0].includes('.') && lines[0].trim().length < 100) {
-                    pageTitle = lines[0].trim();
-                    cleanText = lines.slice(1).join('\n');
-                }
-                cleanText = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
+            if (wikiResult) {
+                const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+                const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
                 
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
                 let summaryText;
                 if (sentences.length <= 3) {
-                    summaryText = cleanText;
+                    summaryText = clean;
                 } else {
                     const maxSentences = isUserSummary ? 4 : 8;
                     const scored = sentences.map((text, i) => {
                         let score = 0;
-                        const clean = text.toLowerCase();
+                        const cl = text.toLowerCase();
                         if (i === 0) score += 10;
                         if (i === 1) score += 3;
                         if (/\d+/.test(text)) score += 3;
                         if (/[A-Z]{2,}/.test(text)) score += 2;
                         const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
-                        markers.forEach(m => { if (clean.includes(m)) score += 2; });
+                        markers.forEach(m => { if (cl.includes(m)) score += 2; });
                         return { text: text.trim(), score, index: i };
                     });
                     
@@ -1869,9 +1855,7 @@ async function findResponses(input, history) {
                     if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                 }
                 
-                let sourceLine = pageTitle ? `\n\n— From Wikipedia: ${pageTitle}` : '\n\n— From Wikipedia';
-                
-                return { role: "ai", text: `\n\n${summaryText}${sourceLine}\n\n`, isWikipedia: true };
+                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl };
             }
           }
         } catch (e) {
@@ -2150,6 +2134,36 @@ async function sendMessage() {
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
+
+        if (botMsg.isWikipedia) {
+            const msgDivs = chatBox.querySelectorAll('.message');
+            const lastMsg = msgDivs[msgDivs.length - 1];
+            if (lastMsg) {
+                if (botMsg.wikiImageUrl) {
+                    const img = document.createElement('img');
+                    img.src = botMsg.wikiImageUrl;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '300px';
+                    img.style.borderRadius = '12px';
+                    img.style.marginBottom = '10px';
+                    img.style.display = 'block';
+                    img.style.objectFit = 'contain';
+                    img.loading = 'lazy';
+                    lastMsg.insertBefore(img, lastMsg.firstChild);
+                }
+                if (botMsg.wikiUrl) {
+                    const wikiBtn = document.createElement('a');
+                    wikiBtn.href = botMsg.wikiUrl;
+                    wikiBtn.target = '_blank';
+                    wikiBtn.rel = 'noopener';
+                    wikiBtn.textContent = 'View on Wikipedia';
+                    wikiBtn.style.cssText = 'display:inline-block;margin-top:10px;padding:6px 14px;border-radius:8px;background:var(--primary);color:#fff;text-decoration:none;font-size:0.85em;transition:opacity .2s;';
+                    wikiBtn.onmouseover = () => wikiBtn.style.opacity = '0.8';
+                    wikiBtn.onmouseout = () => wikiBtn.style.opacity = '1';
+                    lastMsg.appendChild(wikiBtn);
+                }
+            }
+        }
 
         const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
         aiState.resetTimeout = setTimeout(() => { 

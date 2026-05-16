@@ -1,69 +1,45 @@
-/**
- * summarise.js
- * Developed by James Turner (XPDevs)
- * Elite Intelligence Engine for Genesis-AI.
- */
+window.summariseConversation = function(data, maxPoints = 5) {
+    if (!data || data.trim().length < 50) return data;
 
-window.summariseConversation = function(data, maxSentences = 5) {
-    if (!data || data.trim().length < 50) return "Insufficient data density for intelligence extraction.";
-
-    // 1. Structural Analysis
     const sentences = data.match(/[^.!?]+[.!?]+/g) || [data];
-    if (sentences.length <= 2) return `${data}`;
+    if (sentences.length <= 2) return data;
 
-    // 2. Advanced Keyword Extraction (TF-Lite Logic)
-    const stopWords = new Set(["the", "and", "this", "that", "with", "from", "they", "would", "could", "should", "there"]);
-    const wordStats = {};
+    const stopWords = new Set(["the", "and", "this", "that", "with", "from", "they", "would", "could", "should", "there", "what", "which", "their", "have", "been", "were", "when", "where", "also"]);
     const words = data.toLowerCase().match(/\w+/g) || [];
+    const wordStats = {};
+    words.forEach(w => { if (w.length > 3 && !stopWords.has(w)) wordStats[w] = (wordStats[w] || 0) + 1; });
 
-    words.forEach(word => {
-        if (word.length > 3 && !stopWords.has(word)) {
-            wordStats[word] = (wordStats[word] || 0) + 1;
-        }
-    });
+    const keyTerms = Object.entries(wordStats).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
 
-    const themes = Object.entries(wordStats)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(entry => entry[0]);
+    const importanceMarkers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers", "consists", "comprises", "located", "developed", "discovered", "established", "introduced", "invented", "produced"];
+    const numericalPattern = /\d+/;
 
-    // 3. Multi-Dimensional Scoring Engine
-    const scoredSentences = sentences.map((text, i) => {
+    const scored = sentences.map((text, i) => {
         let score = 0;
-        const cleanText = text.toLowerCase();
-        
-        themes.forEach(theme => {
-            if (cleanText.includes(theme)) score += 5;
-        });
-
-        const markers = ["decided", "founded", "created", "built", "launch", "important", "focus", "result"];
-        markers.forEach(m => {
-            if (cleanText.includes(m)) score += 3;
-        });
-
-        if (/\d+/.test(text)) score += 2; 
-        if (/[A-Z]{2,}/.test(text)) score += 2; 
-
-        if (i === 0) score += 10; 
-        if (i === sentences.length - 1) score += 7; 
-
+        const c = text.toLowerCase();
+        keyTerms.forEach(t => { if (c.includes(t)) score += 4; });
+        importanceMarkers.forEach(m => { if (c.includes(m)) score += 3; });
+        if (numericalPattern.test(text)) score += 2;
+        if (text.length > 40) score += 1;
+        if (text.length > 120) score -= 1;
+        if (i === 0) score += 6;
+        if (i === sentences.length - 1) score += 3;
         return { text: text.trim(), score, index: i };
     });
 
-    // 4. Intelligence Filtering
-    const avgScore = scoredSentences.reduce((a, b) => a + b.score, 0) / scoredSentences.length;
-    let candidates = scoredSentences.filter(s => s.score >= avgScore);
-
-    // 5. Narrative Reconstruction
-    const finalSummary = candidates
+    const avg = scored.reduce((a, b) => a + b.score, 0) / scored.length;
+    const candidates = scored.filter(s => s.score >= avg)
         .sort((a, b) => b.score - a.score)
-        .slice(0, maxSentences)
-        .sort((a, b) => a.index - b.index)
-        .map(s => s.text)
-        .join(" ");
+        .slice(0, maxPoints)
+        .sort((a, b) => a.index - b.index);
 
-    // Modified to return a direct string instead of an object
-    return `${finalSummary}`;
+    if (candidates.length === 0) return data;
+
+    const lines = candidates.map(s => {
+        let t = s.text;
+        t = t.replace(/^[^a-zA-Z0-9]+/, '');
+        return `\n- ${t}`;
+    });
+
+    return lines.join('');
 };
-
-console.log("Summary Module Loaded");
