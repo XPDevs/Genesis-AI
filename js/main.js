@@ -426,9 +426,14 @@ function injectCSS() {
         @media (max-width: 768px) {
             .scroll-bottom-btn {
                 bottom: 90px;
-                right: 16px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
                 width: 36px;
                 height: 36px;
+            }
+            .scroll-bottom-btn:hover {
+                transform: translateX(-50%) scale(1.1);
             }
         }
     `;
