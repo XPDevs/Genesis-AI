@@ -1684,12 +1684,14 @@ async function findResponses(input, history) {
       /^(?:search|find|look up)\s+(?:wikipedia|wiki|wkpedia|wp)\s+(?:for\s+)?(.+)/i,
       /^(?:wikipedia|wiki|wkpedia)\s+(?:search\s+)?(?:for\s+)?(.+)/i,
       /^look\s+up\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
-      /^find\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i
+      /^find\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
+      /^(?:image|picture|photo|img)\s+(?:of\s+)?(.+)/i
   ];
   for (const pattern of wikiCmdPatterns) {
       const match = decodedInput.match(pattern);
       if (match && match[1] && match[1].trim()) {
           const query = match[1].trim();
+          const isImageOnly = /^(?:image|picture|photo|img)/i.test(decodedInput);
           const spinnerDiv = document.createElement("div");
           spinnerDiv.className = "message ai wiki-loading";
           spinnerDiv.innerHTML = `
@@ -1711,6 +1713,12 @@ async function findResponses(input, history) {
 
           if (wikiResult) {
               const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+              if (isImageOnly) {
+                  if (imageUrl) {
+                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageOnly: true };
+                  }
+                  return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl };
+              }
               const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
               const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
               let summaryText;
@@ -2146,8 +2154,7 @@ async function sendMessage() {
         // Decode the AI's response before displaying
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
-            const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
-            if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation && botMsg.isWikipedia) {
+            if (botMsg.isWikipedia && window.summariseConversation) {
                 const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
                 const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
                 botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
@@ -2176,7 +2183,7 @@ async function sendMessage() {
                 }
                 if (botMsg.wikiUrl) {
                     const wikiBtn = document.createElement('button');
-                    wikiBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+                    wikiBtn.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/250px-Wikipedia-logo-v2.svg.png" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;">View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
                     wikiBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(26,115,232,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(26,115,232,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;';
                     wikiBtn.onmouseenter = () => wikiBtn.style.background = 'rgba(26,115,232,0.2)';
                     wikiBtn.onmouseleave = () => wikiBtn.style.background = 'rgba(26,115,232,0.12)';
