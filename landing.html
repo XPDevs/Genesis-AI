@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<title>Genesis-AI - Experimental Web Based AI Platform</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --text: #1f1f1f;
+  --sidebar: #f0f4f9;
+  --content-bg: #ffffff;
+  --input-bg: #f0f4f9;
+  --border: #dee2e6;
+  --primary: #1a73e8;
+  --user-msg-bg: #f0f4f9;
+  --chat-bg: #ffffff;
+  --active-chat: #e2e7ed;
+  --active-item: #e2e7ed;
+  --modal-bg: #ffffff;
+}
+body.dark {
+  --bg: #131314;
+  --text: #e3e3e3;
+  --sidebar: #1e1f20;
+  --content-bg: #131314;
+  --chat-bg: #131314;
+  --input-bg: #1e1f20;
+  --border: #444746;
+  --user-msg-bg: #282a2c;
+  --active-chat: #333537;
+  --active-item: #333537;
+  --modal-bg: #1e1f20;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ====== LANDING ====== */
+.topbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--content-bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 1000;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.topbar-brand img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.topbar-center {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.topbar-center a {
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+.topbar-center a:hover,
+.topbar-center a.active {
+  background: var(--active-item);
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-btn:hover {
+  background: rgba(128,128,128,0.1);
+  opacity: 1;
+}
+.cta-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.cta-btn:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 24px 60px;
+  min-height: 70vh;
+}
+.hero-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.hero .tagline {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--primary);
+  margin: 0 0 16px;
+}
+.hero p {
+  max-width: 600px;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 32px;
+  opacity: 0.85;
+}
+.hero-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-btns .outline-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s ease;
+}
+.hero-btns .outline-btn:hover {
+  background: var(--active-item);
+}
+.hero-screenshot {
+  width: 100%;
+  max-width: 900px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-top: 40px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+}
+body.dark .hero-screenshot {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.section-screenshot {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 32px auto 0;
+  display: block;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+body.dark .section-screenshot {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.cta-screenshot {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 32px auto 0;
+  display: block;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+body.dark .cta-screenshot {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.mid-screenshot {
+  width: 100%;
+  max-width: 700px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin: 32px auto 0;
+  display: block;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+body.dark .mid-screenshot {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.section {
+  padding: 60px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+  text-align: center;
+}
+.section-sub {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.85;
+  max-width: 700px;
+  margin: 0 auto 40px;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.feature-card {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+.feature-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+body.dark .feature-card:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--primary);
+}
+.feature-card p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  opacity: 0.85;
+}
+.feature-card ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  opacity: 0.85;
+}
+.steps { display: flex; flex-direction: column; gap: 16px; counter-reset: step; }
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+.step-content h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 600; }
+.step-content p { margin: 0; font-size: 14px; line-height: 1.6; opacity: 0.85; }
+.arch-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.arch-table th {
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+}
+.arch-table td {
+  padding: 14px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+  background: var(--content-bg);
+}
+.arch-table tr:last-child td { border-bottom: none; }
+.arch-table td:first-child { font-weight: 600; color: var(--primary); }
+.phil-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.phil-card {
+  text-align: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 24px;
+}
+.phil-card .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(26,115,232,0.15);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+  font-weight: 700;
+}
+.phil-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.phil-card p { font-size: 14px; line-height: 1.6; margin: 0; opacity: 0.85; }
+.cta-section {
+  text-align: center;
+  padding: 80px 24px;
+  background: var(--input-bg);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cta-section h2 { font-size: 1.8rem; font-weight: 700; margin: 0 0 12px; }
+.cta-section p {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto 28px;
+  opacity: 0.85;
+}
+.cta-section .cta-btn { font-size: 16px; padding: 14px 32px; }
+.footer {
+  padding: 32px 24px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.75;
+  line-height: 2;
+}
+.footer a { color: var(--primary); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.footer .sep { margin: 0 8px; opacity: 0.4; }
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 768px) {
+  .topbar { padding: 0 16px; height: 56px; }
+  .topbar-center { display: none; }
+  .topbar-brand { font-size: 1rem; }
+  .topbar-brand img { width: 28px; height: 28px; }
+  .topbar-actions .cta-btn { padding: 8px 16px; font-size: 13px; }
+  .hero h1 { font-size: 2rem; }
+  .hero { padding: 60px 20px 40px; min-height: 60vh; }
+  .hero-icon { width: 56px; height: 56px; }
+  .hero .tagline { font-size: 1rem; }
+  .hero p { font-size: 15px; }
+  .section { padding: 40px 20px; }
+  .section-title { font-size: 1.5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .phil-grid { grid-template-columns: 1fr; }
+  .arch-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .arch-table th, .arch-table td { padding: 10px 14px; white-space: nowrap; }
+  .step { flex-direction: column; }
+  .cta-section { padding: 60px 20px; }
+  .cta-section h2 { font-size: 1.4rem; }
+  .footer { padding: 24px 16px; font-size: 13px; line-height: 1.8; }
+  .footer .sep { margin: 0 4px; }
+  .hero-screenshot { margin-top: 24px; }
+  .section-screenshot, .mid-screenshot, .cta-screenshot { margin-top: 20px; }
+}
+@media (max-width: 480px) {
+  .topbar { padding: 0 12px; height: 52px; }
+  .topbar-brand { font-size: 0.9rem; gap: 6px; }
+  .topbar-brand img { width: 24px; height: 24px; }
+  .topbar-actions { gap: 4px; }
+  .topbar-actions .cta-btn { padding: 6px 12px; font-size: 12px; }
+  .hero { padding: 48px 16px 32px; min-height: 50vh; }
+  .hero h1 { font-size: 1.6rem; }
+  .hero .tagline { font-size: 0.9rem; }
+  .hero p { font-size: 14px; margin-bottom: 24px; }
+  .hero-icon { width: 48px; height: 48px; margin-bottom: 16px; }
+  .hero-btns { flex-direction: column; align-items: center; width: 100%; }
+  .hero-btns .cta-btn, .hero-btns .outline-btn { width: 100%; max-width: 280px; justify-content: center; }
+  .section { padding: 32px 16px; }
+  .section-title { font-size: 1.3rem; }
+  .section-sub { font-size: 14px; margin-bottom: 24px; }
+  .feature-card { padding: 16px; }
+  .feature-card h3 { font-size: 1rem; }
+  .feature-card p, .feature-card ul { font-size: 13px; }
+  .step { padding: 16px; }
+  .phil-card { padding: 24px 16px; }
+  .phil-card h3 { font-size: 1rem; }
+  .cta-section { padding: 48px 16px; }
+  .cta-section h2 { font-size: 1.2rem; }
+  .cta-section p { font-size: 14px; }
+  .cta-section .cta-btn { font-size: 14px; padding: 12px 24px; width: 100%; max-width: 280px; justify-content: center; }
+  .footer { padding: 20px 12px; font-size: 12px; }
+  .footer .sep { margin: 0 3px; }
+  .hero-screenshot { border-radius: 8px; margin-top: 20px; }
+  .section-screenshot, .mid-screenshot, .cta-screenshot { border-radius: 8px; }
+}
+@media (max-width: 360px) {
+  .topbar { padding: 0 8px; }
+  .topbar-brand { font-size: 0.8rem; gap: 4px; }
+  .topbar-brand .brand-text { display: none; }
+  .hero h1 { font-size: 1.4rem; }
+  .hero p { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<div id="landingView">
+  <nav class="topbar">
+    <a href="index.html" class="topbar-brand">
+      <img src="icon.png" alt="Genesis-AI">
+      <span class="brand-text">Genesis-AI</span>
+    </a>
+    <div class="topbar-center">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#philosophy">Philosophy</a>
+    </div>
+    <div class="topbar-actions">
+      <button class="theme-btn" id="landingThemeToggle" title="Toggle theme">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="legal/setup.html" class="cta-btn">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <img src="icon.png" alt="" class="hero-icon">
+    <h1>Genesis-AI</h1>
+    <div class="tagline">Experimental &middot; Web Based &middot; Privacy First</div>
+    <p>It runs right in your browser with no downloads or setup required. You can chat, search Wikipedia, and more without sending your data anywhere. Everything stays on your device.</p>
+    <div class="hero-btns">
+      <a href="legal/setup.html" class="cta-btn">Get Started &rarr;</a>
+      <a href="#features" class="outline-btn">Explore Features</a>
+    </div>
+    <p style="margin-top: 48px; font-size: 14px; opacity: 0.7;">This is what the main page looks like when you open it. The chat area is in the center and your conversations are on the left.</p>
+    <img src="images/landing/homepage.png" alt="Genesis-AI screenshot" class="hero-screenshot">
+  </section>
+
+  <section class="section" id="features">
+    <h2 class="section-title">Features</h2>
+    <p class="section-sub">Here is everything it can do, and it all runs right in your browser.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>Core AI</h3>
+        <ul>
+          <li>Binary and JSON modals for AI behavior</li>
+          <li>Keyword and phrase matching engine</li>
+          <li>Combines multiple responses together</li>
+          <li>Fallback handler when nothing matches</li>
+          <li>Load your own modals from a file or URL</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>AI Commands</h3>
+        <ul>
+          <li><strong>@ImgAuth</strong> checks if an image was made by AI</li>
+          <li><strong>@txtauth</strong> checks if text was written by AI</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Knowledge and Search</h3>
+        <ul>
+          <li>Built-in Wikipedia lookup with summaries</li>
+          <li>Ask it to summarize any topic for you</li>
+          <li>Web search toggle for recent info</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Chat Management</h3>
+        <ul>
+          <li>Create, rename, delete, and pin chats</li>
+          <li>Share links to your conversations</li>
+          <li>Saves everything locally in your browser</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Input and Output</h3>
+        <ul>
+          <li>Type, upload images, or use your voice</li>
+          <li>Listen to responses with text-to-speech</li>
+          <li>Stop generation whenever you want</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Math and Calculations</h3>
+        <ul>
+          <li>Built-in calculator for math problems</li>
+          <li>Renders LaTeX formulas nicely</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Themes</h3>
+        <ul>
+          <li>Light mode, dark mode, or auto switch</li>
+          <li>Works on desktop and mobile</li>
+          <li>Optional shorter Wikipedia answers</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Privacy and Safety</h3>
+        <ul>
+          <li>Nothing leaves your computer</li>
+          <li>Built-in safety system for bad content</li>
+          <li>Warning modals with auto stop</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Account</h3>
+        <ul>
+          <li>Optional Google sign in to sync chats</li>
+          <li>Everything stored locally otherwise</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <h3>Performance</h3>
+        <ul>
+          <li>Loads fast, responds fast</li>
+          <li>Works on any modern browser</li>
+          <li>Clear error messages when something breaks</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">When you send a message, it shows up as a bubble on the right. The AI response appears on the left. You can also see the message actions that let you copy or listen to replies.</p>
+    <img src="images/landing/message.png" alt="Chat interface screenshot" class="section-screenshot">
+    <p style="margin-top: 24px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">If you tap the question mark icon, a help overlay pops up with more info about whatever setting you are looking at. It explains things without leaving the page.</p>
+    <img src="images/landing/help-modal.png" alt="Help modal screenshot" class="mid-screenshot" style="margin-top:8px;">
+  </section>
+
+  <section class="section" id="how-it-works">
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-sub">Everything runs on your machine with no backend or cloud support needed. Your browser does all the work.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Open the Page</h3>
+          <p>Your browser loads the HTML, CSS, and JavaScript. There are no installation steps or API keys required.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Load the Modal</h3>
+          <p>The AI brain is called a <strong>modal</strong>, which is a file (binary or JSON) containing keywords, answers, and personality settings. Your browser reads it directly.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Match Your Input</h3>
+          <p>The engine looks for patterns in what you typed, finds the best match, and builds a reply. Special commands like <code>@ImgAuth</code> trigger extra tools.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Look Up Knowledge</h3>
+          <p>If you ask about a topic, it can fetch a Wikipedia page and give you a short version. That gives you way more knowledge than what the modal has on its own.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="architecture">
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-sub">The project uses three layers that each handle their own job, so you can change one without touching the others.</p>
+    <table class="arch-table">
+      <thead><tr><th>Layer</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend (UI)</td><td>This is the HTML and CSS you see on screen, built to work on any screen size.</td></tr>
+        <tr><td>Logic Engine</td><td>JavaScript code that reads the modal, manages the app state, and picks the right response for your input.</td></tr>
+        <tr><td>Model (Modal)</td><td>A binary or JSON file containing all the AI knowledge and responses. It is easy to edit and extend.</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top: 24px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; font-size: 14px; line-height: 1.6;">
+      <strong style="color: var(--primary);">Modal Example</strong>
+      <pre style="margin: 12px 0 0; overflow-x: auto; font-size: 13px; opacity: 0.9;">{
+  "ver": "Genesis-SPT-1.0",
+  "hello": "Hello there! How can I help you today?",
+  "who are you": "I'm Genesis-AI, an experimental web-based intelligence by XPDevs."
+}</pre>
+    </div>
+  </section>
+
+  <section class="section" id="philosophy">
+    <h2 class="section-title">How We Build Things</h2>
+    <p class="section-sub">We follow three rules that shape everything you see here.</p>
+    <div class="phil-grid">
+      <div class="phil-card">
+        <div class="icon">C</div>
+        <h3>Clarity</h3>
+        <p>You should understand everything at a glance with no hidden menus or confusing icons. Just straightforward design.</p>
+      </div>
+      <div class="phil-card">
+        <div class="icon">C</div>
+        <h3>Control</h3>
+        <p>Your data stays yours since everything runs locally. Nothing gets sent anywhere without you knowing about it.</p>
+      </div>
+      <div class="phil-card">
+        <div class="icon">S</div>
+        <h3>Simplicity</h3>
+        <p>Every feature earns its place here. If it doesn't make the experience better, it doesn't belong in the project.</p>
+      </div>
+    </div>
+    <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">You can set up a profile with your name and picture. If you sign in with Google, your chats sync across devices. Otherwise everything stays saved in your browser.</p>
+    <img src="images/landing/account.png" alt="Account screen" class="mid-screenshot">
+  </section>
+
+  <section class="cta-section">
+    <h2>Want to give it a try?</h2>
+    <p>There is no sign up required and no credit card needed. Just open the page and start using it.</p>
+    <a href="legal/setup.html" class="cta-btn">Get Started &rarr;</a>
+    <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 600px; margin-left: auto; margin-right: auto;">The settings panel lets you switch between light and dark mode, pick an AI model, toggle web search, and more. You can also check which modal version is running.</p>
+    <img src="images/landing/settings.png" alt="Settings screenshot" class="cta-screenshot">
+  </section>
+
+  <footer class="footer">
+    <a href="https://xpdevs.github.io/legal/terms-of-service">Terms of Service</a>
+    <span class="sep">&middot;</span>
+    <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy">Privacy Policy</a>
+    <span class="sep">&middot;</span>
+    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">Status</a>
+    <span class="sep">&middot;</span>
+    <a href="https://xpdevs.github.io/">XPDevs</a>
+    <br>
+    &copy; XPDevs
+  </footer>
+</div>
+
+<script>
+(function() {
+  const MAINTENANCE_MODE = 0;
+  if (MAINTENANCE_MODE === 1) {
+    window.location.href = '404.html';
+    return;
+  }
+
+  const body = document.body;
+
+  const savedTheme = localStorage.getItem('genesis-landing-theme');
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    body.classList.add('dark');
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#landingThemeToggle')) {
+      body.classList.toggle('dark');
+      localStorage.setItem('genesis-landing-theme', body.classList.contains('dark') ? 'dark' : 'light');
+    }
+  });
+
+  const SETUP_KEY = 'SETUP';
+  const isAuthenticated = localStorage.getItem(SETUP_KEY) === 'FLAG_TRUE';
+  if (isAuthenticated) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const landingLinks = document.querySelectorAll('.topbar-center a');
+  const landingSections = document.querySelectorAll('.section, .cta-section');
+  function updateActiveLink() {
+    var current = '';
+    landingSections.forEach(function(s) {
+      var rect = s.getBoundingClientRect();
+      if (rect.top <= 200) current = s.id;
+    });
+    landingLinks.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+  updateActiveLink();
+  document.addEventListener('scroll', updateActiveLink);
+})();
+</script>
+</body>
+</html>
