@@ -4,118 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Genesis-AI Setup</title>
+    <link rel="icon" type="image/x-icon" href="../icon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
             --bg: #ffffff;
             --text: #1f1f1f;
-            --sidebar: #f0f4f9;
+            --content-bg: #ffffff;
             --input-bg: #f0f4f9;
             --border: #dee2e6;
             --primary: #1a73e8;
-            --button-text: #ffffff;
-            --card-bg: #ffffff;
         }
-
         body.dark {
             --bg: #131314;
             --text: #e3e3e3;
-            --sidebar: #1e1f20;
+            --content-bg: #131314;
             --input-bg: #1e1f20;
             --border: #444746;
             --primary: #8ab4f8;
-            --button-text: #131314;
-            --card-bg: #1e1f20;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #131314;
-                --text: #e3e3e3;
-                --sidebar: #1e1f20;
-                --input-bg: #1e1f20;
-                --border: #444746;
-                --primary: #8ab4f8;
-                --button-text: #131314;
-                --card-bg: #1e1f20;
-            }
-        }
-
+        * { box-sizing: border-box; }
         body {
-            margin: 0; 
-            padding: 0; 
+            margin: 0;
+            padding: 0;
             font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            visibility: hidden; /* Prevent flicker */
+            min-height: 100vh;
+            overflow: auto;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
-        .container {
-            max-width: 420px;
+        .setup-card {
             width: 90%;
-            padding: 48px 32px;
-            background: var(--card-bg);
-            border-radius: 24px;
+            max-width: 420px;
+            padding: 40px 32px;
+            background: var(--input-bg);
+            border-radius: 20px;
             border: 1px solid var(--border);
             text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            margin: 24px auto;
+        }
+        body.dark .setup-card {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
         }
 
-        h1 { 
-            font-size: 2rem;
-            font-weight: 800;
-            margin: 0 0 16px 0;
-            letter-spacing: -0.03em;
+        .setup-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            margin: 0 auto 20px;
+        }
+        .setup-card h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0 0 8px;
             color: var(--text);
+            letter-spacing: -0.02em;
         }
-
-        p { 
-            font-size: 1rem;
+        .setup-card p {
+            font-size: 15px;
             color: var(--text);
             opacity: 0.8;
-            margin-bottom: 32px;
-            line-height: 1.5; 
+            margin: 0 0 28px;
+            line-height: 1.5;
         }
 
-        /* Checkbox Layout */
         .checkbox-group {
             text-align: left;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             display: flex;
             align-items: flex-start;
-            padding: 12px;
-            border-radius: 12px;
-            background: var(--input-bg);
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: var(--content-bg);
             border: 1px solid transparent;
             transition: border-color 0.2s;
         }
-        
         .checkbox-group:hover {
             border-color: var(--border);
         }
-
         .checkbox-group input[type="checkbox"] {
             margin-right: 12px;
-            margin-top: 4px;
+            margin-top: 3px;
             min-width: 18px;
             min-height: 18px;
             accent-color: var(--primary);
             cursor: pointer;
         }
-
         .checkbox-group label {
-            font-size: 0.9rem;
+            font-size: 14px;
             color: var(--text);
             cursor: pointer;
-            line-height: 1.4;
+            line-height: 1.5;
             font-weight: 500;
         }
 
@@ -124,56 +113,55 @@
             text-decoration: none;
             font-weight: 600;
         }
-        
         a:hover {
             text-decoration: underline;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 16px;
-            border-radius: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
             border: 1px solid var(--border);
-            background: var(--input-bg);
+            background: var(--content-bg);
             color: var(--text);
-            font-size: 1rem;
+            font-size: 15px;
+            font-family: inherit;
             box-sizing: border-box;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-
         input[type="text"]:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+        }
+        input[type="text"]::placeholder {
+            color: var(--text);
+            opacity: 0.4;
         }
 
-        /* Buttons */
-        button {
-            background-color: var(--primary);
-            color: var(--button-text);
+        .btn {
+            background: var(--primary);
+            color: #fff;
             border: none;
-            padding: 16px 24px;
-            border-radius: 100px;
-            font-size: 1rem;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
             width: 100%;
-            letter-spacing: 0.02em;
+            transition: filter 0.2s ease, transform 0.2s ease;
         }
-
-        button:disabled {
+        .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             filter: grayscale(0.5);
         }
-
-        button:not(:disabled):hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .btn:not(:disabled):hover {
+            filter: brightness(0.9);
         }
-
-        button:not(:disabled):active {
+        .btn:not(:disabled):active {
             transform: scale(0.98);
         }
 
@@ -185,31 +173,42 @@
             display: flex;
             align-items: center;
             text-align: center;
-            margin: 24px 0;
+            margin: 20px 0;
             color: var(--text);
-            opacity: 0.5;
-            font-size: 0.85rem;
+            opacity: 0.4;
+            font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
         }
-        
         .divider::before, .divider::after {
             content: '';
             flex: 1;
             border-bottom: 1px solid var(--border);
         }
-        
-        .divider::before { margin-right: 10px; }
-        .divider::after { margin-left: 10px; }
+        .divider::before { margin-right: 12px; }
+        .divider::after { margin-left: 12px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .back-link:hover { opacity: 1; text-decoration: none; }
     </style>
 </head>
-<body class="dark">
+<body>
 
-    <div class="container" id="step1">
+    <div class="setup-card" id="step1">
+        <img src="../icon.png" alt="" class="setup-icon">
         <h1>Legal Agreement</h1>
         <p>Please review and accept our terms to continue.</p>
-        
+
         <div class="checkbox-group">
             <input type="checkbox" id="tosCheckbox">
             <label for="tosCheckbox">
@@ -222,23 +221,33 @@
                 I have read and agree to the <a href="privacy-policy.html" target="_blank">Privacy Policy</a>.
             </label>
         </div>
-        
-        <button id="legalContinueBtn" disabled>Continue</button>
+
+        <button class="btn" id="legalContinueBtn" disabled>Continue</button>
+        <a href="../landing.html" class="back-link">&larr; Back</a>
     </div>
 
-    <div class="container hidden" id="step2">
+    <div class="setup-card hidden" id="step2">
+        <img src="../icon.png" alt="" class="setup-icon">
         <h1>Profile Setup</h1>
         <p>How should Genesis-AI address you?</p>
-        
+
         <div id="googleSignInBtn" style="display: flex; justify-content: center; margin-bottom: 20px; width: 100%;"></div>
         <div class="divider">OR</div>
-        
+
         <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off">
-        
-        <button id="finishBtn">Finish Setup</button>
+
+        <button class="btn" id="finishBtn">Finish Setup</button>
+        <a href="../landing.html" class="back-link">&larr; Back</a>
     </div>
     
     <script>
+        (function() {
+            const savedTheme = localStorage.getItem('genesis-landing-theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark');
+            }
+        })();
+
         const step1 = document.getElementById('step1');
         const tosCheckbox = document.getElementById('tosCheckbox');
         const ppCheckbox = document.getElementById('ppCheckbox');
@@ -247,17 +256,38 @@
         const nameInput = document.getElementById('nameInput');
         const finishBtn = document.getElementById('finishBtn');
 
+        function setAppState(key, value) {
+            localStorage.setItem(key, value);
+            return new Promise((resolve) => {
+                try {
+                    const req = indexedDB.open('GenesisAI', 1);
+                    req.onerror = () => resolve();
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('appState'))
+                            db.createObjectStore('appState', { keyPath: 'key' });
+                    };
+                    req.onsuccess = (e) => {
+                        try {
+                            const tx = e.target.result.transaction('appState', 'readwrite');
+                            tx.objectStore('appState').put({ key: key, value: value });
+                        } catch (_) {}
+                        resolve();
+                    };
+                } catch (_) { resolve(); }
+            });
+        }
+
         function checkAgreements() {
             legalContinueBtn.disabled = !(tosCheckbox.checked && ppCheckbox.checked);
         }
 
-        function completeSetup() {
+        async function completeSetup() {
             const name = nameInput.value.trim();
             if (name) {
-                // Storing name in userInfo and setting setup flag
-                localStorage.setItem('userInfo', JSON.stringify({ name: name }));
-                localStorage.setItem('SETUP', 'FLAG_TRUE');
-                window.location.href = 'https://xpdevs.github.io/Genesis-AI';
+                await setAppState('userInfo', JSON.stringify({ name: name }));
+                await setAppState('SETUP', 'FLAG_TRUE');
+                window.location.href = '../index.html';
             } else {
                 nameInput.focus();
             }
@@ -277,7 +307,7 @@
             if (e.key === 'Enter') completeSetup();
         });
 
-        function handleCredentialResponse(response) {
+        async function handleCredentialResponse(response) {
             try {
                 const base64Url = response.credential.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -285,12 +315,12 @@
                 const payload = JSON.parse(jsonPayload);
                 
                 if (payload.name) {
-                    localStorage.setItem('userInfo', JSON.stringify({ 
+                    await setAppState('userInfo', JSON.stringify({ 
                         name: payload.name,
                         picture: payload.picture,
                         googleId: payload.sub
                     }));
-                    localStorage.setItem('SETUP', 'FLAG_TRUE');
+                    await setAppState('SETUP', 'FLAG_TRUE');
                     window.location.href = '../index.html';
                 }
             } catch (e) {
@@ -298,28 +328,13 @@
             }
         }
 
-        const loadScript = (src) => {
-            return new Promise((resolve) => {
-                const s = document.createElement('script');
-                s.src = `${src}?v=${Date.now()}`;
-                s.onload = resolve;
-                document.head.appendChild(s);
+        if (window.google) {
+            google.accounts.id.initialize({
+                client_id: "243159738325-feq9jnd1sulm3tdpq7nq1b2vtoltu6r3.apps.googleusercontent.com",
+                callback: handleCredentialResponse
             });
-        };
-
-        (async () => {
-            // Loading your external loading logic
-            await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
-            document.body.style.visibility = 'visible';
-
-            if (window.google) {
-                google.accounts.id.initialize({
-                    client_id: "243159738325-feq9jnd1sulm3tdpq7nq1b2vtoltu6r3.apps.googleusercontent.com",
-                    callback: handleCredentialResponse
-                });
-                google.accounts.id.renderButton(document.getElementById("googleSignInBtn"), { theme: "outline", size: "large" });
-            }
-        })();
+            google.accounts.id.renderButton(document.getElementById("googleSignInBtn"), { theme: "outline", size: "large" });
+        }
     </script>
 </body>
 </html>

@@ -694,7 +694,7 @@ body.dark .feature-card:hover {
 </div>
 
 <script>
-(function() {
+(async function() {
   const MAINTENANCE_MODE = 0;
   if (MAINTENANCE_MODE === 1) {
     window.location.href = '404.html';
@@ -715,8 +715,27 @@ body.dark .feature-card:hover {
     }
   });
 
-  const SETUP_KEY = 'SETUP';
-  const isAuthenticated = localStorage.getItem(SETUP_KEY) === 'FLAG_TRUE';
+  // Auth check (IndexedDB with localStorage fallback)
+  const isAuthenticated = await new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('GenesisAI', 1);
+      req.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('appState'))
+          db.createObjectStore('appState', { keyPath: 'key' });
+      };
+      req.onsuccess = (e) => {
+        try {
+          const tx = e.target.result.transaction('appState', 'readonly');
+          const store = tx.objectStore('appState');
+          const get = store.get('SETUP');
+          get.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+          get.onsuccess = () => resolve(get.result && get.result.value === 'FLAG_TRUE');
+        } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+      };
+    } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+  });
   if (isAuthenticated) {
     window.location.href = 'index.html';
     return;
