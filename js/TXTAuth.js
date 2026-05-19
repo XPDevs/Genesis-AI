@@ -1,4 +1,37 @@
 (function() {
+
+    // ── AI Model Signatures (like ImgAuth's aiSignatures) ──
+    const AI_MODEL_SIGNATURES = [
+        { name: "ChatGPT (GPT-3.5)", codes: ["As an AI language model", "as an AI language model", "I am an AI language model", "I'm an AI language model", "My knowledge cutoff", "my knowledge cutoff", "knowledge cutoff date"] },
+        { name: "ChatGPT (GPT-4)", codes: ["As an AI, I", "as an AI, I", "I'm an AI assistant", "I am an AI assistant", "as an AI assistant", "GPT-4", "gpt-4"] },
+        { name: "ChatGPT (GPT-4o)", codes: ["GPT-4o", "gpt-4o", "I'm an AI,", "I am an AI,"] },
+        { name: "Claude (Anthropic)", codes: ["I'm Claude", "I am Claude", "Claude 3", "Claude 3.5", "Claude 4", "Claude Opus", "Claude Sonnet", "Claude Haiku", "Anthropic", "I'm an AI assistant created by Anthropic"] },
+        { name: "Gemini (Google)", codes: ["I'm Gemini", "I am Gemini", "Gemini Ultra", "Gemini Pro", "Gemini Nano", "Google AI", "I'm a large language model", "I'm an AI model", "as a large language model"] },
+        { name: "LLaMA (Meta)", codes: ["LLaMA", "llama", "Meta AI", "Meta's AI"] },
+        { name: "Mistral AI", codes: ["Mistral", "mistral", "Le Chat", "le chat"] },
+        { name: "DeepSeek", codes: ["DeepSeek", "deepseek"] },
+        { name: "Perplexity AI", codes: ["Perplexity", "perplexity"] },
+        { name: "Copilot (Microsoft)", codes: ["Microsoft Copilot", "Bing Chat", "Copilot", "I'm an AI, not a human"] },
+        { name: "Grok (xAI)", codes: ["Grok", "xAI", "I'm Grok"] },
+        { name: "Character.AI", codes: ["Character.AI", "character.ai"] },
+        { name: "AI21 (Jurassic)", codes: ["AI21", "Jurassic", "jamba"] },
+        { name: "Cohere", codes: ["Cohere", "command-r", "Command R"] },
+        { name: "Pi (Inflection)", codes: ["I'm Pi", "I am Pi", "Inflection"] },
+        { name: "OpenAI o1", codes: ["OpenAI o1", "o1-preview", "o1-mini"] },
+        { name: "OpenAI o3", codes: ["OpenAI o3", "o3-mini"] },
+        { name: "xAI Grok 3", codes: ["Grok 3", "xAI Grok"] },
+        { name: "DeepSeek R1", codes: ["DeepSeek R1", "deepseek-r1"] },
+        { name: "Claude Code (Anthropic)", codes: ["Claude Code", "I'm Claude Code"] },
+        { name: "Gemini 2.0", codes: ["Gemini 2.0", "Gemini 2.5"] },
+        { name: "Generative AI", codes: ["generative AI", "generative ai", "GenAI", "gen AI"] },
+        { name: "LLM-generated", codes: ["LLM-generated", "llm generated", "LLM generated"] },
+        { name: "AI-generated content", codes: ["AI-generated", "ai-generated", "AI generated", "ai generated"] },
+        { name: "Disclaimer Pattern", codes: ["I cannot fulfill this request", "I cannot complete this request", "I cannot provide", "I cannot generate", "I cannot create", "I cannot assist", "I cannot help with", "I'm not able to", "I am not able to", "I apologize, but I cannot", "I'm sorry, but I cannot", "I'm sorry, I cannot"] },
+        { name: "Ethical disclaimer", codes: ["As a responsible AI", "as a responsible AI", "ethically", "I must emphasize", "it's important to note that", "please note that as an AI"] },
+        { name: "Formatting pattern", codes: ["Here's a", "Here is a", "Here's an", "Here is an", "Here are", "Certainly!", "Absolutely!", "I'd be happy to", "I'd be glad to", "I will provide", "Let me provide", "Let me give you"] },
+    ];
+
+    // ── AI Watermark Phrases ──
     const AI_WATERMARKS = [
         "As an AI language model", "I cannot fulfill this request",
         "I am a large language model", "I do not have personal opinions",
@@ -16,9 +49,56 @@
         "in today's digital age", "in today's world",
         "in conclusion", "to sum up", "in summary",
         "it is worth considering", "it should be noted that",
-        "it is important to recognize", "it is important to understand"
+        "it is important to recognize", "it is important to understand",
+        "harness the power", "harnessing the power",
+        "revolutionize the way", "transformative potential",
+        "ever-evolving landscape", "rapidly evolving",
+        "it is essential to", "it is crucial to",
+        "it is imperative to", "in an era where",
+        "the intersection of", "the convergence of",
+        "cutting-edge", "state-of-the-art",
+        "groundbreaking", "pioneering",
+        "game-changer", "paradigm shift",
+        "in the context of", "in terms of",
+        "with respect to", "with regard to",
+        "as previously mentioned", "as mentioned earlier",
+        "as discussed above", "as outlined below",
+        "the aforementioned", "the following",
+        "it goes without saying", "needless to say",
+        "it is noteworthy that", "it is worth mentioning",
+        "it bears mentioning", "it is significant that",
+        "one cannot overstate", "cannot be overstated",
+        "plays a pivotal role", "plays a crucial role",
+        "plays a vital role", "plays a key role",
+        "serves as a", "stands as a",
+        "a wide range of", "a broad range of",
+        "a variety of", "a plethora of",
+        "a multitude of", "a myriad of",
+        "in the grand scheme", "all things considered",
+        "taking everything into account",
+        "when all is said and done",
+        "it is essential to consider",
+        "it is crucial to note",
+        "this highlights the", "this underscores the",
+        "this demonstrates the", "this illustrates the",
+        "this showcases the", "this emphasizes the",
+        "as can be seen", "as shown above",
+        "as evidenced by", "as demonstrated by",
+        "effectively", "essentially",
+        "ultimately", "fundamentally",
+        "interestingly", "notably",
+        "importantly", "significantly",
+        "broadly speaking", "generally speaking",
+        "strictly speaking", "roughly speaking",
+        "in a sense", "in some sense",
+        "to some extent", "to a certain extent",
+        "in many ways", "in various ways",
+        "I'm here to assist", "here to help",
+        "let me know if", "feel free to ask",
+        "don't hesitate to", "please let me know",
     ];
 
+    // ── AI Indicator Patterns ──
     const AI_INDICATORS = [
         { pattern: /however, it is (important|crucial|essential)/i, score: 4 },
         { pattern: /in conclusion,/i, score: 3 },
@@ -38,25 +118,237 @@
         { pattern: /\b(therefore|thus|hence|consequently|accordingly),/i, score: 2 },
         { pattern: /it's (?:important|crucial|essential|worthwhile|necessary) to/i, score: 3 },
         { pattern: /(?:by leveraging|by utilizing|through the use of)/i, score: 2 },
+        { pattern: /(?:harness|harnessing).+(?:power|potential|capabilities)/i, score: 3 },
+        { pattern: /(?:transformative|revolutionary|groundbreaking|pioneering|game-changing)/i, score: 3 },
+        { pattern: /(?:in an era|in a world|in today's).+(?:where|of|digital)/i, score: 2 },
+        { pattern: /(?:as previously|as mentioned|as discussed|as outlined|as stated).+(?:above|earlier|previously|below)/i, score: 3 },
+        { pattern: /(?:it cannot be overstated|one cannot overstate|cannot be overstated)/i, score: 3 },
+        { pattern: /the (?:convergence|intersection|integration).+(?:of|between).+(?:and)/i, score: 3 },
+        { pattern: /(?:it is|it's).+(?:imperative|essential|crucial|vital|critical).+(?:to|that)/i, score: 2 },
+        { pattern: /(?:it goes without saying|needless to say|it is self-evident)/i, score: 3 },
+        { pattern: /(?:it is noteworthy|it is worth mentioning|it bears mentioning|it is significant)/i, score: 3 },
+        { pattern: /(?:plays? a|serves? as|acts as).+(?:pivotal|crucial|vital|key|significant|integral).+(?:role|part|function)/i, score: 3 },
+        { pattern: /(?:a plethora of|a multitude of|a myriad of|a wealth of)/i, score: 3 },
+        { pattern: /(?:broadly speaking|generally speaking|strictly speaking|roughly speaking)/i, score: 2 },
+        { pattern: /(?:effectively|essentially|fundamentally|ultimately),/i, score: 1 },
+        { pattern: /(?:as can be seen|as shown|as evidenced|as demonstrated|as illustrated)/i, score: 2 },
+        { pattern: /in the (?:realm|context|field|domain).+(?:of)/i, score: 2 },
+        { pattern: /(?:this|that|these|those).+(?:serves?|serves as a|acts as a)/i, score: 2 },
+        { pattern: /(?:it is essential|it is crucial|it is vital|it is critical).+(?:to|that)/i, score: 2 },
+        { pattern: /(?:delve|delve deeper|delve into)/i, score: 4 },
+        { pattern: /a testament to/i, score: 4 },
+        { pattern: /the tapestry of/i, score: 4 },
+        { pattern: /(?:landscape|scenario) (?:where|in which|wherein)/i, score: 2 },
+        { pattern: /pave the way for/i, score: 3 },
+        { pattern: /(?:first and foremost|last but not least)/i, score: 3 },
+        { pattern: /(?:embody|embodies|embodied).+(?:essence|spirit|principle)/i, score: 3 },
+        { pattern: /(?:foster|fostering|fostered).+(?:innovation|creativity|growth|development)/i, score: 2 },
+        { pattern: /(?:navigate|navigating|navigated).+(?:complex|challenge|landscape)/i, score: 2 },
+        { pattern: /(?:underscore|underscores|underscored).+(?:importance|need|significance)/i, score: 3 },
+        { pattern: /(?:in summary|to summarize|to conclude|in closing),/i, score: 2 },
+        { pattern: /(?:additionally|furthermore|moreover|besides),/i, score: 2 },
+        { pattern: /\b(resonate|resonates|resonated).+(?:with|audience|reader)/i, score: 2 },
+        { pattern: /\b(unlock|unlocking|unlocks).+(?:potential|opportunity|value)/i, score: 2 },
+        { pattern: /\b(reimagine|reimagining|reimagined)\b/i, score: 3 },
+        { pattern: /\b(drive|driving|driven).+(?:innovation|change|growth|results)/i, score: 2 },
+        { pattern: /\b(unprecedented|unparalleled|incomparable)\b/i, score: 3 },
+        { pattern: /as we (?:move|look|venture|step).+(?:forward|ahead|into|toward)/i, score: 2 },
+        { pattern: /(?:in light of|in view of|given that|considering that)/i, score: 2 },
+        { pattern: /(?:for instance|for example|such as|e\.g\.)/i, score: 1 },
+        { pattern: /(?:initiate|initiating|initiated).+(?:process|discussion|action)/i, score: 1 },
+        { pattern: /\b(paradigm|paradigms)\b/i, score: 3 },
+        { pattern: /\b(synergy|synergies|synergistic)\b/i, score: 3 },
+        { pattern: /\b(holistic|holistically)\b/i, score: 2 },
+        { pattern: /\b(end-to-end)\b/i, score: 2 },
+        { pattern: /\b(best-in-class|world-class)\b/i, score: 2 },
+        { pattern: /\b(cutting-edge|state.?of.?the.?art|bleeding.?edge)\b/i, score: 2 },
+        { pattern: /\b(mission.?critical|business.?critical)\b/i, score: 2 },
+        { pattern: /(?:in the ever.?evolving|in this rapidly evolving)/i, score: 2 },
+        { pattern: /it should be noted that/i, score: 3 },
+        { pattern: /(?:in conclusion|to conclude|in summary|to summarize|in closing|to sum up),/i, score: 2 },
     ];
 
+    // ── Human Indicator Patterns ──
     const HUMAN_INDICATORS = [
-        { pattern: /\b(i|me|my)\b/g, score: 1 },
-        { pattern: /\b(lol|lmao|idk|tbh|im|dont|cant|wanna|gonna|gotta|lemme|gimme)\b/i, score: 4 },
+        { pattern: /\b(i|me|my)\b/gi, score: 1 },
+        { pattern: /\b(lol|lmao|idk|tbh|im|dont|cant|wanna|gonna|gotta|lemme|gimme|hafta|kinda|sorta)\b/i, score: 4 },
         { pattern: /\byou(?:'re|ve|d|ll|r)\b/i, score: 2 },
         { pattern: /\b(?:i'm|i've|i'd|i'll|i am)\b/i, score: 2 },
         { pattern: /[!]{2,}/, score: 3 },
         { pattern: /\.{3,}/, score: 2 },
         { pattern: /\b(anyway|so|like|basically|honestly|literally|actually|seriously|frankly)\b/i, score: 1.5 },
-        { pattern: /\b(yeah|nah|yep|nope|sure|okay|alright|cool|awesome|amazing|weird|crazy)\b/i, score: 2 },
+        { pattern: /\b(yeah|nah|yep|nope|sure|okay|alright|cool|awesome|amazing|weird|crazy|dope|lit|fire)\b/i, score: 2 },
         { pattern: /\b(dunno|probs|defs|deffo|maybe|perhaps|kinda|sorta)\b/i, score: 2 },
         { pattern: /\b(u|ur|ya|gonna|wanna)\b/i, score: 2 },
         { pattern: /[?]{2,}/, score: 2 },
-        { pattern: /\b(doesn't|don't|won't|can't|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|couldn't|shouldn't|wouldn't|mightn't|mustn't)\b/i, score: 1 },
-        { pattern: /(?:tbh|imo|imho|idk|jk|brb|omg|lmao|rofl|smh|nvm)\b/i, score: 3 },
-        { pattern: /\b(hell|damn|crap|sucks|stupid|ridiculous|awesome|terrible|horrible)\b/i, score: 2 },
+        { pattern: /\b(doesn't|don't|won't|can't|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|couldn't|shouldn't|wouldn't|mightn't|mustn't|shan't|needn't|daren't)\b/i, score: 1 },
+        { pattern: /(?:tbh|imo|imho|idk|jk|brb|omg|lmao|rofl|smh|nvm|afk|btw|fyi|icymi)\b/i, score: 3 },
+        { pattern: /\b(hell|damn|crap|sucks|stupid|ridiculous|awesome|terrible|horrible|bullshit|crap|darn|freaking|friggin)\b/i, score: 2 },
+        { pattern: /[A-Z]{3,}/g, score: 2 },
+        { pattern: /\b(well|so|right|ok|okay|alright|anyways|honestly|basically|actually|literally|seriously|honestly|frankly|truthfully)\b/i, score: 1 },
+        { pattern: /\b(hey|hi|hello|yo|sup|howdy|cheers)\b/i, score: 1 },
+        { pattern: /\b(thanks|ty|thx|thank you|cheers|appreciate it)\b/i, score: 1 },
+        { pattern: /\b(btw|by the way|anyway|anywho|anyhoo)\b/i, score: 1.5 },
+        { pattern: /(?<=\s)-(?=\s)/g, score: 1 },
+        { pattern: /\b(gonna|gotta|wanna|lemme|gimme|kinda|sorta|hafta|dunno|prolly|probly|tryna)\b/i, score: 3 },
+        { pattern: /\b(cuz|'cause|cus|bc|bcos)\b/i, score: 2 },
+        { pattern: /\b(ain't|y'all|d'you|'em|'bout)\b/i, score: 2 },
+        { pattern: /\b(pretty|quite|rather|somewhat).+(?:good|bad|nice|well|big|small)\b/i, score: 1 },
+        { pattern: /\b(just|like|really|very|so|such|totally|absolutely|definitely)\b/i, score: 0.5 },
+        { pattern: /(?:\bi\b)(?:\s+\w+){0,3}\s+(?:think|feel|believe|guess|suppose|figure|reckon)\b/i, score: 2 },
+        { pattern: /\b(maybe|perhaps|possibly|probably|hopefully)\b/i, score: 1 },
+        { pattern: /\b(shit|fuck|damn|hell|crap|piss|dick|ass)\b/i, score: 3 },
+        { pattern: /\b(wtf|omg|lol|lmao|rofl|stfu|idk|idc|irl|af)\b/i, score: 3 },
+        { pattern: /\.{4,}/g, score: 2 },
+        { pattern: /\b('cause|cause|cuz|coz)\b/i, score: 2 },
+        { pattern: /\b(great|nice|good|awesome|amazing|fantastic|wonderful|superb|excellent)\b/i, score: 0.5 },
     ];
 
+    // ── Punctuation & Emdash Analysis ──
+    const getPunctuationAnalysis = (text) => {
+        const scores = [];
+        const emDashCount = (text.match(/—/g) || []).length;
+        const enDashCount = (text.match(/–/g) || []).length;
+        const doubleHyphenCount = (text.match(/--/g) || []).length;
+        const totalDashVariants = emDashCount + enDashCount + doubleHyphenCount;
+
+        const semicolonCount = (text.match(/;/g) || []).length;
+        const colonCount = (text.match(/:/g) || []).length;
+        const ellipsisCount = (text.match(/\.{3,}/g) || []).length;
+        const exclamationCount = (text.match(/!/g) || []).length;
+        const questionCount = (text.match(/\?/g) || []).length;
+        const quoteCount = (text.match(/[""]/g) || []).length;
+        const parenCount = (text.match(/[()]/g) || []).length / 2;
+        const bulletCount = (text.match(/^[\s]*[-*•]\s/gm) || []).length;
+        const numberedListCount = (text.match(/^\s*\d+[.)]\s/gm) || []).length;
+
+        const wordCount = text.split(/\s+/).length;
+
+        const emDashDensity = wordCount > 0 ? totalDashVariants / wordCount * 100 : 0;
+        const semiColonDensity = wordCount > 0 ? semicolonCount / wordCount * 100 : 0;
+
+        if (emDashDensity > 1.0) scores.push({ name: "punctuation_emdash_high", score: 7, weight: 1 });
+        else if (emDashDensity > 0.5) scores.push({ name: "punctuation_emdash_moderate", score: 4, weight: 1 });
+
+        if (semiColonDensity > 1.5) scores.push({ name: "punctuation_semicolon_high", score: 5, weight: 1 });
+        else if (semiColonDensity > 0.8) scores.push({ name: "punctuation_semicolon_moderate", score: 3, weight: 1 });
+
+        if (exclamationCount > 0 && exclamationCount / wordCount * 100 > 0.5) {
+            scores.push({ name: "punctuation_exclamation_human", score: -4, weight: 1 });
+        }
+
+        if (ellipsisCount > 2) scores.push({ name: "punctuation_ellipsis_human", score: -3, weight: 1 });
+
+        if (bulletCount > 2) scores.push({ name: "structure_bullet_list", score: 4, weight: 1 });
+        if (numberedListCount > 2) scores.push({ name: "structure_numbered_list", score: 4, weight: 1 });
+
+        if (totalDashVariants > 0) scores.push({ name: "punctuation_dash_variants_count", score: totalDashVariants, weight: 0.5 });
+
+        const totalPunctVariety = (emDashCount > 0 ? 1 : 0) + (semicolonCount > 0 ? 1 : 0) + (exclamationCount > 0 ? 1 : 0) + (questionCount > 0 ? 1 : 0) + (ellipsisCount > 0 ? 1 : 0);
+        if (totalPunctVariety <= 1 && wordCount > 100) scores.push({ name: "punctuation_low_variety", score: 3, weight: 1 });
+
+        return { scores, metrics: { emDashCount, enDashCount, doubleHyphenCount, semicolonCount, colonCount, ellipsisCount, exclamationCount, questionCount, quoteCount, parenCount, bulletCount, numberedListCount, emDashDensity: emDashDensity.toFixed(2), semiColonDensity: semiColonDensity.toFixed(2) } };
+    };
+
+    // ── Readability Analysis ──
+    const getReadabilityAnalysis = (text) => {
+        const scores = [];
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const words = text.split(/\s+/).filter(w => w.length > 0);
+        const syllables = (t) => {
+            t = t.toLowerCase().replace(/[^a-z]/g, '');
+            if (t.length <= 3) return 1;
+            t = t.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            t = t.replace(/^y/, '');
+            const syl = t.match(/[aeiouy]{1,2}/g);
+            return syl ? syl.length : 1;
+        };
+
+        const totalSyllables = words.reduce((sum, w) => sum + syllables(w), 0);
+        const sentenceCount = sentences.length || 1;
+        const wordCount = words.length || 1;
+
+        const avgWordsPerSentence = wordCount / sentenceCount;
+        const avgSyllablesPerWord = totalSyllables / wordCount;
+
+        const fleschKincaid = 206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord;
+        const fleschGrade = 0.39 * avgWordsPerSentence + 11.8 * avgSyllablesPerWord - 15.59;
+
+        if (fleschKincaid < 30 && wordCount > 50) scores.push({ name: "readability_very_difficult", score: 4, weight: 1 });
+        else if (fleschKincaid < 50 && wordCount > 50) scores.push({ name: "readability_difficult", score: 2, weight: 1 });
+        else if (fleschKincaid > 80 && wordCount > 50) scores.push({ name: "readability_very_easy", score: -3, weight: 1 });
+
+        if (fleschGrade > 14 && wordCount > 50) scores.push({ name: "readability_grade_college_plus", score: 3, weight: 1 });
+        else if (fleschGrade > 10 && wordCount > 50) scores.push({ name: "readability_grade_high_school", score: 1, weight: 1 });
+
+        return { scores, metrics: { fleschKincaid: fleschKincaid.toFixed(1), fleschGrade: fleschGrade.toFixed(1), avgWordsPerSentence: avgWordsPerSentence.toFixed(1), avgSyllablesPerWord: avgSyllablesPerWord.toFixed(1) } };
+    };
+
+    // ── Vocabulary & Lexical Analysis ──
+    const getVocabularyAnalysis = (text) => {
+        const scores = [];
+        const words = text.toLowerCase().match(/\b[a-z]+(?:'[a-z]+)?\b/gi) || [];
+        const uniqueWords = new Set(words);
+        const wordCount = words.length;
+
+        const lexicalDiversity = wordCount > 0 ? uniqueWords.size / wordCount : 0;
+
+        if (lexicalDiversity < 0.35 && wordCount > 50) scores.push({ name: "lexical_diversity_low", score: 5, weight: 1 });
+        else if (lexicalDiversity < 0.45 && wordCount > 50) scores.push({ name: "lexical_diversity_moderate_low", score: 2, weight: 1 });
+        else if (lexicalDiversity > 0.65 && wordCount > 50) scores.push({ name: "lexical_diversity_high", score: -3, weight: 1 });
+
+        const avgWordLength = wordCount > 0 ? words.reduce((s, w) => s + w.length, 0) / wordCount : 0;
+        if (avgWordLength > 6 && wordCount > 50) scores.push({ name: "vocab_avg_word_length_high", score: 3, weight: 1 });
+        else if (avgWordLength < 4 && wordCount > 50) scores.push({ name: "vocab_avg_word_length_low", score: -2, weight: 1 });
+
+        const longWords = words.filter(w => w.length > 10).length;
+        const longWordRatio = wordCount > 0 ? longWords / wordCount : 0;
+        if (longWordRatio > 0.15 && wordCount > 50) scores.push({ name: "vocab_long_words_high", score: 3, weight: 1 });
+
+        const hedgeWords = ["perhaps", "maybe", "possibly", "probably", "somewhat", "relatively", "fairly", "quite", "rather", "pretty", "kind of", "sort of", "a bit"];
+        const hedgeCount = hedgeWords.filter(h => words.includes(h)).length;
+        if (hedgeCount > 3) scores.push({ name: "vocab_hedging_high", score: -2, weight: 1 });
+
+        return { scores, metrics: { lexicalDiversity: lexicalDiversity.toFixed(2), avgWordLength: avgWordLength.toFixed(2), longWordRatio: (longWordRatio * 100).toFixed(1) + '%', uniqueWords: uniqueWords.size, totalWords: wordCount } };
+    };
+
+    // ── Discourse Structure Analysis ──
+    const getDiscourseAnalysis = (text) => {
+        const scores = [];
+        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+        const paraCount = paragraphs.length;
+
+        if (paraCount > 1) {
+            const paraLengths = paragraphs.map(p => p.split(/\s+/).length);
+            const avgParaLen = paraLengths.reduce((a, b) => a + b, 0) / paraLengths.length;
+            const paraVar = paraLengths.reduce((a, b) => a + (b - avgParaLen) ** 2, 0) / paraLengths.length;
+            const paraStdDev = Math.sqrt(paraVar);
+
+            if (paraStdDev < avgParaLen * 0.3 && paraCount > 2) scores.push({ name: "discourse_para_uniform", score: 4, weight: 1 });
+            else if (paraStdDev > avgParaLen * 0.8 && paraCount > 2) scores.push({ name: "discourse_para_varied", score: -2, weight: 1 });
+        }
+
+        const transitionStart = ["however", "furthermore", "moreover", "therefore", "thus", "hence", "consequently", "additionally", "nevertheless", "nonetheless", "meanwhile", "subsequently", "accordingly", "notably", "specifically", "particularly", "importantly", "interestingly", "alternatively", "conversely", "in addition", "on the other hand", "in contrast", "as a result", "for example", "for instance", "in particular"];
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const formattedStarts = sentences.filter(s => {
+            const firstWord = s.trim().toLowerCase().split(/\s+/)[0];
+            return transitionStart.includes(firstWord) || transitionStart.some(t => s.trim().toLowerCase().startsWith(t));
+        });
+        const transitionStartRatio = sentences.length > 0 ? formattedStarts.length / sentences.length : 0;
+
+        if (transitionStartRatio > 0.4 && sentences.length > 5) scores.push({ name: "discourse_transition_starts_high", score: 5, weight: 1 });
+        else if (transitionStartRatio > 0.25 && sentences.length > 5) scores.push({ name: "discourse_transition_starts_moderate", score: 2, weight: 1 });
+
+        const wordCount = text.split(/\s+/).length;
+        const firstPerson = (text.match(/\bI\b/g) || []).length;
+        const secondPerson = (text.match(/\byou\b/gi) || []).length;
+        const thirdPersonNarrative = firstPerson === 0 && secondPerson === 0;
+        if (thirdPersonNarrative && wordCount > 100) scores.push({ name: "discourse_third_person_only", score: 2, weight: 1 });
+
+        return { scores, metrics: { paragraphCount: paraCount, transitionStartRatio: (transitionStartRatio * 100).toFixed(1) + '%', firstPersonCount: firstPerson, secondPersonCount: secondPerson } };
+    };
+
+    // ── Core Statistical Functions ──
     const getEntropy = (str) => {
         const len = str.length;
         if (len === 0) return 0;
@@ -70,7 +362,7 @@
 
     const getBurstiness = (text) => {
         const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        if (sentences.length < 3) return { variance: 0, avg: 0, stdDev: 0 };
+        if (sentences.length < 3) return { variance: 0, avg: 0, stdDev: 0, sentenceCount: 0 };
         const lengths = sentences.map(s => s.trim().split(/\s+/).length);
         const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
         const variance = lengths.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / lengths.length;
@@ -102,7 +394,7 @@
     };
 
     const countTransitionWords = (text) => {
-        const transitions = ["however", "furthermore", "moreover", "therefore", "thus", "hence", "consequently", "additionally", "nevertheless", "nonetheless", "meanwhile", "subsequently", "accordingly", "notably", "specifically", "particularly", "importantly", "interestingly", "alternatively", "conversely"];
+        const transitions = ["however", "furthermore", "moreover", "therefore", "thus", "hence", "consequently", "additionally", "nevertheless", "nonetheless", "meanwhile", "subsequently", "accordingly", "notably", "specifically", "particularly", "importantly", "interestingly", "alternatively", "conversely", "in addition", "on the other hand", "in contrast", "as a result", "for example", "for instance", "in particular", "as mentioned", "as noted", "that said", "having said that"];
         const words = text.toLowerCase().match(/\w+/g) || [];
         const total = words.length;
         const found = transitions.filter(t => text.toLowerCase().includes(t)).length;
@@ -110,11 +402,32 @@
     };
 
     const countFormalWords = (text) => {
-        const formal = ["utilize", "leverage", "facilitate", "implement", "optimize", "streamline", "innovate", "paradigm", "synergy", "holistic", "comprehensive", "robust", "scalable", "dynamic", "proactive", "strategic", "transformative", "disruptive", "cutting-edge", "state-of-the-art", "world-class", "best-in-class"];
+        const formal = ["utilize", "leverage", "facilitate", "implement", "optimize", "streamline", "innovate", "paradigm", "synergy", "holistic", "comprehensive", "robust", "scalable", "dynamic", "proactive", "strategic", "transformative", "disruptive", "cutting-edge", "state-of-the-art", "world-class", "best-in-class", "end-to-end", "mission-critical", "unprecedented", "groundbreaking", "pioneering", "game-changing", "revolutionary", "paradigm-shifting", "value-added", "best-of-breed"];
         const words = text.toLowerCase().match(/\w+/g) || [];
         let count = 0;
         for (const w of words) if (formal.includes(w)) count++;
         return count;
+    };
+
+    const countContractions = (text) => {
+        const contractions = (text.match(/\b\w+'(?:t|ve|re|ll|d|s|m|em)\b/gi) || []).length;
+        return contractions;
+    };
+
+    const countPassiveVoice = (text) => {
+        const passive = (text.match(/\b(?:is|are|was|were|been|being|be)\s+\w+ed\b/gi) || []).length;
+        return passive;
+    };
+
+    const countListStructures = (text) => {
+        const bulletPoints = (text.match(/^\s*[-*•]\s/gm) || []).length;
+        const numberedItems = (text.match(/^\s*\d+[.)]\s/gm) || []).length;
+        return { bulletPoints, numberedItems };
+    };
+
+    const countConjunctions = (text) => {
+        const conjunctions = (text.match(/\b(?:and|but|or|nor|yet|so|because|although|while|since|unless|if|when|where|whereas)\b/gi) || []).length;
+        return conjunctions;
     };
 
     window.authenticateText = function(text) {
@@ -125,93 +438,266 @@
             }
 
             const cleanText = text.trim();
+            const wordCount = cleanText.split(/\s+/).length;
+
+            // ── Phase 1: Model Signature Detection ──
+            let sigDetected = [];
+            for (const sig of AI_MODEL_SIGNATURES) {
+                let foundCodes = [];
+                for (const code of sig.codes) {
+                    if (cleanText.includes(code)) foundCodes.push(code);
+                }
+                if (foundCodes.length > 0) {
+                    sigDetected.push({ name: sig.name, codes: foundCodes, count: foundCodes.length });
+                }
+            }
+
+            // ── Phase 2: Watermark Phrase Detection ──
             let aiScore = 0;
             let humanScore = 0;
+            let allEvalPoints = [];
 
             for (const mark of AI_WATERMARKS) {
                 const regex = new RegExp(mark.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const matches = cleanText.match(regex);
-                if (matches) aiScore += 15 * matches.length;
+                if (matches) {
+                    const pts = 15 * matches.length;
+                    aiScore += pts;
+                    allEvalPoints.push({ name: "watermark_" + mark.replace(/[^a-z0-9]/gi, '_').substring(0, 20), score: Math.min(pts, 40), weight: 1 });
+                }
             }
 
+            // ── Phase 3: AI Indicator Patterns ──
             AI_INDICATORS.forEach(item => {
                 const matches = cleanText.match(item.pattern);
-                if (matches) aiScore += item.score * (matches.length + 1);
+                if (matches) {
+                    const pts = item.score * (matches.length + 1);
+                    aiScore += pts;
+                    allEvalPoints.push({ name: "ai_indicator_" + item.pattern.source.replace(/[^a-z0-9]/gi, '_').substring(0, 20), score: Math.min(pts, 20), weight: 1 });
+                }
             });
+
+            // ── Phase 4: Human Indicator Patterns ──
             HUMAN_INDICATORS.forEach(item => {
                 const matches = cleanText.match(item.pattern);
-                if (matches) humanScore += item.score * matches.length;
+                if (matches) {
+                    const pts = item.score * matches.length;
+                    humanScore += pts;
+                    allEvalPoints.push({ name: "human_indicator_" + item.pattern.source.replace(/[^a-z0-9]/gi, '_').substring(0, 20), score: -Math.min(pts, 15), weight: 1 });
+                }
             });
 
+            // ── Phase 5: Statistical Analysis ──
             const { avg, variance, stdDev, sentenceCount } = getBurstiness(cleanText);
             const entropy = getEntropy(cleanText);
-
-            if (variance < 10) aiScore += 5;
-            else if (variance < 15) aiScore += 2;
-            if (variance > 30) humanScore += 4;
-            if (stdDev < 3 && sentenceCount > 5) aiScore += 4;
-            if (entropy < 3.8) aiScore += 3;
-            else if (entropy > 4.8) humanScore += 2;
-
-            if (avg > 25) aiScore += 2;
-            if (avg < 10) humanScore += 2;
-
             const startVariety = countSentenceStartVariety(cleanText);
-            if (startVariety < 0.5 && startVariety > 0) aiScore += 6;
-            else if (startVariety > 0.75) humanScore += 3;
-
             const repetitiveRatio = countRepetitiveStructures(cleanText);
-            if (repetitiveRatio > 0.3) aiScore += 5;
-            else if (repetitiveRatio > 0.2) aiScore += 2;
-
             const transDensity = countTransitionWords(cleanText);
-            if (transDensity > 3) aiScore += 4;
-            else if (transDensity > 1.5) aiScore += 2;
-
             const formalCount = countFormalWords(cleanText);
-            if (formalCount > 3) aiScore += 3;
-            else if (formalCount > 1) aiScore += 1;
+            const contractionCount = countContractions(cleanText);
+            const passiveCount = countPassiveVoice(cleanText);
+            const listCount = countListStructures(cleanText);
+            const conjunctionCount = countConjunctions(cleanText);
 
-            const aiTotal = aiScore;
-            const humanTotal = humanScore;
+            // ── Phase 6: Advanced Analysis Modules ──
+            const punctAnalysis = getPunctuationAnalysis(cleanText);
+            const readabilityAnalysis = getReadabilityAnalysis(cleanText);
+            const vocabAnalysis = getVocabularyAnalysis(cleanText);
+            const discourseAnalysis = getDiscourseAnalysis(cleanText);
+
+            // ── Compile all eval points ──
+            for (const p of punctAnalysis.scores) allEvalPoints.push(p);
+            for (const p of readabilityAnalysis.scores) allEvalPoints.push(p);
+            for (const p of vocabAnalysis.scores) allEvalPoints.push(p);
+            for (const p of discourseAnalysis.scores) allEvalPoints.push(p);
+
+            // ── Scoring from statistical metrics ──
+            const metricPoints = [];
+
+            // Entropy
+            if (entropy < 3.8) metricPoints.push({ name: "st_entropy_low", score: 5, weight: 1 });
+            else if (entropy > 4.8) metricPoints.push({ name: "st_entropy_high", score: -2, weight: 1 });
+
+            // Variance / Burstiness
+            if (variance < 10 && sentenceCount > 5) metricPoints.push({ name: "st_variance_low", score: 6, weight: 1 });
+            else if (variance < 15 && sentenceCount > 5) metricPoints.push({ name: "st_variance_moderate_low", score: 2, weight: 1 });
+            if (variance > 30 && sentenceCount > 5) metricPoints.push({ name: "st_variance_high", score: -4, weight: 1 });
+
+            // Std Dev
+            if (stdDev < 3 && sentenceCount > 5) metricPoints.push({ name: "st_stddev_low", score: 5, weight: 1 });
+
+            // Sentence length
+            if (avg > 25) metricPoints.push({ name: "st_long_sentences", score: 3, weight: 1 });
+            else if (avg < 10) metricPoints.push({ name: "st_short_sentences", score: -3, weight: 1 });
+            else if (avg > 20) metricPoints.push({ name: "st_sentences_moderate_long", score: 1, weight: 1 });
+
+            // Sentence start variety
+            if (startVariety < 0.5 && startVariety > 0) metricPoints.push({ name: "st_start_variety_low", score: 7, weight: 1 });
+            else if (startVariety > 0.75) metricPoints.push({ name: "st_start_variety_high", score: -4, weight: 1 });
+
+            // Repetitive structures
+            if (repetitiveRatio > 0.3) metricPoints.push({ name: "st_repetitive_high", score: 6, weight: 1 });
+            else if (repetitiveRatio > 0.2) metricPoints.push({ name: "st_repetitive_moderate", score: 3, weight: 1 });
+
+            // Transition word density
+            if (transDensity > 3) metricPoints.push({ name: "st_transition_high", score: 5, weight: 1 });
+            else if (transDensity > 1.5) metricPoints.push({ name: "st_transition_moderate", score: 2, weight: 1 });
+
+            // Formal word count
+            if (formalCount > 5) metricPoints.push({ name: "st_formal_high", score: 4, weight: 1 });
+            else if (formalCount > 2) metricPoints.push({ name: "st_formal_moderate", score: 2, weight: 1 });
+
+            // Contractions (human signal)
+            if (contractionCount > 5) metricPoints.push({ name: "st_contractions_high", score: -3, weight: 1 });
+            else if (contractionCount > 2) metricPoints.push({ name: "st_contractions_moderate", score: -1, weight: 1 });
+
+            // Passive voice
+            if (passiveCount > 5) metricPoints.push({ name: "st_passive_high", score: 3, weight: 1 });
+            else if (passiveCount > 2) metricPoints.push({ name: "st_passive_moderate", score: 1, weight: 1 });
+
+            // List structures
+            if (listCount.bulletPoints > 3 || listCount.numberedItems > 3) {
+                metricPoints.push({ name: "st_list_heavy", score: 5, weight: 1 });
+            }
+
+            // Conjunction density
+            const conjDensity = wordCount > 0 ? conjunctionCount / wordCount * 100 : 0;
+            if (conjDensity > 6) metricPoints.push({ name: "st_conjunction_high", score: 2, weight: 1 });
+            else if (conjDensity < 2 && wordCount > 50) metricPoints.push({ name: "st_conjunction_low", score: 2, weight: 1 });
+
+            // Word-level entropy
+            const words = cleanText.toLowerCase().match(/\w+/g) || [];
+            const wordFreq = {};
+            for (const w of words) wordFreq[w] = (wordFreq[w] || 0) + 1;
+            const wordCountTotal = words.length;
+            const wordEntropy = Object.values(wordFreq).reduce((sum, f) => {
+                const p = f / wordCountTotal;
+                return sum - p * Math.log2(p);
+            }, 0);
+            const maxWordEntropy = Math.log2(new Set(words).size || 1);
+            const normalizedWordEntropy = maxWordEntropy > 0 ? wordEntropy / maxWordEntropy : 0;
+            if (normalizedWordEntropy < 0.7 && wordCount > 50) metricPoints.push({ name: "st_word_entropy_low", score: 4, weight: 1 });
+            else if (normalizedWordEntropy > 0.9 && wordCount > 50) metricPoints.push({ name: "st_word_entropy_high", score: -2, weight: 1 });
+
+            allEvalPoints.push(...metricPoints);
+
+            // ── Phase 7: Weighted Score Calculation (like ImgAuth) ──
+            const weights = allEvalPoints.map(p => p.weight);
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            let weightedScore = 0;
+            for (const p of allEvalPoints) {
+                weightedScore += p.score * p.weight;
+            }
+
+            // Convert weighted score to a baseline percentage (shifted to center around 50)
+            const avgScore = totalWeight > 0 ? 50 + (weightedScore / totalWeight) * 5 : 50;
+            const aiScoreFinal = avgScore;
+            const humanScoreFinal = 100 - avgScore;
+
+            // ── Phase 8: Signature match bonus ──
+            const hasSigMatch = sigDetected.length > 0;
+            if (hasSigMatch) {
+                for (const sig of sigDetected) {
+                    allEvalPoints.push({ name: "sig_match_" + sig.name.replace(/[^a-z0-9]/gi, '_'), score: 20 + sig.count * 5, weight: 1 });
+                }
+            }
+
+            // ── Phase 9: Determine verdict ──
+            let aiTotal = aiScoreFinal;
+            let humanTotal = humanScoreFinal;
+
+            // Apply signature detection bonus
+            if (hasSigMatch) {
+                aiTotal += 15;
+            }
 
             const diff = aiTotal - humanTotal;
             let verdict;
             let confidence;
 
-            if (diff > 15) {
+            if (diff > 20) {
                 verdict = "Highly Likely AI";
-                confidence = Math.min(85 + (diff - 15) * 1.5, 99);
-            } else if (diff > 7) {
+                confidence = Math.min(85 + (diff - 20) * 1.5, 99);
+            } else if (diff > 10) {
                 verdict = "Likely AI";
-                confidence = 60 + (diff - 7) * 5;
-            } else if (diff > 3) {
+                confidence = 60 + (diff - 10) * 5;
+            } else if (diff > 5) {
                 verdict = "Possibly AI";
-                confidence = 50 + (diff - 3) * 5;
-            } else if (diff < -10) {
+                confidence = 50 + (diff - 5) * 5;
+            } else if (diff < -15) {
                 verdict = "Highly Likely Human";
-                confidence = Math.min(80 + Math.abs(diff + 10) * 2, 99);
-            } else if (diff < -5) {
+                confidence = Math.min(80 + Math.abs(diff + 15) * 2, 99);
+            } else if (diff < -8) {
                 verdict = "Likely Human";
-                confidence = 60 + Math.abs(diff + 5) * 5;
-            } else if (diff < -2) {
+                confidence = 60 + Math.abs(diff + 8) * 5;
+            } else if (diff < -3) {
                 verdict = "Possibly Human";
-                confidence = 50 + Math.abs(diff + 2) * 5;
+                confidence = 50 + Math.abs(diff + 3) * 5;
             } else {
                 verdict = "Inconclusive";
                 confidence = 50;
             }
 
+            // ── Determine primary AI model (if detected) ──
+            let primaryModel = "";
+            if (sigDetected.length > 0) {
+                primaryModel = sigDetected.sort((a, b) => b.count - a.count)[0].name;
+            }
+
+            // ── Build result (matching ImgAuth style) ──
+            let resultText = "";
+            if (verdict.includes("AI")) {
+                resultText = "Text detected as AI-generated.\n";
+                if (primaryModel) {
+                    resultText += "Detected Signature: " + primaryModel + ".\n";
+                }
+                resultText += "Confidence: " + Math.round(Math.min(confidence, 99)) + "%\n";
+                resultText += "Evaluation points: " + allEvalPoints.length;
+            } else if (verdict.includes("Human")) {
+                let note = "";
+                if (wordCount < 50) note = " (short text)";
+                resultText = "Text not detected as AI-generated.\n";
+                resultText += "Analysis: No AI generator signatures found in database of " + AI_MODEL_SIGNATURES.length + " model signatures" + note + ".\n";
+                resultText += "Evaluation points analyzed: " + allEvalPoints.length + ".\n";
+                resultText += "Confidence: " + Math.round(Math.min(confidence, 30)) + "%";
+            } else {
+                resultText = "Analysis inconclusive.\n";
+                resultText += "Evaluation points analyzed: " + allEvalPoints.length + ".\n";
+                resultText += "Confidence: " + Math.round(confidence) + "%";
+            }
+
             resolve({
+                resultText,
                 verdict,
                 confidence: Math.round(Math.min(confidence, 99)),
+                primaryModel,
+                hasSigMatch,
+                totalEvalPoints: allEvalPoints.length,
                 metrics: {
-                    aiScore: aiTotal,
-                    humanScore: humanTotal,
+                    aiScore: Math.round(aiTotal),
+                    humanScore: Math.round(humanTotal),
                     variance: variance.toFixed(1),
+                    stdDev: stdDev.toFixed(1),
                     entropy: entropy.toFixed(2),
                     startVariety: startVariety.toFixed(2),
-                    sentenceCount
+                    repetitiveRatio: repetitiveRatio.toFixed(2),
+                    transDensity: transDensity.toFixed(1),
+                    formalCount,
+                    contractionCount,
+                    passiveCount,
+                    sentenceCount,
+                    wordCount,
+                    lexicalDiversity: vocabAnalysis.metrics.lexicalDiversity,
+                    avgWordLength: vocabAnalysis.metrics.avgWordLength,
+                    fleschKincaid: readabilityAnalysis.metrics.fleschKincaid,
+                    fleschGrade: readabilityAnalysis.metrics.fleschGrade,
+                    emDashCount: punctAnalysis.metrics.emDashCount,
+                    enDashCount: punctAnalysis.metrics.enDashCount,
+                    doubleHyphenCount: punctAnalysis.metrics.doubleHyphenCount,
+                    semicolonCount: punctAnalysis.metrics.semicolonCount,
+                    ellipsisCount: punctAnalysis.metrics.ellipsisCount,
+                    bulletCount: punctAnalysis.metrics.bulletCount,
+                    sigMatchCount: sigDetected.length
                 }
             });
         });
