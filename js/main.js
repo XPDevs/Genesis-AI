@@ -423,6 +423,31 @@ function injectCSS() {
             opacity: 1;
             transform: scale(1.1);
         }
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .quick-action-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .quick-action-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
         @media (max-width: 768px) {
             .scroll-bottom-btn {
                 bottom: 90px;
@@ -1007,9 +1032,26 @@ async function updateChatView() {
         }
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
-        const hour = new Date().getHours();
-        const greetingText = hour < 12 ? 'Good Morning' : 'Good Afternoon';
-        greetingEl.textContent = `${greetingText}, ${name}`;
+        const greetingText = typeof getRandomGreeting === 'function' ? getRandomGreeting() : 'Hello';
+        greetingEl.innerHTML = `${greetingText}, ${name}<div class="quick-actions"></div>`;
+        const actionsContainer = greetingEl.querySelector('.quick-actions');
+        if (actionsContainer && !actionsContainer.dataset.initialized) {
+          actionsContainer.dataset.initialized = 'true';
+          const quickActions = [
+            { label: '🐱 Image of a cat', msg: 'image of a cat' },
+            { label: '🌌 What is a black hole', msg: 'what is a black hole' },
+            { label: '😂 Tell me a joke', msg: 'tell me a joke' },
+            { label: '💡 Who created you', msg: 'who made you' },
+            { label: '🌊 Tell me about the ocean', msg: 'tell me about the ocean' },
+          ];
+          quickActions.forEach(a => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-action-btn';
+            btn.textContent = a.label;
+            btn.onclick = () => sendQuickAction(a.msg);
+            actionsContainer.appendChild(btn);
+          });
+        }
     } else {
         document.body.classList.remove('is-new-chat');
         if (chatHeader) {
@@ -1022,6 +1064,20 @@ async function updateChatView() {
             greetingEl.remove();
         }
     }
+}
+
+function sendQuickAction(text) {
+  if (aiState.isResponding) return;
+  if (!activeChatId) {
+    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+    chats.unshift(newChat);
+    activeChatId = newChat.id;
+    DB.set("activeChatId", activeChatId);
+    saveChats();
+    renderChatList();
+  }
+  userInput.value = text;
+  sendMessage();
 }
 
 async function renderMessages() {

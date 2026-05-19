@@ -552,6 +552,7 @@ if (isMobile) {
   uiElements.forEach(el => el.style.display = 'flex');
   
 await Promise.all([
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/greetings.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/speech.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
