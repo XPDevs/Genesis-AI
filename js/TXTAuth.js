@@ -433,7 +433,7 @@
     window.authenticateText = function(text) {
         return new Promise((resolve) => {
             if (!text || text.trim().split(/\s+/).length < 20) {
-                resolve({ verdict: "Inconclusive", confidence: 0, metrics: { aiScore: 0, humanScore: 0, note: "Text too short" } });
+                resolve("Text too short to analyze (minimum 20 words required).");
                 return;
             }
 
