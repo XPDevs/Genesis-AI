@@ -423,6 +423,9 @@ function injectCSS() {
             opacity: 1;
             transform: scale(1.1);
         }
+        #greeting {
+            text-align: center !important;
+        }
         .quick-actions {
             display: flex;
             flex-wrap: wrap;
