@@ -666,40 +666,7 @@
                 resultText += "Confidence: " + Math.round(confidence) + "%";
             }
 
-            resolve({
-                resultText,
-                verdict,
-                confidence: Math.round(Math.min(confidence, 99)),
-                primaryModel,
-                hasSigMatch,
-                totalEvalPoints: allEvalPoints.length,
-                metrics: {
-                    aiScore: Math.round(aiTotal),
-                    humanScore: Math.round(humanTotal),
-                    variance: variance.toFixed(1),
-                    stdDev: stdDev.toFixed(1),
-                    entropy: entropy.toFixed(2),
-                    startVariety: startVariety.toFixed(2),
-                    repetitiveRatio: repetitiveRatio.toFixed(2),
-                    transDensity: transDensity.toFixed(1),
-                    formalCount,
-                    contractionCount,
-                    passiveCount,
-                    sentenceCount,
-                    wordCount,
-                    lexicalDiversity: vocabAnalysis.metrics.lexicalDiversity,
-                    avgWordLength: vocabAnalysis.metrics.avgWordLength,
-                    fleschKincaid: readabilityAnalysis.metrics.fleschKincaid,
-                    fleschGrade: readabilityAnalysis.metrics.fleschGrade,
-                    emDashCount: punctAnalysis.metrics.emDashCount,
-                    enDashCount: punctAnalysis.metrics.enDashCount,
-                    doubleHyphenCount: punctAnalysis.metrics.doubleHyphenCount,
-                    semicolonCount: punctAnalysis.metrics.semicolonCount,
-                    ellipsisCount: punctAnalysis.metrics.ellipsisCount,
-                    bulletCount: punctAnalysis.metrics.bulletCount,
-                    sigMatchCount: sigDetected.length
-                }
-            });
+            resolve(resultText);
         });
     };
 })();
