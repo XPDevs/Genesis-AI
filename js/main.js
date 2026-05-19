@@ -1036,24 +1036,28 @@ async function updateChatView() {
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
         const greetingText = typeof getRandomGreeting === 'function' ? getRandomGreeting() : 'Hello';
-        greetingEl.innerHTML = `${greetingText}, ${name}<div class="quick-actions"></div>`;
-        const actionsContainer = greetingEl.querySelector('.quick-actions');
-        if (actionsContainer && !actionsContainer.dataset.initialized) {
-          actionsContainer.dataset.initialized = 'true';
-          const quickActions = [
-            { label: '🐱 Image of a cat', msg: 'image of a cat' },
-            { label: '🌌 What is a black hole', msg: 'what is a black hole' },
-            { label: '😂 Tell me a joke', msg: 'tell me a joke' },
-            { label: '💡 Who created you', msg: 'who made you' },
-            { label: '🌊 Tell me about the ocean', msg: 'tell me about the ocean' },
-          ];
-          quickActions.forEach(a => {
-            const btn = document.createElement('button');
-            btn.className = 'quick-action-btn';
-            btn.textContent = a.label;
-            btn.onclick = () => sendQuickAction(a.msg);
-            actionsContainer.appendChild(btn);
-          });
+        greetingEl.innerHTML = `${greetingText}, ${name}`;
+        const qaSetting = await DB.get("quickActionsEnabled", "false");
+        if (qaSetting === "true" || qaSetting === "new") {
+          greetingEl.innerHTML += `<div class="quick-actions"></div>`;
+          const actionsContainer = greetingEl.querySelector('.quick-actions');
+          if (actionsContainer && !actionsContainer.dataset.initialized) {
+            actionsContainer.dataset.initialized = 'true';
+            const quickActions = [
+              { label: '🐱 Image of a cat', msg: 'image of a cat' },
+              { label: '🌌 What is a black hole', msg: 'what is a black hole' },
+              { label: '😂 Tell me a joke', msg: 'tell me a joke' },
+              { label: '💡 Who created you', msg: 'who made you' },
+              { label: '🌊 Tell me about the ocean', msg: 'tell me about the ocean' },
+            ];
+            quickActions.forEach(a => {
+              const btn = document.createElement('button');
+              btn.className = 'quick-action-btn';
+              btn.textContent = a.label;
+              btn.onclick = () => sendQuickAction(a.msg);
+              actionsContainer.appendChild(btn);
+            });
+          }
         }
     } else {
         document.body.classList.remove('is-new-chat');
@@ -1067,6 +1071,146 @@ async function updateChatView() {
             greetingEl.remove();
         }
     }
+}
+
+function showQuickActionsGuide() {
+  if (document.getElementById('quick-actions-guide')) return;
+  const modal = document.createElement('div');
+  modal.id = 'quick-actions-guide';
+  modal.innerHTML = `
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h2>Welcome! Try Quick Actions</h2>
+      <p>Get started quickly with these suggested prompts. Quick actions are available for your first chat. You can always enable them again in Settings.</p>
+      <div class="qa-guide-buttons">
+        <button class="quick-action-btn" data-qa="image of a cat">🐱 Image of a cat</button>
+        <button class="quick-action-btn" data-qa="what is a black hole">🌌 What is a black hole</button>
+        <button class="quick-action-btn" data-qa="tell me a joke">😂 Tell me a joke</button>
+        <button class="quick-action-btn" data-qa="who made you">💡 Who created you</button>
+        <button class="quick-action-btn" data-qa="tell me about the ocean">🌊 Tell me about the ocean</button>
+      </div>
+      <div class="modal-actions">
+        <button id="qa-guide-ok" class="confirm">Got it</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('.quick-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.remove();
+      sendQuickAction(btn.dataset.qa);
+    });
+  });
+
+  const overlay = modal.querySelector('.modal-overlay');
+  const okBtn = modal.querySelector('#qa-guide-ok');
+
+  const dismiss = () => {
+    modal.remove();
+  };
+
+  okBtn.addEventListener('click', dismiss);
+  overlay.addEventListener('click', dismiss);
+
+  const style = document.createElement('style');
+  style.id = 'qa-guide-style';
+  style.textContent = `
+    #quick-actions-guide {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+      padding: 20px;
+    }
+    #quick-actions-guide .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+    }
+    #quick-actions-guide .modal-content {
+      background: var(--modal-bg, #1e1e1e);
+      padding: 30px;
+      border-radius: 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      color: var(--text, #fff);
+      text-align: center;
+    }
+    #quick-actions-guide h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+    #quick-actions-guide p {
+      margin: 0 0 18px;
+      font-size: 14px;
+      color: var(--text-secondary, #aaa);
+      line-height: 1.5;
+    }
+    #quick-actions-guide .qa-guide-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #quick-actions-guide .qa-guide-buttons .quick-action-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    #quick-actions-guide .qa-guide-buttons .quick-action-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    #quick-actions-guide .modal-actions {
+      margin-top: 0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    #qa-guide-ok {
+      padding: 10px 28px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 15px;
+      border: none;
+      background-color: var(--primary, #007bff);
+      color: #ffffff;
+    }
+    #qa-guide-ok:hover {
+      filter: brightness(0.9);
+      transform: translateY(-1px);
+    }
+    @media (max-width: 480px) {
+      #quick-actions-guide {
+        padding: 16px;
+        align-items: flex-end;
+      }
+      #quick-actions-guide .modal-content {
+        padding: 24px;
+        border-radius: 24px 24px 0 0;
+        max-width: none;
+      }
+    }
+  `;
+  if (!document.getElementById('qa-guide-style')) {
+    document.head.appendChild(style);
+  }
 }
 
 function sendQuickAction(text) {
@@ -2214,6 +2358,10 @@ async function sendMessage() {
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, async () => { chat.title = newTitle; await saveChats(); renderChatList(); await updateURL(newTitle); });
+    const qaSetting = await DB.get("quickActionsEnabled");
+    if (qaSetting === "new") {
+      await DB.set("quickActionsEnabled", "false");
+    }
   }
 
   const loadingDiv = document.createElement("div");
@@ -2985,6 +3133,10 @@ async function startApp() {
         'shortened-answers': {
             title: 'Shortened Answers',
             text: 'When enabled, Wikipedia-sourced responses will be reduced to 60% of their original length using intelligent text summarization, plus a short concluding sentence. Only applies to answers fetched from Wikipedia.'
+        },
+        'quick-actions': {
+            title: 'Quick Actions',
+            text: 'Suggested prompts shown on empty chats to help you get started. New users see these on their first chat only. Enable this setting to always show quick actions.'
         }
     };
 
@@ -3028,6 +3180,26 @@ async function startApp() {
         shortenedAnswersToggle.onchange = async () => {
             await DB.set("shortenedAnswers", shortenedAnswersToggle.checked ? "true" : "false");
         };
+    }
+
+    // Initialize Quick Actions setting
+    let qaSetting = await DB.get("quickActionsEnabled");
+    if (qaSetting === null) {
+      const hasSentMessages = chats.some(c => c.messages && c.messages.length > 0);
+      await DB.set("quickActionsEnabled", hasSentMessages ? "false" : "new");
+      qaSetting = hasSentMessages ? "false" : "new";
+    }
+
+    const quickActionsToggle = document.getElementById("quickActionsToggle");
+    if (quickActionsToggle) {
+      quickActionsToggle.checked = qaSetting === "true";
+      quickActionsToggle.onchange = async () => {
+        await DB.set("quickActionsEnabled", quickActionsToggle.checked ? "true" : "false");
+      };
+    }
+
+    if (qaSetting === "new") {
+      setTimeout(showQuickActionsGuide, 600);
     }
 
     // Set initial send button state
