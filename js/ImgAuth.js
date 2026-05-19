@@ -104,6 +104,7 @@
         { name: "Imagen", codes: ["Imagen", "Google AI"] },
         { name: "Imagen 2", codes: ["Imagen 2"] },
         { name: "Imagen 3", codes: ["Imagen 3"] },
+        { name: "Google Gemini / Gemini Nano", codes: ["Gemini", "gemini", "Google Gemini", "Gemini Nano"] },
         { name: "Janus", codes: ["Janus"] },
         { name: "Janus Pro", codes: ["Janus Pro"] },
         { name: "OmniGen", codes: ["OmniGen"] },
@@ -505,7 +506,6 @@
         { name: "GLIGEN", codes: ["GLIGEN"] },
         { name: "Stable Cascade", codes: ["Stable Cascade"] },
         { name: "Wuerstchen", codes: ["Wuerstchen"] },
-        { name: "Latent Consistency Model", codes: ["Latent Consistency Model"] },
         { name: "PixArt-alpha", codes: ["PixArt-alpha"] },
         { name: "PixArt-Sigma", codes: ["PixArt-Sigma"] },
         { name: "Playground v2", codes: ["Playground v2"] },
@@ -561,12 +561,7 @@
         { name: "SLAM", codes: ["SLAM"] },
         { name: "NeRF", codes: ["NeRF"] },
         { name: "Instant NGP", codes: ["Instant NGP"] },
-        { name: "3D Gaussian Splatting", codes: ["Gaussian Splatting", "3DGS"] },
         { name: "SuGaR", codes: ["SuGaR"] },
-        { name: "DIGITALFASHION", codes: ["DIGITALFASHION"] },
-        { name: "CLO 3D", codes: ["CLO 3D"] },
-        { name: "Browzwear", codes: ["Browzwear"] },
-        { name: "Style3D", codes: ["Style3D"] },
         { name: "Midjourney Alpha", codes: ["Midjourney Alpha"] },
         { name: "Magnific AI", codes: ["Magnific"] },
         { name: "Krea AI", codes: ["Krea"] },
@@ -848,9 +843,530 @@
         { name: "DyLoRA", codes: ["DyLoRA"] },
         { name: "DoRA", codes: ["DoRA"] },
         { name: "PiSSA", codes: ["PiSSA"] },
+        { name: "OpenAI DALL-E 3.5", codes: ["dall-e-3.5", "dalle3.5"] },
+        { name: "Google Veo", codes: ["Veo", "veo"] },
+        { name: "Google Veo 2", codes: ["Veo 2", "veo_2"] },
+        { name: "Meta Imagine", codes: ["Meta Imagine", "meta_imagine"] },
+        { name: "OpenAI o1", codes: ["o1", "openai_o1"] },
+        { name: "xAI Aurora", codes: ["xAI Aurora", "xai_aurora"] },
+        { name: "Perplexity AI", codes: ["Perplexity", "perplexity"] },
+        { name: "DeepSeek", codes: ["DeepSeek", "deepseek"] },
+        { name: "ByteDance Doubao", codes: ["Doubao", "doubao"] },
+        { name: "Tencent Hunyuan", codes: ["Tencent Hunyuan"] },
+        { name: "Alibaba Tongyi", codes: ["Tongyi", "tongyi"] },
+        { name: "Baidu ERNIE", codes: ["ERNIE", "ernie"] },
+        { name: "MiniMax", codes: ["MiniMax", "minimax"] },
+        { name: "StepFun", codes: ["StepFun", "stepfun"] },
     ];
 
     const exifSoftwareMarkers = ["Software", "EXIF", "sK1", "Adobe Photoshop", "Adobe_", "photoshop_"];
+
+    function computeEntropy(values, bins) {
+        const hist = new Array(bins).fill(0);
+        for (const v of values) {
+            const b = Math.min(bins - 1, Math.floor(v * bins / 256));
+            hist[b]++;
+        }
+        let ent = 0;
+        for (const h of hist) {
+            if (h > 0) { const p = h / values.length; ent -= p * Math.log2(p); }
+        }
+        return ent;
+    }
+
+    function variance(vals) {
+        const m = vals.reduce((a,b)=>a+b,0) / vals.length;
+        return vals.reduce((a,b)=>a+(b-m)**2,0) / vals.length;
+    }
+
+    function hist(values, bins) {
+        const h = new Array(bins).fill(0);
+        for (const v of values) {
+            h[Math.min(bins - 1, Math.floor(v * bins / 256))]++;
+        }
+        return h;
+    }
+
+    function regionPixelData(data, w, x1, y1, x2, y2) {
+        const out = [];
+        for (let y = y1; y < y2; y++) {
+            for (let x = x1; x < x2; x++) {
+                const i = (y * w + x) * 4;
+                out.push({ r: data[i], g: data[i+1], b: data[i+2] });
+            }
+        }
+        return out;
+    }
+
+    function makeEval(name, score) {
+        return { name: name, score: Math.max(0, Math.min(100, score)), weight: 1 };
+    }
+
+    function evalNoise(data, w, h) {
+        const pts = [];
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            const px = regionPixelData(data, w, x1, y1, x2, y2);
+            for (const ch of ['r','g','b']) {
+                const vals = px.map(p => p[ch]);
+                const v = variance(vals);
+                const std = Math.sqrt(v);
+                let s = 35;
+                if (std < 8) s = 85;
+                else if (std < 14) s = 65;
+                else if (std < 20) s = 50;
+                else if (std > 55) s = 70;
+                else if (std > 45) s = 55;
+                pts.push(makeEval('noise_std_' + ch + '_' + qn, s));
+            }
+            const rv = variance(px.map(p => p.r));
+            const gv = variance(px.map(p => p.g));
+            const bv = variance(px.map(p => p.b));
+            const corr = Math.abs(rv - gv) + Math.abs(gv - bv) + Math.abs(rv - bv);
+            pts.push(makeEval('noise_ch_corr_' + qn, corr < 500 ? 60 : 30));
+        }
+        const allVals = [];
+        for (let i = 0; i < data.length; i += 4) {
+            allVals.push((data[i] + data[i+1] + data[i+2]) / 3);
+        }
+        const ent = computeEntropy(allVals, 64);
+        pts.push(makeEval('noise_lum_entropy', ent < 4.5 ? 70 : ent > 6.2 ? 40 : 50));
+        const locVar = [];
+        for (let y = 2; y < h-2; y += 4) {
+            for (let x = 2; x < w-2; x += 4) {
+                const i = (y*w+x)*4;
+                const lum = (data[i]+data[i+1]+data[i+2])/3;
+                locVar.push(lum);
+            }
+        }
+        const lv = variance(locVar);
+        pts.push(makeEval('noise_uniformity', lv < 2000 ? 65 : lv > 8000 ? 55 : 45));
+        const ec = [];
+        for (let y = 0; y < h-1; y += 2) {
+            for (let x = 0; x < w-1; x += 2) {
+                const i = (y*w+x)*4;
+                const j = ((y+1)*w+x)*4;
+                const diff = Math.abs(data[i]-data[j]) + Math.abs(data[i+1]-data[j+1]) + Math.abs(data[i+2]-data[j+2]);
+                ec.push(diff);
+            }
+        }
+        const meanNeighborDiff = ec.reduce((a,b)=>a+b,0) / ec.length;
+        pts.push(makeEval('noise_neighbor_diff', meanNeighborDiff < 5 ? 75 : meanNeighborDiff > 25 ? 45 : 50));
+        return pts;
+    }
+
+    function evalColor(data, w, h) {
+        const pts = [];
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        const allR = [], allG = [], allB = [];
+        for (let i = 0; i < data.length; i += 4) {
+            allR.push(data[i]); allG.push(data[i+1]); allB.push(data[i+2]);
+        }
+        const entR = computeEntropy(allR, 64);
+        const entG = computeEntropy(allG, 64);
+        const entB = computeEntropy(allB, 64);
+        pts.push(makeEval('color_entropy_r', entR < 4.5 ? 65 : 45));
+        pts.push(makeEval('color_entropy_g', entG < 4.5 ? 65 : 45));
+        pts.push(makeEval('color_entropy_b', entB < 4.5 ? 65 : 45));
+        const corrRG = allR.reduce((a,_,i)=>a+Math.abs(allR[i]-allG[i]),0)/allR.length;
+        const corrRB = allR.reduce((a,_,i)=>a+Math.abs(allR[i]-allB[i]),0)/allR.length;
+        const corrGB = allG.reduce((a,_,i)=>a+Math.abs(allG[i]-allB[i]),0)/allG.length;
+        pts.push(makeEval('color_corr_rg', corrRG < 15 ? 70 : 40));
+        pts.push(makeEval('color_corr_rb', corrRB < 15 ? 70 : 40));
+        pts.push(makeEval('color_corr_gb', corrGB < 15 ? 70 : 40));
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            const px = regionPixelData(data, w, x1, y1, x2, y2);
+            const sats = px.map(p => {
+                const max = Math.max(p.r,p.g,p.b)/255, min = Math.min(p.r,p.g,p.b)/255;
+                return max === 0 ? 0 : (max-min)/max;
+            });
+            const sm = sats.reduce((a,b)=>a+b,0)/sats.length;
+            pts.push(makeEval('color_sat_mean_' + qn, sm > 0.45 ? 65 : sm > 0.3 ? 50 : 35));
+            const sv = variance(sats);
+            pts.push(makeEval('color_sat_var_' + qn, sv < 0.02 ? 60 : sv > 0.1 ? 45 : 50));
+            const hues = px.map(p => {
+                const r=p.r/255,g=p.g/255,b=p.b/255;
+                const max=Math.max(r,g,b), min=Math.min(r,g,b);
+                if (max===min) return 0;
+                let h2;
+                if (max===r) h2=(60*((g-b)/(max-min))+360)%360;
+                else if (max===g) h2=60*((b-r)/(max-min))+120;
+                else h2=60*((r-g)/(max-min))+240;
+                return h2;
+            });
+            const hueVar = variance(hues);
+            pts.push(makeEval('color_hue_var_' + qn, hueVar > 5000 ? 60 : hueVar < 1000 ? 65 : 50));
+        }
+        const meanR = allR.reduce((a,b)=>a+b,0)/allR.length;
+        const meanG = allG.reduce((a,b)=>a+b,0)/allG.length;
+        const meanB = allB.reduce((a,b)=>a+b,0)/allB.length;
+        const castRG = Math.abs(meanR - meanG);
+        const castRB = Math.abs(meanR - meanB);
+        const castGB = Math.abs(meanG - meanB);
+        pts.push(makeEval('color_cast_rg', castRG > 30 ? 60 : 40));
+        pts.push(makeEval('color_cast_rb', castRB > 30 ? 60 : 40));
+        pts.push(makeEval('color_cast_gb', castGB > 30 ? 60 : 40));
+        let bandingR = 0, bandingG = 0, bandingB = 0;
+        for (let i = 0; i < data.length-4; i += 4) {
+            if (Math.abs(data[i]-data[i+4]) < 2) bandingR++;
+            if (Math.abs(data[i+1]-data[i+5]) < 2) bandingG++;
+            if (Math.abs(data[i+2]-data[i+6]) < 2) bandingB++;
+        }
+        const total = data.length/4;
+        pts.push(makeEval('color_banding_r', (bandingR/total)*100 > 40 ? 70 : 40));
+        pts.push(makeEval('color_banding_g', (bandingG/total)*100 > 40 ? 70 : 40));
+        pts.push(makeEval('color_banding_b', (bandingB/total)*100 > 40 ? 70 : 40));
+        const colorTemp = (meanR + meanG + meanB) / 3;
+        pts.push(makeEval('color_temp_deviation', Math.abs(colorTemp - 128) > 40 ? 55 : 40));
+        const warm = meanR / Math.max(1, meanB);
+        pts.push(makeEval('color_warmth', warm > 1.5 ? 60 : warm < 0.7 ? 60 : 40));
+        return pts;
+    }
+
+    function evalEdges(data, w, h) {
+        const pts = [];
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            const px = regionPixelData(data, w, x1, y1, x2, y2);
+            let edgeSum = 0, edgeCount = 0;
+            for (let y = y1+1; y < y2-1; y++) {
+                for (let x = x1+1; x < x2-1; x++) {
+                    const i = (y*w+x)*4;
+                    const ix = ((y)*w+x+1)*4;
+                    const iy = ((y+1)*w+x)*4;
+                    const gx = Math.abs(data[i]-data[ix])+Math.abs(data[i+1]-data[ix+1])+Math.abs(data[i+2]-data[ix+2]);
+                    const gy = Math.abs(data[i]-data[iy])+Math.abs(data[i+1]-data[iy+1])+Math.abs(data[i+2]-data[iy+2]);
+                    const mag = (gx + gy) / 3;
+                    if (mag > 25) { edgeSum += mag; edgeCount++; }
+                }
+            }
+            const edgeDensity = edgeCount / ((x2-x1)*(y2-y1));
+            pts.push(makeEval('edge_density_' + qn, edgeDensity > 0.25 ? 60 : edgeDensity > 0.1 ? 50 : 40));
+            const avgEdge = edgeCount > 0 ? edgeSum / edgeCount : 0;
+            pts.push(makeEval('edge_strength_' + qn, avgEdge > 80 ? 65 : avgEdge > 40 ? 50 : 45));
+        }
+        let totalEdgeMag = 0, totalEdgePx = 0;
+        for (let y = 1; y < h-1; y++) {
+            for (let x = 1; x < w-1; x++) {
+                const i = (y*w+x)*4;
+                const gx = Math.abs(data[i]-data[i+4])+Math.abs(data[i+1]-data[i+5])+Math.abs(data[i+2]-data[i+6]);
+                const gy = Math.abs(data[i]-data[i+w*4])+Math.abs(data[i+1]-data[i+w*4+1])+Math.abs(data[i+2]-data[i+w*4+2]);
+                totalEdgeMag += (gx+gy)/3;
+                totalEdgePx++;
+            }
+        }
+        const globalEdge = totalEdgeMag / totalEdgePx;
+        pts.push(makeEval('edge_global_strength', globalEdge > 60 ? 60 : globalEdge > 30 ? 50 : 45));
+        const edgeHist = new Array(10).fill(0);
+        let totalE = 0;
+        for (let y = 1; y < h-1; y+=2) {
+            for (let x = 1; x < w-1; x+=2) {
+                const i = (y*w+x)*4;
+                const gx = Math.abs(data[i]-data[i+4])+Math.abs(data[i+1]-data[i+5])+Math.abs(data[i+2]-data[i+6]);
+                const gy = Math.abs(data[i]-data[i+w*4])+Math.abs(data[i+1]-data[i+w*4+1])+Math.abs(data[i+2]-data[i+w*4+2]);
+                const m = (gx+gy)/3;
+                if (m > 15) { edgeHist[Math.min(9, Math.floor(m/20))]++; totalE++; }
+            }
+        }
+        if (totalE > 0) {
+            const skew = edgeHist.slice(5).reduce((a,b)=>a+b,0) / totalE;
+            pts.push(makeEval('edge_high_freq_ratio', skew > 0.3 ? 60 : skew > 0.15 ? 50 : 40));
+        }
+        return pts;
+    }
+
+    function evalLuminance(data, w, h) {
+        const pts = [];
+        const lums = [];
+        for (let i = 0; i < data.length; i += 4) {
+            lums.push((data[i]+data[i+1]+data[i+2])/3);
+        }
+        const lm = lums.reduce((a,b)=>a+b,0)/lums.length;
+        const lv = variance(lums);
+        const lstd = Math.sqrt(lv);
+        pts.push(makeEval('lum_mean', lm > 180 ? 60 : lm < 50 ? 60 : 45));
+        pts.push(makeEval('lum_contrast', lstd > 70 ? 60 : lstd > 40 ? 50 : 40));
+        const ent = computeEntropy(lums, 64);
+        pts.push(makeEval('lum_entropy', ent < 4 ? 65 : ent > 6 ? 45 : 50));
+        const tenth = Math.floor(lums.length/10);
+        const sorted = lums.slice().sort((a,b)=>a-b);
+        const dynRange = sorted[sorted.length-1] - sorted[0];
+        pts.push(makeEval('lum_dynamic_range', dynRange > 230 ? 55 : dynRange > 180 ? 50 : 45));
+        const lowLight = lums.filter(v => v < 30).length / lums.length;
+        const highLight = lums.filter(v => v > 225).length / lums.length;
+        pts.push(makeEval('lum_shadow_detail', lowLight > 0.15 ? 55 : 45));
+        pts.push(makeEval('lum_highlight_detail', highLight > 0.1 ? 55 : 45));
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            const px = regionPixelData(data, w, x1, y1, x2, y2);
+            const vals = px.map(p => (p.r+p.g+p.b)/3);
+            const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+            const v = variance(vals);
+            pts.push(makeEval('lum_region_mean_' + qn, Math.abs(m - lm) > 50 ? 55 : 40));
+            pts.push(makeEval('lum_region_contrast_' + qn, Math.sqrt(v) > 50 ? 55 : 45));
+        }
+        let gradSum = 0, gradCount = 0;
+        for (let y = 3; y < h-3; y += 2) {
+            for (let x = 3; x < w-3; x += 2) {
+                const i = (y*w+x)*4;
+                const l = (data[i]+data[i+1]+data[i+2])/3;
+                const il = ((y-1)*w+x)*4;
+                const dl = (data[il]+data[il+1]+data[il+2])/3;
+                gradSum += Math.abs(l - dl);
+                gradCount++;
+            }
+        }
+        const avgGrad = gradSum / gradCount;
+        pts.push(makeEval('lum_gradient', avgGrad > 15 ? 60 : avgGrad > 8 ? 50 : 40));
+        return pts;
+    }
+
+    function evalTexture(data, w, h) {
+        const pts = [];
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            let lbpSum = 0, lbpCount = 0;
+            for (let y = y1+1; y < y2-1; y += 2) {
+                for (let x = x1+1; x < x2-1; x += 2) {
+                    const i = (y*w+x)*4;
+                    const c = (data[i]+data[i+1]+data[i+2])/3;
+                    let lbp = 0;
+                    const offsets = [[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0]];
+                    for (let k = 0; k < 8; k++) {
+                        const ny = y + offsets[k][1], nx = x + offsets[k][0];
+                        const ni = (ny*w+nx)*4;
+                        const nv = (data[ni]+data[ni+1]+data[ni+2])/3;
+                        if (nv >= c) lbp |= (1 << k);
+                    }
+                    lbpSum += lbp;
+                    lbpCount++;
+                }
+            }
+            const avgLBP = lbpCount > 0 ? lbpSum / lbpCount : 128;
+            pts.push(makeEval('texture_lbp_mean_' + qn, Math.abs(avgLBP - 128) > 40 ? 60 : 45));
+            let localVarSum = 0, lvCount = 0;
+            for (let y = y1+2; y < y2-2; y += 3) {
+                for (let x = x1+2; x < x2-2; x += 3) {
+                    const block = [];
+                    for (let dy = -2; dy <= 2; dy++) {
+                        for (let dx = -2; dx <= 2; dx++) {
+                            const bi = ((y+dy)*w+x+dx)*4;
+                            block.push((data[bi]+data[bi+1]+data[bi+2])/3);
+                        }
+                    }
+                    localVarSum += variance(block);
+                    lvCount++;
+                }
+            }
+            const avgLV = lvCount > 0 ? localVarSum / lvCount : 0;
+            pts.push(makeEval('texture_local_var_' + qn, avgLV < 100 ? 65 : avgLV > 500 ? 50 : 45));
+        }
+        return pts;
+    }
+
+    function evalSymmetry(data, w, h) {
+        const pts = [];
+        let hSym = 0, hCount = 0;
+        for (let y = 0; y < h; y += 2) {
+            for (let x = 0; x < Math.floor(w/2); x += 2) {
+                const i = (y*w+x)*4;
+                const mx = w - 1 - x;
+                const j = (y*w+mx)*4;
+                const diff = Math.abs(data[i]-data[j])+Math.abs(data[i+1]-data[j+1])+Math.abs(data[i+2]-data[j+2]);
+                hSym += diff;
+                hCount++;
+            }
+        }
+        const avgHSym = hCount > 0 ? hSym / hCount : 0;
+        pts.push(makeEval('symmetry_horizontal', avgHSym < 10 ? 65 : avgHSym > 40 ? 45 : 50));
+        let vSym = 0, vCount = 0;
+        for (let x = 0; x < w; x += 2) {
+            for (let y = 0; y < Math.floor(h/2); y += 2) {
+                const i = (y*w+x)*4;
+                const my = h - 1 - y;
+                const j = (my*w+x)*4;
+                const diff = Math.abs(data[i]-data[j])+Math.abs(data[i+1]-data[j+1])+Math.abs(data[i+2]-data[j+2]);
+                vSym += diff;
+                vCount++;
+            }
+        }
+        const avgVSym = vCount > 0 ? vSym / vCount : 0;
+        pts.push(makeEval('symmetry_vertical', avgVSym < 12 ? 60 : avgVSym > 45 ? 45 : 50));
+        let diagSym = 0, diagCount = 0;
+        for (let y = 0; y < Math.min(h,w); y += 2) {
+            for (let x = 0; x < y; x += 2) {
+                const i = (y*w+x)*4;
+                const j = (x*w+y)*4;
+                const diff = Math.abs(data[i]-data[j])+Math.abs(data[i+1]-data[j+1])+Math.abs(data[i+2]-data[j+2]);
+                diagSym += diff;
+                diagCount++;
+            }
+        }
+        const avgDiagSym = diagCount > 0 ? diagSym / diagCount : 0;
+        pts.push(makeEval('symmetry_diagonal', avgDiagSym < 15 ? 60 : avgDiagSym > 50 ? 45 : 50));
+        return pts;
+    }
+
+    function evalFrequency(data, w, h) {
+        const pts = [];
+        const midX = Math.floor(w/2), midY = Math.floor(h/2);
+        const quads = [
+            ['tl', 0, 0, midX, midY], ['tr', midX, 0, w, midY],
+            ['bl', 0, midY, midX, h], ['br', midX, midY, w, h]
+        ];
+        for (const [qn, x1, y1, x2, y2] of quads) {
+            let highFreq = 0, totalPix = 0;
+            for (let y = y1+1; y < y2-1; y += 2) {
+                for (let x = x1+1; x < x2-1; x += 2) {
+                    const i = (y*w+x)*4;
+                    const lum = (data[i]+data[i+1]+data[i+2])/3;
+                    const il = ((y-1)*w+x)*4;
+                    const ir = ((y)*w+x+1)*4;
+                    const iu = ((y)*w+x-1)*4;
+                    const id = ((y+1)*w+x)*4;
+                    const l = (data[il]+data[il+1]+data[il+2])/3;
+                    const r = (data[ir]+data[ir+1]+data[ir+2])/3;
+                    const u = (data[iu]+data[iu+1]+data[iu+2])/3;
+                    const d = (data[id]+data[id+1]+data[id+2])/3;
+                    const hf = Math.abs(l - r) + Math.abs(u - d);
+                    if (hf > 40) highFreq++;
+                    totalPix++;
+                }
+            }
+            const hfRatio = totalPix > 0 ? highFreq / totalPix : 0;
+            pts.push(makeEval('freq_high_' + qn, hfRatio > 0.2 ? 65 : hfRatio > 0.1 ? 55 : 45));
+        }
+        let blurScore = 0, blurCount = 0;
+        for (let y = 2; y < h-2; y += 3) {
+            for (let x = 2; x < w-2; x += 3) {
+                const i = (y*w+x)*4;
+                const lum = (data[i]+data[i+1]+data[i+2])/3;
+                const ni = ((y+1)*w+x)*4;
+                const pi = ((y-1)*w+x)*4;
+                const nl = (data[ni]+data[ni+1]+data[ni+2])/3;
+                const pl = (data[pi]+data[pi+1]+data[pi+2])/3;
+                blurScore += Math.abs(nl - pl);
+                blurCount++;
+            }
+        }
+        const avgBlur = blurCount > 0 ? blurScore / blurCount : 0;
+        pts.push(makeEval('freq_blur', avgBlur < 3 ? 70 : avgBlur < 6 ? 55 : 40));
+        let freqShift = 0, fsCount = 0;
+        for (let i = 0; i < data.length-8; i += 8) {
+            const d1 = Math.abs(data[i]-data[i+4]);
+            const d2 = Math.abs(data[i+4]-data[i+8]);
+            if (Math.abs(d1 - d2) > 20) freqShift++;
+            fsCount++;
+        }
+        pts.push(makeEval('freq_variation', (freqShift/fsCount)*100 > 30 ? 60 : 40));
+        return pts;
+    }
+
+    function evalMetadata(binaryString) {
+        const pts = [];
+        const exifChecks = [
+            ['exif_make', 'Make'], ['exif_model', 'Model'],
+            ['exif_dto', 'DateTimeOriginal'], ['exif_gps', 'GPS'],
+            ['exif_software', 'Software'], ['exif_creator', 'Creator'],
+            ['exif_copyright', 'Copyright'], ['exif_desc', 'ImageDescription'],
+            ['exif_artist', 'Artist'], ['exif_host', 'HostComputer'],
+            ['exif_xmp', 'XMP'], ['exif_iptc', 'IPTC'],
+            ['exif_icc', 'ICC'], ['exif_gama', 'gAMA'],
+        ];
+        for (const [name, marker] of exifChecks) {
+            pts.push(makeEval('meta_' + name, binaryString.includes(marker) ? 55 : 40));
+        }
+        const pngChunks = ['tEXt', 'zTXt', 'iTXt', 'IHDR', 'PLTE', 'IDAT', 'IEND', 'pHYs', 'sRGB', 'iCCP'];
+        for (const ch of pngChunks) {
+            pts.push(makeEval('meta_png_' + ch, binaryString.includes(ch) ? 50 : 40));
+        }
+        const jpegMarkers = ['JFIF', 'Exif', 'Adobe', 'DCT'];
+        for (const m of jpegMarkers) {
+            pts.push(makeEval('meta_jpeg_' + m, binaryString.includes(m) ? 50 : 40));
+        }
+        const aiHints = ['c2pa', 'C2PA', 'payload:', 'manifest', 'credentials'];
+        for (const h of aiHints) {
+            pts.push(makeEval('meta_c2pa_' + h.replace(/[^a-z0-9]/g,'_'), binaryString.includes(h) ? 90 : 40));
+        }
+        pts.push(makeEval('meta_exif_count', exifChecks.filter(([_,m])=>binaryString.includes(m)).length * 10));
+        pts.push(makeEval('meta_total_size', binaryString.length < 10000 ? 50 : 40));
+        return pts;
+    }
+
+    function evalStructure(u8array) {
+        const pts = [];
+        const size = u8array.length;
+        if (size > 4) {
+            const isPNG = u8array[0]===137 && u8array[1]===80 && u8array[2]===78 && u8array[3]===71;
+            const isJPEG = u8array[0]===255 && u8array[1]===216;
+            const isWebP = u8array[0]===82 && u8array[1]===73 && u8array[2]===70 && u8array[3]===70;
+            const isGIF = u8array[0]===71 && u8array[1]===73 && u8array[2]===70;
+            const isBMP = u8array[0]===66 && u8array[1]===77;
+            const isTIFF = (u8array[0]===73 && u8array[1]===73) || (u8array[0]===77 && u8array[1]===77);
+            pts.push(makeEval('struct_type_png', isPNG ? 45 : 40));
+            pts.push(makeEval('struct_type_jpeg', isJPEG ? 45 : 40));
+            pts.push(makeEval('struct_type_webp', isWebP ? 45 : 40));
+            pts.push(makeEval('struct_type_gif', isGIF ? 50 : 40));
+            pts.push(makeEval('struct_type_bmp', isBMP ? 50 : 40));
+            pts.push(makeEval('struct_type_tiff', isTIFF ? 55 : 40));
+            const hasAlpha = isPNG && (u8array[24] === 6 || u8array[24] === 4);
+            pts.push(makeEval('struct_alpha', hasAlpha ? 50 : 40));
+            const colorType = isPNG ? u8array[24] : -1;
+            pts.push(makeEval('struct_color_type', colorType === 2 ? 45 : colorType === 6 ? 50 : 40));
+            const bitDepth = isPNG ? u8array[23] : 8;
+            pts.push(makeEval('struct_bit_depth', bitDepth > 8 ? 55 : 40));
+        }
+        const fileRatio = size / 1000000;
+        pts.push(makeEval('struct_size_mb', fileRatio > 10 ? 55 : fileRatio > 3 ? 50 : 45));
+        let entropySum = 0;
+        const byteHist = new Array(256).fill(0);
+        for (let i = 0; i < Math.min(u8array.length, 50000); i++) byteHist[u8array[i]]++;
+        for (const h of byteHist) {
+            if (h > 0) { const p = h / Math.min(u8array.length, 50000); entropySum -= p * Math.log2(p); }
+        }
+        pts.push(makeEval('struct_byte_entropy', entropySum > 7.5 ? 55 : entropySum > 6 ? 50 : 45));
+        let consecutive = 0;
+        for (let i = 0; i < Math.min(u8array.length, 10000)-1; i++) {
+            if (u8array[i] === u8array[i+1]) consecutive++;
+        }
+        pts.push(makeEval('struct_repeat_bytes', (consecutive/10000)*100 > 5 ? 55 : 40));
+        return pts;
+    }
+
+        const knownWatermarks = [
+        { name: 'Google Gemini / Gemini Nano', corner: 'bottom-right', colors: [[66,133,244],[234,67,53],[251,188,4],[52,168,83]], desc: 'Google colors watermark' },
+        { name: 'DALL-E 3', corner: 'bottom-right', colors: [[0,255,255],[255,0,255],[255,255,0],[0,128,255]], desc: 'DALL-E rainbow bar' },
+        { name: 'Adobe Firefly', corner: 'bottom-right', colors: [[0,20,255],[255,255,255]], desc: 'Adobe Firefly logo' },
+        { name: 'Craiyon', corner: 'bottom-right', colors: [[255,100,100],[200,50,200]], desc: 'Craiyon watermark' },
+        { name: 'Stability AI', corner: 'bottom-right', colors: [[0,0,0],[0,0,0]], desc: 'Stability AI logo' },
+        { name: 'Midjourney', corner: 'bottom-left', colors: [[128,128,128],[200,200,200]], desc: 'Midjourney subtle watermark' },
+        { name: 'Leonardo.ai', corner: 'bottom-right', colors: [[30,144,255],[0,100,200]], desc: 'Leonardo logo' },
+        { name: 'Meta AI', corner: 'bottom-right', colors: [[0,0,0],[200,200,255]], desc: 'Meta AI watermark' },
+        { name: 'Canva', corner: 'bottom-right', colors: [[0,200,255],[0,100,200]], desc: 'Canva watermark' },
+        { name: 'Picsart', corner: 'bottom-right', colors: [[255,100,200],[200,50,150]], desc: 'Picsart logo' },
+        { name: 'Clipdrop', corner: 'bottom-right', colors: [[100,100,255],[50,50,200]], desc: 'Clipdrop by Stability' },
+        { name: 'Bing / Microsoft Designer', corner: 'bottom-right', colors: [[0,120,215],[255,185,0]], desc: 'Microsoft corner watermark' },
+    ];
 
     async function detectCornerWatermarks(file) {
         return new Promise((resolve) => {
@@ -863,219 +1379,328 @@
                         canvas.width = img.width;
                         canvas.height = img.height;
                         ctx.drawImage(img, 0, 0);
-
-                        const cSize = Math.max(20, Math.min(120, Math.floor(Math.min(img.width, img.height) * 0.08)));
+                        const cSize = Math.max(30, Math.min(150, Math.floor(Math.min(img.width, img.height) * 0.1)));
                         const corners = {
                             'top-left': [0, 0],
                             'top-right': [img.width - cSize, 0],
                             'bottom-left': [0, img.height - cSize],
                             'bottom-right': [img.width - cSize, img.height - cSize]
                         };
-
                         let results = [];
-
-                        for (const [name, [cx, cy]] of Object.entries(corners)) {
-                            const data = ctx.getImageData(cx, cy, cSize, cSize);
-                            const pixels = data.data;
+                        for (const [cName, [cx, cy]] of Object.entries(corners)) {
+                            const imageData = ctx.getImageData(cx, cy, cSize, cSize);
+                            const pixels = imageData.data;
+                            const count = pixels.length / 4;
                             let totalR = 0, totalG = 0, totalB = 0;
                             let varR = 0, varG = 0, varB = 0;
-                            const count = pixels.length / 4;
-
                             for (let i = 0; i < pixels.length; i += 4) {
-                                totalR += pixels[i];
-                                totalG += pixels[i + 1];
-                                totalB += pixels[i + 2];
+                                totalR += pixels[i]; totalG += pixels[i+1]; totalB += pixels[i+2];
                             }
-                            const avgR = totalR / count;
-                            const avgG = totalG / count;
-                            const avgB = totalB / count;
-
+                            const avgR = totalR/count, avgG = totalG/count, avgB = totalB/count;
                             for (let i = 0; i < pixels.length; i += 4) {
-                                varR += (pixels[i] - avgR) ** 2;
-                                varG += (pixels[i + 1] - avgG) ** 2;
-                                varB += (pixels[i + 2] - avgB) ** 2;
+                                varR += (pixels[i]-avgR)**2; varG += (pixels[i+1]-avgG)**2; varB += (pixels[i+2]-avgB)**2;
                             }
-                            const variance = (varR + varG + varB) / (count * 3);
-
-                            let edgeCount = 0;
+                            const variance = (varR+varG+varB)/(count*3);
+                            let edgeCount = 0, highSatCount = 0, brightEdgeCount = 0;
                             for (let y = 1; y < cSize - 1; y++) {
                                 for (let x = 1; x < cSize - 1; x++) {
-                                    const idx = (y * cSize + x) * 4;
-                                    const gx = Math.abs(pixels[idx] - pixels[idx + 4]) +
-                                               Math.abs(pixels[idx + 1] - pixels[idx + 5]) +
-                                               Math.abs(pixels[idx + 2] - pixels[idx + 6]);
-                                    const gy = Math.abs(pixels[idx] - pixels[idx + cSize * 4]) +
-                                               Math.abs(pixels[idx + 1] - pixels[idx + cSize * 4 + 1]) +
-                                               Math.abs(pixels[idx + 2] - pixels[idx + cSize * 4 + 2]);
-                                    if ((gx + gy) / 3 > 30) edgeCount++;
+                                    const idx = (y*cSize+x)*4;
+                                    const r=pixels[idx],g=pixels[idx+1],b=pixels[idx+2];
+                                    const gx = Math.abs(pixels[idx]-pixels[idx+4])+Math.abs(pixels[idx+1]-pixels[idx+5])+Math.abs(pixels[idx+2]-pixels[idx+6]);
+                                    const gy = Math.abs(pixels[idx]-pixels[idx+cSize*4])+Math.abs(pixels[idx+1]-pixels[idx+cSize*4+1])+Math.abs(pixels[idx+2]-pixels[idx+cSize*4+2]);
+                                    const mag = (gx+gy)/3;
+                                    if (mag > 30) edgeCount++;
+                                    const max=Math.max(r,g,b)/255,min=Math.min(r,g,b)/255;
+                                    const sat = max===0?0:(max-min)/max;
+                                    if (sat > 0.5 && mag > 20) { highSatCount++; brightEdgeCount += mag; }
                                 }
                             }
-                            const edgeRatio = edgeCount / (cSize * cSize);
-
-                            const hasColor = variance > 800;
-                            const hasEdges = edgeRatio > 0.08;
-                            const isDarkCorner = avgR < 50 && avgG < 50 && avgB < 50;
-                            const isWhiteCorner = avgR > 200 && avgG > 200 && avgB > 200;
-
-                            let watermarkConfidence = 0;
-                            let matchHints = [];
-
-                            if (hasColor && hasEdges) {
-                                watermarkConfidence += 40;
-                                matchHints.push("colored+textured");
-                            } else if (hasColor) {
-                                watermarkConfidence += 20;
-                                matchHints.push("colored");
-                            } else if (hasEdges && !isDarkCorner && !isWhiteCorner) {
-                                watermarkConfidence += 15;
-                                matchHints.push("textured");
+                            const edgeRatio = edgeCount/(cSize*cSize);
+                            const satEdgeRatio = highSatCount/(cSize*cSize);
+                            if (edgeRatio < 0.02 && variance < 200) continue;
+                            let bestMatch = null, bestScore = 0;
+                            for (const wm of knownWatermarks) {
+                                if (wm.corner !== cName) continue;
+                                let colorScore = 0, colorMatches = 0;
+                                for (const [cr,cg,cb] of wm.colors) {
+                                    for (let i = 0; i < pixels.length; i += 8) {
+                                        const dr = Math.abs(pixels[i]-cr);
+                                        const dg = Math.abs(pixels[i+1]-cg);
+                                        const db = Math.abs(pixels[i+2]-cb);
+                                        if (dr < 40 && dg < 40 && db < 40) { colorMatches++; break; }
+                                    }
+                                }
+                                if (colorMatches > 0) {
+                                    colorScore = Math.min(60, colorMatches * 15);
+                                    if (edgeRatio > 0.05) colorScore += 15;
+                                    if (satEdgeRatio > 0.02) colorScore += 15;
+                                }
+                                if (colorScore > bestScore) { bestScore = colorScore; bestMatch = wm.name; }
                             }
-
-                            if (name === 'bottom-right' && hasColor && avgR > 150 && avgB > 150 && avgG < 100) {
-                                watermarkConfidence += 30;
-                                matchHints.push("dalle-style");
+                            if (bestMatch && bestScore > 20) {
+                                results.push({ corner: cName, name: bestMatch, confidence: Math.min(bestScore+20, 85) });
                             }
-                            if (name === 'bottom-left' && hasEdges && avgR > 100) {
-                                watermarkConfidence += 10;
-                                matchHints.push("possible-watermark");
-                            }
-                            if (name === 'top-right' && hasColor) {
-                                watermarkConfidence += 5;
-                            }
-                            if (name === 'top-left' && hasColor) {
-                                watermarkConfidence += 5;
-                            }
-
-                            if (watermarkConfidence > 0) {
-                                results.push({
-                                    corner: name,
-                                    confidence: Math.min(watermarkConfidence, 85),
-                                    hints: matchHints,
-                                    avgColor: { r: Math.round(avgR), g: Math.round(avgG), b: Math.round(avgB) },
-                                    variance: Math.round(variance),
-                                    edgeRatio: Math.round(edgeRatio * 100) / 100
-                                });
+                            if (variance > 3000 && edgeRatio > 0.12 && satEdgeRatio > 0.03) {
+                                results.push({ corner: cName, name: 'Unknown AI watermark', confidence: Math.min(60 + Math.round(variance/200), 80) });
                             }
                         }
                         resolve(results);
-                    } catch (e) {
-                        resolve([]);
-                    }
+                    } catch (e) { resolve([]); }
                 };
-                img.onerror = function() {
-                    resolve([]);
-                };
-                const url = URL.createObjectURL(file);
-                img.src = url;
-            } catch (e) {
-                resolve([]);
-            }
+                img.onerror = function() { resolve([]); };
+                img.src = URL.createObjectURL(file);
+            } catch (e) { resolve([]); }
         });
     }
-
-    window.authenticateImage = async function(file) {
+    
+    function evalFullGrid(data, w, h) {
+        const pts = [];
+        const rows = 5, cols = 4;
+        const cellW = Math.floor(w/cols), cellH = Math.floor(h/rows);
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const x1 = c*cellW, y1 = r*cellH, x2 = Math.min(w, (c+1)*cellW), y2 = Math.min(h, (r+1)*cellH);
+                const tag = r + '_' + c;
+                const px = regionPixelData(data, w, x1, y1, x2, y2);
+                if (px.length === 0) continue;
+                const rs = px.map(p => p.r), gs = px.map(p => p.g), bs = px.map(p => p.b);
+                const lums = px.map(p => (p.r+p.g+p.b)/3);
+                const rm = rs.reduce((a,b)=>a+b,0)/rs.length;
+                const gm = gs.reduce((a,b)=>a+b,0)/gs.length;
+                const bm = bs.reduce((a,b)=>a+b,0)/bs.length;
+                const lm = lums.reduce((a,b)=>a+b,0)/lums.length;
+                const rv = variance(rs), gv = variance(gs), bv = variance(bs);
+                const lv = variance(lums);
+                pts.push(makeEval('grid_noise_r_' + tag, Math.sqrt(rv) < 10 ? 70 : Math.sqrt(rv) > 40 ? 55 : 45));
+                pts.push(makeEval('grid_noise_g_' + tag, Math.sqrt(gv) < 10 ? 70 : Math.sqrt(gv) > 40 ? 55 : 45));
+                pts.push(makeEval('grid_noise_b_' + tag, Math.sqrt(bv) < 10 ? 70 : Math.sqrt(bv) > 40 ? 55 : 45));
+                pts.push(makeEval('grid_lum_' + tag, lm > 200 ? 60 : lm < 40 ? 60 : 45));
+                pts.push(makeEval('grid_contrast_' + tag, Math.sqrt(lv) > 60 ? 60 : Math.sqrt(lv) > 30 ? 50 : 40));
+                const sats = px.map(p => { const mx=Math.max(p.r,p.g,p.b)/255, mn=Math.min(p.r,p.g,p.b)/255; return mx===0?0:(mx-mn)/mx; });
+                const sm = sats.reduce((a,b)=>a+b,0)/sats.length;
+                pts.push(makeEval('grid_sat_' + tag, sm > 0.5 ? 65 : sm > 0.3 ? 50 : 40));
+                const satVar = variance(sats);
+                pts.push(makeEval('grid_sat_var_' + tag, satVar < 0.015 ? 60 : 45));
+                pts.push(makeEval('grid_brightness_var_' + tag, Math.sqrt(lv) < 15 ? 60 : 45));
+                const corrRG = Math.abs(rm-gm); const corrRB = Math.abs(rm-bm); const corrGB = Math.abs(gm-bm);
+                pts.push(makeEval('grid_chan_corr_rg_' + tag, corrRG < 8 ? 65 : 45));
+                pts.push(makeEval('grid_chan_corr_rb_' + tag, corrRB < 8 ? 65 : 45));
+                pts.push(makeEval('grid_chan_corr_gb_' + tag, corrGB < 8 ? 65 : 45));
+                let edges = 0;
+                for (let y = y1+1; y < y2-1; y+=2) {
+                    for (let x = x1+1; x < x2-1; x+=2) {
+                        const i = (y*w+x)*4;
+                        const gx = Math.abs(data[i]-data[i+4])+Math.abs(data[i+1]-data[i+5])+Math.abs(data[i+2]-data[i+6]);
+                        const gy = Math.abs(data[i]-data[i+w*4])+Math.abs(data[i+1]-data[i+w*4+1])+Math.abs(data[i+2]-data[i+w*4+2]);
+                        if((gx+gy)/3>25) edges++;
+                    }
+                }
+                const ed = edges / ((x2-x1)*(y2-y1)/4);
+                pts.push(makeEval('grid_edge_density_' + tag, ed > 0.3 ? 65 : ed > 0.12 ? 55 : 40));
+                let lbpSum = 0, lbpN = 0;
+                for (let y = y1+1; y < y2-1; y+=3) {
+                    for (let x = x1+1; x < x2-1; x+=3) {
+                        const i = (y*w+x)*4; const c = (data[i]+data[i+1]+data[i+2])/3;
+                        let lbp = 0; const offs = [[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0]];
+                        for (let k=0;k<8;k++) {
+                            const ni = ((y+offs[k][1])*w+x+offs[k][0])*4;
+                            if ((data[ni]+data[ni+1]+data[ni+2])/3 >= c) lbp |= (1<<k);
+                        }
+                        lbpSum += lbp; lbpN++;
+                    }
+                }
+                const avgLBP = lbpN>0 ? lbpSum/lbpN : 128;
+                pts.push(makeEval('grid_texture_lbp_' + tag, Math.abs(avgLBP-128)>45 ? 60 : 45));
+                let hueVar = 0;
+                if (px.length > 0) {
+                    const hues = px.map(p => {
+                        const r=p.r/255,g=p.g/255,b=p.b/255;
+                        const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+                        if (mx===mn) return 0;
+                        let h; if (mx===r) h=60*((g-b)/(mx-mn))+360; else if (mx===g) h=60*((b-r)/(mx-mn))+120; else h=60*((r-g)/(mx-mn))+240;
+                        return h%360;
+                    });
+                    hueVar = variance(hues);
+                }
+                pts.push(makeEval('grid_hue_var_' + tag, hueVar > 6000 ? 60 : hueVar < 800 ? 65 : 50));
+            }
+        }
+        // Global additional checks
+        const allLums = [];
+        for (let i=0;i<data.length;i+=4) allLums.push((data[i]+data[i+1]+data[i+2])/3);
+        const fullEnt = computeEntropy(allLums, 128);
+        pts.push(makeEval('full_entropy', fullEnt < 3.5 ? 75 : fullEnt < 4.5 ? 65 : fullEnt > 6.5 ? 40 : 50));
+        pts.push(makeEval('full_lum_range', (Math.max(...allLums)-Math.min(...allLums)) > 240 ? 55 : 45));
+        const darkPct = allLums.filter(l=>l<20).length/allLums.length;
+        const brightPct = allLums.filter(l=>l>235).length/allLums.length;
+        pts.push(makeEval('full_clip_shadows', darkPct > 0.2 ? 60 : 40));
+        pts.push(makeEval('full_clip_highlights', brightPct > 0.15 ? 60 : 40));
+        const allR2=[],allG2=[],allB2=[];
+        for (let i=0;i<data.length;i+=4){allR2.push(data[i]);allG2.push(data[i+1]);allB2.push(data[i+2]);}
+        pts.push(makeEval('full_channel_entropy_r', computeEntropy(allR2,64)<4?65:45));
+        pts.push(makeEval('full_channel_entropy_g', computeEntropy(allG2,64)<4?65:45));
+        pts.push(makeEval('full_channel_entropy_b', computeEntropy(allB2,64)<4?65:45));
+        const meanAll = allLums.reduce((a,b)=>a+b,0)/allLums.length;
+        pts.push(makeEval('full_mean_brightness', Math.abs(meanAll-128)>50?55:45));
+        pts.push(makeEval('full_gamma_estimate', meanAll<60||meanAll>200?60:45));
+        let edgePixels = 0;
+        for (let y=1;y<h-1;y+=2) for (let x=1;x<w-1;x+=2) {
+            const i=(y*w+x)*4;
+            if(Math.abs(data[i]-data[i+4])+Math.abs(data[i+1]-data[i+5])+Math.abs(data[i+2]-data[i+6])>50) edgePixels++;
+        }
+        pts.push(makeEval('full_edge_count', (edgePixels/((w*h)/4))*100>30?60:40));
+        let flatCount=0;
+        for (let y=0;y<h-1;y+=2) for (let x=0;x<w-1;x+=2) {
+            const i=(y*w+x)*4; const j=((y+1)*w+x)*4;
+            if(Math.abs(data[i]-data[j])<3&&Math.abs(data[i+1]-data[j+1])<3&&Math.abs(data[i+2]-data[j+2])<3) flatCount++;
+        }
+        pts.push(makeEval('full_flat_areas', (flatCount/((w*h)/4))*100>40?65:40));
+        pts.push(makeEval('full_total_points', Math.min(100, data.length/100000)));
+        return pts;
+    }
+window.authenticateImage = async function(file) {
         console.log("ImgAuth is running");
         if (!file) {
             return "Error: No image file provided for authentication.";
         }
 
-        const cornerResults = await detectCornerWatermarks(file);
-
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const buffer = e.target.result;
-                const u8 = new Uint8Array(buffer);
-                const totalSize = u8.length;
-                const scanLimit = Math.min(u8.length, 100000);
-
-                let binaryString = "";
-                for (let i = 0; i < scanLimit; i++) {
-                    binaryString += String.fromCharCode(u8[i]);
-                }
-
-                let detected = [];
-                let confidence = 0;
-                let signatureCount = 0;
-
-                if (cornerResults.length > 0) {
-                    const topCorner = cornerResults.reduce((a, b) => a.confidence > b.confidence ? a : b, cornerResults[0]);
-                    detected.push({
-                        name: `Watermark in ${topCorner.corner}`,
-                        codes: [`corner:${topCorner.corner}`],
-                        count: 1
-                    });
-                    confidence += topCorner.confidence;
-
-                    const avg = topCorner.avgColor;
-                    if (avg.r > 150 && avg.g > 100 && avg.b < 100 && topCorner.corner === 'bottom-right') {
-                        detected.push({ name: "DALL-E 3 / C2PA (via corner watermark)", codes: ["corner:dalle"], count: 1 });
-                        confidence += 15;
-                    }
-                    if (avg.r < 80 && avg.g < 80 && avg.b < 80 && topCorner.edges > 0.12) {
-                        detected.push({ name: "Stable Diffusion (via corner artifact)", codes: ["corner:sd"], count: 1 });
-                        confidence += 10;
-                    }
-                    if (avg.b > 180 && avg.r < 100 && avg.g < 100) {
-                        detected.push({ name: "Adobe Firefly (via corner logo)", codes: ["corner:firefly"], count: 1 });
-                        confidence += 10;
-                    }
-                }
-
-                if (confidence < 20) {
-                    for (const sig of aiSignatures) {
-                        let foundCodes = [];
-                        for (const code of sig.codes) {
-                            if (binaryString.includes(code)) {
-                                foundCodes.push(code);
-                            }
-                        }
-                        if (foundCodes.length > 0) {
-                            if (!detected.find(d => d.name === sig.name)) {
-                                detected.push({ name: sig.name, codes: foundCodes, count: foundCodes.length });
-                            }
-                            signatureCount++;
-                            confidence += 10 + (foundCodes.length - 1) * 5;
-                        }
-                    }
-                }
-
-                if (confidence < 10) {
-                    for (const marker of exifSoftwareMarkers) {
-                        if (binaryString.includes(marker)) {
-                            confidence += 5;
-                            detected.push({ name: "EXIF: " + marker, codes: [marker], count: 1 });
-                        }
-                    }
-                }
-
-                if (totalSize < 5000) confidence -= 5;
-
-                if (detected.length > 0) {
-                    const primary = detected.reduce((a, b) => a.count > b.count ? a : b, detected[0]);
-                    const allNames = detected.map(d => d.name).join(", ");
-                    let resultText = "Image detected as AI-generated.\n";
-                    if (detected.length === 1) {
-                        resultText += "Detected Signature: Matching known AI generation software \"" + primary.name + "\".\n";
-                    } else {
-                        resultText += "Detected Signatures: " + allNames + ".\n";
-                        resultText += "Primary Match: " + primary.name + ".\n";
-                    }
-                    if (cornerResults.length > 0) {
-                        resultText += "Watermark Analysis: Visual watermark/logo detected in image corners.\n";
-                    }
-                    resultText += "Confidence: " + Math.min(Math.round(confidence + 50), 99) + "%";
-                    resolve(resultText);
-                } else {
-                    let note = "";
-                    if (totalSize < 10000) note = " (small file size)";
-                    resolve("Image not detected as AI-generated.\nAnalysis: No AI generator signatures found in database of " + aiSignatures.length + " generators" + note + ".\nResult: Likely captured/photographed or generated by an unknown/untracked AI model.");
-                }
-            };
-            reader.onerror = function() {
-                resolve("Error: Failed to read image file.");
-            };
-            reader.readAsArrayBuffer(file);
+        const u8 = await new Promise((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(new Uint8Array(r.result));
+            r.onerror = () => resolve(null);
+            r.readAsArrayBuffer(file);
         });
+        if (!u8) return "Error: Failed to read image file.";
+
+        let binaryString = "";
+        const scanLimit = Math.min(u8.length, 100000);
+        for (let i = 0; i < scanLimit; i++) binaryString += String.fromCharCode(u8[i]);
+
+        const allEvalPoints = [];
+
+        // Run metadata & structure eval (no image needed)
+        const metaPts = evalMetadata(binaryString);
+        const structPts = evalStructure(u8);
+        allEvalPoints.push(...metaPts, ...structPts);
+
+        // Run signature database scan
+        let sigDetected = [];
+        for (const sig of aiSignatures) {
+            let foundCodes = [];
+            for (const code of sig.codes) {
+                if (binaryString.includes(code)) foundCodes.push(code);
+            }
+            if (foundCodes.length > 0) {
+                if (!sigDetected.find(d => d.name === sig.name)) {
+                    sigDetected.push({ name: sig.name, codes: foundCodes, count: foundCodes.length });
+                }
+                for (let i = 0; i < foundCodes.length; i++) {
+                    allEvalPoints.push(makeEval('sig_match_' + sig.name.replace(/[^a-z0-9]/gi,'_') + '_' + i, 85));
+                }
+            }
+        }
+
+        // EXIF fallback
+        if (sigDetected.length === 0) {
+            for (const marker of exifSoftwareMarkers) {
+                if (binaryString.includes(marker)) {
+                    allEvalPoints.push(makeEval('exif_fallback_' + marker.replace(/[^a-z0-9]/gi,'_'), 60));
+                }
+            }
+        }
+
+        // Corner watermarks
+        const cornerResults = await detectCornerWatermarks(file);
+        for (const cr of cornerResults) {
+            allEvalPoints.push(makeEval('corner_watermark_' + cr.corner, cr.confidence));
+        }
+
+        // Pixel-based eval (load image to canvas)
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let dw = img.width, dh = img.height;
+                    const maxDim = 400;
+                    if (dw > maxDim || dh > maxDim) {
+                        const r = Math.min(maxDim/dw, maxDim/dh);
+                        dw = Math.floor(dw*r); dh = Math.floor(dh*r);
+                    }
+                    canvas.width = dw; canvas.height = dh;
+                    ctx.drawImage(img, 0, 0, dw, dh);
+                    const imageData = ctx.getImageData(0, 0, dw, dh).data;
+                    allEvalPoints.push(...evalNoise(imageData, dw, dh));
+                    allEvalPoints.push(...evalColor(imageData, dw, dh));
+                    allEvalPoints.push(...evalEdges(imageData, dw, dh));
+                    allEvalPoints.push(...evalLuminance(imageData, dw, dh));
+                    allEvalPoints.push(...evalTexture(imageData, dw, dh));
+                    allEvalPoints.push(...evalSymmetry(imageData, dw, dh));
+                    allEvalPoints.push(...evalFrequency(imageData, dw, dh));
+                    allEvalPoints.push(...evalFullGrid(imageData, dw, dh));
+                } catch (e) { console.warn("Pixel eval error:", e); }
+                resolve();
+            };
+            img.onerror = function() { resolve(); };
+            img.src = URL.createObjectURL(file);
+        });
+
+        // Calculate final score
+        const weights = allEvalPoints.map(p => p.weight);
+        const totalWeight = weights.reduce((a,b) => a+b, 0);
+        let weightedScore = 0;
+        for (const p of allEvalPoints) weightedScore += p.score * p.weight;
+        const avgScore = totalWeight > 0 ? weightedScore / totalWeight : 40;
+        const totalPoints = allEvalPoints.length;
+
+        // Determine primary generator
+        let primaryGen = "";
+        for (const sig of aiSignatures) {
+            let foundCodes = [];
+            for (const code of sig.codes) {
+                if (binaryString.includes(code)) foundCodes.push(code);
+            }
+            if (foundCodes.length > 0) {
+                primaryGen = sig.name;
+                break;
+            }
+        }
+        if (!primaryGen && cornerResults.length > 0) {
+            primaryGen = "Unknown AI (watermark detected)";
+        }
+        if (!primaryGen) {
+            // Check if any eval points strongly suggest AI
+            const strongAIPts = allEvalPoints.filter(p => p.score > 70);
+            if (strongAIPts.length > 50) {
+                primaryGen = "Likely AI-generated";
+            }
+        }
+
+        const finalConfidence = Math.round(avgScore);
+                const hasSigMatch = sigDetected.length > 0;
+        const hasCornerMatch = cornerResults.length > 0 && cornerResults.some(c => c.confidence > 50);
+        const strongScore = finalConfidence >= 75;
+        const moderateScore = finalConfidence >= 60;
+        const isAI = hasSigMatch || (hasCornerMatch && moderateScore) || (strongScore && hasCornerMatch) || (strongScore && hasSigMatch);
+        const finalGen = primaryGen || (hasCornerMatch ? cornerResults[0].name : '');
+// Build result
+        let resultText = "";
+        if (isAI) {
+            resultText = "Image detected as AI-generated.\n";
+            if (finalGen) {
+                resultText += "Detected Signature: " + finalGen + ".\n";
+            }
+            resultText += "Confidence: " + Math.min(finalConfidence + 5, 95) + "%\n";
+            resultText += "Evaluation points: " + totalPoints;
+        } else {
+            let note = "";
+            if (u8.length < 10000) note = " (small file size)";
+            resultText = "Image not detected as AI-generated.\n";
+            resultText += "Analysis: No AI generator signatures found in database of " + aiSignatures.length + " generators" + note + ".\n";
+            resultText += "Evaluation points analyzed: " + totalPoints + ".\n";
+            resultText += "Confidence: " + Math.min(finalConfidence, 30) + "%";
+        }
+        return resultText;
     };
 })();
