@@ -2786,39 +2786,175 @@ document.getElementById("deleteAllConfirm").onclick = async () => {
 };
 
 const exportDataBtn = document.getElementById("exportDataBtn");
-if (exportDataBtn) {
-    exportDataBtn.onclick = async () => {
-        const userInfo = await DB.get("userInfo", {});
-        const banInfo = await DB.get("genesisBanInfo", {});
+const importExportModal = document.getElementById("importExportModal");
+
+if (exportDataBtn && importExportModal) {
+    exportDataBtn.onclick = () => {
+        document.getElementById("accountModal").style.display = "none";
+        importExportModal.style.display = "flex";
+    };
+}
+
+// --- Export Option ---
+document.getElementById("exportOptionBtn").onclick = async () => {
+    const userInfo = await DB.get("userInfo", {});
+    const banInfo = await DB.get("genesisBanInfo", {});
+    
+    const data = {
+        exportDate: new Date().toISOString(),
+        source: "genesis-ai",
+        version: 1,
+        user: {
+            name: userInfo.name || null,
+            email: userInfo.email || null,
+            googleId: userInfo.googleId || null,
+            picture: userInfo.picture || null
+        },
+        stats: {
+            totalChats: chats.length,
+            totalWarnings: banInfo.consecutiveViolations || 0,
+            banHistoryCount: banInfo.banHistoryCount || 0
+        },
+        chats: chats
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `genesis-export-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    importExportModal.style.display = "none";
+};
+
+// --- Import Functionality ---
+async function importAccountData(file) {
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
         
-        const data = {
-            exportDate: new Date().toISOString(),
-            user: {
-                name: userInfo.name || null,
-                email: userInfo.email || null,
-                googleId: userInfo.googleId || null,
-                picture: userInfo.picture || null
-            },
-            stats: {
-                totalChats: chats.length,
-                totalWarnings: banInfo.consecutiveViolations || 0,
-                banHistoryCount: banInfo.banHistoryCount || 0
-            },
-            chats: chats
-        };
+        let importedChats = [];
+        let importedUserInfo = null;
         
-        const dataStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `genesis-data-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (data.source === "genesis-ai" || (data.chats && Array.isArray(data.chats))) {
+            importedChats = data.chats || [];
+            importedUserInfo = data.user || null;
+        } else {
+            const { chats: xChats, user: xUser, conversations } = extractExternalChats(data);
+            importedChats = xChats;
+            importedUserInfo = xUser;
+            if (conversations && conversations.length > importedChats.length) {
+                importedChats = conversations;
+            }
+        }
         
-        if (accountModal) accountModal.style.display = "none";
+        if (!importedChats.length && !importedUserInfo) {
+            throw new Error("No recognizable chat data found in this file.");
+        }
+        
+        const existingIds = new Set(chats.map(c => c.id));
+        let addedCount = 0;
+        
+        for (const chat of importedChats) {
+            if (!chat.id) {
+                chat.id = "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+            }
+            if (!existingIds.has(chat.id)) {
+                if (!chat.title) chat.title = "Imported Chat";
+                if (!chat.messages) chat.messages = [];
+                chats.push(chat);
+                existingIds.add(chat.id);
+                addedCount++;
+            }
+        }
+        
+        await saveChats();
+        
+        if (importedUserInfo && importedUserInfo.name && !(await DB.get("userInfo", {})).name) {
+            await DB.set("userInfo", importedUserInfo);
+        }
+        
+        renderChatList();
+        
+        showInfoModal(
+            "Import Complete",
+            addedCount > 0
+                ? `Successfully imported ${addedCount} chat${addedCount > 1 ? 's' : ''}!${importedUserInfo && importedUserInfo.name ? ' User profile was also restored.' : ''}`
+                : "No new chats were imported (they may already exist in your account)."
+        );
+    } catch (e) {
+        showInfoModal("Import Failed", e.message + " Please make sure you selected a valid export file.");
+    }
+}
+
+function extractExternalChats(data) {
+    const chats = [];
+    let user = null;
+    
+    let messages = data.messages || data.history || data.conversations || [];
+    
+    if (data.title || data.name) {
+        const title = data.title || data.name || "Imported Chat";
+        const msgs = Array.isArray(data.messages) ? data.messages
+                  : Array.isArray(data.history) ? data.history
+                  : Array.isArray(data.conversations) ? data.conversations
+                  : [];
+        if (msgs.length) {
+            chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
+            return { chats, user };
+        }
+    }
+    
+    if (Array.isArray(data)) {
+        for (const item of data) {
+            if (item.messages || item.history || item.conversations) {
+                const title = item.title || item.name || "Imported Chat";
+                const msgs = item.messages || item.history || item.conversations || [];
+                chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
+            }
+        }
+    }
+    
+    if (data.user || data.userInfo || data.profile) {
+        user = data.user || data.userInfo || data.profile;
+    }
+    
+    return { chats, user };
+}
+
+function normalizeMessage(msg) {
+    if (typeof msg === "string") {
+        return { role: msg.startsWith("http") || msg.startsWith("!") ? "ai" : "user", text: msg };
+    }
+    const text = msg.text || msg.content || msg.message || "";
+    let role = msg.role || msg.from || msg.sender || "user";
+    role = role.toLowerCase();
+    if (role === "assistant" || role === "bot" || role === "ai" || role === "model" || role === "genesis") role = "ai";
+    if (role === "human" || role === "me") role = "user";
+    return { role, text };
+}
+
+const importOptionBtn = document.getElementById("importOptionBtn");
+const importFileInput = document.getElementById("importFileInput");
+if (importOptionBtn && importFileInput) {
+    importOptionBtn.onclick = () => importFileInput.click();
+    importFileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        importOptionBtn.textContent = "Importing...";
+        importOptionBtn.style.opacity = "0.6";
+        importOptionBtn.disabled = true;
+        await importAccountData(file);
+        importFileInput.value = "";
+        importOptionBtn.textContent = "Import Data";
+        importOptionBtn.style.opacity = "1";
+        importOptionBtn.disabled = false;
+        importExportModal.style.display = "none";
     };
 }
 

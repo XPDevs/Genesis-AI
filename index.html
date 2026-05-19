@@ -331,6 +331,27 @@
     </div>
   </div>
 
+  <div id="importExportModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2>Data Management</h2>
+      <p style="margin: 10px 0 20px; opacity: 0.8;">Export your data as a backup or import previously exported data from this or other AI platforms.</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin: 20px 0;">
+        <button id="importOptionBtn" style="background: var(--primary); color: #fff; border: none; padding: 14px 20px; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Import Data
+        </button>
+        <button id="exportOptionBtn" style="background: var(--primary); color: #fff; border: none; padding: 14px 20px; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Export Data
+        </button>
+      </div>
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+      <div class="modal-actions">
+        <button class="cancel" onclick="document.getElementById('importExportModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pfpModal" class="modal">
     <div class="modal-content" style="text-align: center;">
       <h2>Change Profile Picture</h2>

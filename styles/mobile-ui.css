@@ -367,7 +367,7 @@ body.dark .action-btn:hover {
 }
 
 #exportDataBtn {
-  background: #28a745;
+  background: var(--primary);
 }
 
 #deleteAccountBtn {
