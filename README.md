@@ -238,6 +238,12 @@ By using Genesis-AI, you agree to the following official documents:
 
 These policies explain how Genesis-AI operates, including acceptable use, safety rules, and privacy standards.
 
+## License
+
+The source code in this repository is provided under the terms found in the LICENSE.md file.
+However, the live Genesis-AI website (https://xpdevs.github.io/Genesis-AI) operates under a separate custom license. That custom license governs your use of the hosted service and may include additional terms regarding usage, content policies, and safety requirements. When using the website directly, the website's custom license and the linked Terms of Service take precedence over the repository's LICENSE.md.
+
+
 ## Contact
 For information, suggestions, or inquiries:  
 Visit the [XPDevs official website](https://xpdevs.github.io/) for updates, contact options, and related projects.
