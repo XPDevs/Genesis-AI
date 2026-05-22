@@ -916,13 +916,21 @@ async function loadModel(force = false) {
       return;
     }
 
-    // LARGE MODEL: Use streaming + IndexedDB
+    // LARGE MODEL: Use streaming + IndexedDB with robust state-machine parser
     await DB.clearResponses();
     const reader = r.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let loaded = 0;
     
+    let state = 'expect_key_start';
+    let currentKey = '';
+    let currentValue = '';
+    let escape = false;
+    let braceDepth = 0;
+    let rootStarted = false;
+    let totalInserted = 0;
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -931,17 +939,109 @@ async function loadModel(force = false) {
       loaded += value.length;
       if (total) showModelLoading(Math.round((loaded / total) * 100));
       
-      let match;
-      const regex = /"([^"]+)":\s*"([^"]*)"/g;
-      while ((match = regex.exec(buffer)) !== null) {
-        const [fullMatch, key, value] = match;
-        await DB.setResponse(key, value);
-        buffer = buffer.substring(match.index + fullMatch.length);
-        regex.lastIndex = 0;
+      let i = 0;
+      while (i < buffer.length) {
+        const ch = buffer[i];
+        if (state === 'expect_key_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '{' && !rootStarted) {
+            rootStarted = true;
+            braceDepth = 1;
+            i++;
+            continue;
+          }
+          if (rootStarted && (ch === ',' || ch === '}')) {
+            if (ch === '}') braceDepth--;
+            i++;
+            if (braceDepth === 0) break;
+            continue;
+          }
+          if (rootStarted && ch === '"') {
+            state = 'in_key';
+            currentKey = '';
+            i++;
+            continue;
+          }
+          i++;
+        }
+        else if (state === 'in_key') {
+          if (escape) {
+            currentKey += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_key';
+            i++;
+            continue;
+          }
+          currentKey += ch;
+          i++;
+        }
+        else if (state === 'after_key') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === ':') {
+            state = 'expect_value_start';
+            i++;
+            continue;
+          }
+          state = 'expect_key_start';
+          i++;
+        }
+        else if (state === 'expect_value_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '"') {
+            state = 'in_value';
+            currentValue = '';
+            i++;
+            continue;
+          } else {
+            state = 'after_value';
+            i++;
+          }
+        }
+        else if (state === 'in_value') {
+          if (escape) {
+            currentValue += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_value';
+            i++;
+            continue;
+          }
+          currentValue += ch;
+          i++;
+        }
+        else if (state === 'after_value') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (currentKey !== '' && currentValue !== '') {
+            await DB.setResponse(currentKey, currentValue);
+            totalInserted++;
+            if (totalInserted % 500 === 0) await new Promise(r => setTimeout(r, 0));
+          }
+          currentKey = '';
+          currentValue = '';
+          if (ch === ',') {
+            state = 'expect_key_start';
+            i++;
+          } else if (ch === '}') {
+            braceDepth--;
+            state = 'expect_key_start';
+            i++;
+            if (braceDepth === 0) break;
+          } else {
+            state = 'expect_key_start';
+            i++;
+          }
+        }
       }
-      if (buffer.length > 10000) {
-        buffer = buffer.substring(buffer.length - 1000);
-      }
+      buffer = buffer.substring(i);
     }
     
     await DB.setModel(jsonURL, { cached: true });
