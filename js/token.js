@@ -97,39 +97,49 @@
             return parts;
         }
 
+        let leadingSpaces = '';
         while (i < text.length) {
             const ch = text[i];
             if (ch === ' ') {
                 let spaces = '';
                 while (i < text.length && text[i] === ' ') spaces += text[i++];
-                tokens.push(spaces);
+                leadingSpaces += spaces;
                 continue;
             }
             if (/[^\w\s]/.test(ch)) {
-                tokens.push(ch);
+                tokens.push(leadingSpaces + ch);
+                leadingSpaces = '';
                 i++;
                 continue;
             }
             if (/\d/.test(ch)) {
                 let num = '';
                 while (i < text.length && /\d/.test(text[i])) num += text[i++];
-                tokens.push(num);
+                tokens.push(leadingSpaces + num);
+                leadingSpaces = '';
                 continue;
             }
             if (/[a-zA-Z]/.test(ch)) {
                 let word = '';
                 while (i < text.length && /[a-zA-Z]/.test(text[i])) word += text[i++];
-                tokens.push(...splitCamelCase(word));
+                const parts = splitCamelCase(word);
+                parts[0] = leadingSpaces + parts[0];
+                tokens.push(...parts);
+                leadingSpaces = '';
                 continue;
             }
             i++;
         }
+        if (leadingSpaces) tokens.push(leadingSpaces);
         return tokens;
     }
 
     function getTokenDelay(token, baseSpeed) {
-        let delay = baseSpeed + (Math.random() - 0.5) * baseSpeed * 0.6;
-        if (Math.random() < 0.02) delay += 400;
+        let delay = baseSpeed + (Math.random() - 0.5) * 8;
+        if (Math.random() < 0.01) delay += 200 + Math.random() * 300;
+        if (delay < 15) delay = 15;
+        if (delay > 150 && delay < 200) delay = 150;
+        if (delay > 450) delay = 450;
         return delay;
     }
 
@@ -142,10 +152,16 @@
         function tick() {
             if (stopped) return;
             if (index < tokens.length) {
-                element.textContent += tokens[index];
+                const rand = Math.random();
+                let burstSize = 1;
+                if (rand < 0.05) burstSize = 3;
+                else if (rand < 0.30) burstSize = 2;
+                burstSize = Math.min(burstSize, tokens.length - index);
+                const chunk = tokens.slice(index, index + burstSize).join('');
+                element.textContent += chunk;
                 if (onToken) onToken();
                 const delay = getTokenDelay(tokens[index], speed);
-                index++;
+                index += burstSize;
                 timeoutId = setTimeout(tick, delay);
             } else if (onDone) {
                 onDone();
