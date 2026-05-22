@@ -4,6 +4,7 @@ const DB = {
     dbVersion: 2,
     storeName: "settings",
     modelStore: "models",
+    responsesStore: "responses",
     db: null,
 
     async init() {
@@ -16,6 +17,9 @@ const DB = {
                 }
                 if (!db.objectStoreNames.contains(this.modelStore)) {
                     db.createObjectStore(this.modelStore);
+                }
+                if (!db.objectStoreNames.contains(this.responsesStore)) {
+                    db.createObjectStore(this.responsesStore);
                 }
             };
             request.onsuccess = (e) => {
@@ -70,6 +74,50 @@ const DB = {
         });
     },
 
+    async getResponse(key) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readonly");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async setResponse(key, value) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async clearResponses() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async countResponses() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readonly");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.count();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
     async delete(key) {
         if (!this.db) await this.init();
         return new Promise((resolve, reject) => {
@@ -107,6 +155,21 @@ async function migrateFromLocalStorage() {
             localStorage.removeItem(key);
         }
     }
+}
+
+async function updateParamsDisplay() {
+    const display = document.getElementById("modelParamsDisplay");
+    if (!display) return;
+    
+    let count = 0;
+    if (responses) {
+        count = Object.keys(responses).length;
+    } else {
+        count = await DB.countResponses();
+    }
+    
+    currentParamCount = count;
+    display.textContent = formatShortNumber(count);
 }
 
 async function initializeApp() {
@@ -183,20 +246,14 @@ async function initializeApp() {
 
     window.dispatchEvent(new Event('app-ready'));
     setupSwipeGestures();
-
-    // Scroll-to-bottom button logic
-    const scrollBtn = document.getElementById('scrollToBottomBtn');
-    if (scrollBtn && chatBox) {
-        chatBox.addEventListener('scroll', () => {
-            const threshold = 200;
-            const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
-            scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
-        });
-        scrollBtn.addEventListener('click', () => {
-            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-        });
+    
+    const paramsHelp = document.getElementById('paramsHelp');
+    if (paramsHelp) {
+        paramsHelp.onclick = () => {
+            showInfoModal("Model Parameters", `The current AI model has ${formatFullNumber(currentParamCount)} parameters.`);
+        };
     }
-
+    
     // Show feature modal after everything is loaded
     if (typeof showFeatureModal === 'function') {
         showFeatureModal();
@@ -398,31 +455,6 @@ function injectCSS() {
         #chatBox::-webkit-scrollbar-thumb:hover {
             background: rgba(128, 128, 128, 0.5);
         }
-        .scroll-bottom-btn {
-            position: fixed;
-            bottom: 100px;
-            right: max(calc((100% - 800px) / 2 + 20px), 20px);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            transition: all 0.2s ease;
-            padding: 0;
-            opacity: 0.85;
-        }
-        .scroll-bottom-btn:hover {
-            background: var(--active-chat);
-            opacity: 1;
-            transform: scale(1.1);
-        }
         #greeting {
             text-align: center !important;
         }
@@ -452,12 +484,6 @@ function injectCSS() {
             transform: translateY(-1px);
         }
         @media (max-width: 768px) {
-            .scroll-bottom-btn {
-                bottom: 90px;
-                right: 16px;
-                width: 36px;
-                height: 36px;
-            }
         }
     `;
     document.head.appendChild(style);
@@ -518,6 +544,20 @@ let isReadOnlyMode = false;
 let currentUploadFile = null;
 let isDevMode = false;
 let searchQuery = "";
+let currentParamCount = 0;
+
+// Formatting helpers
+function formatShortNumber(num) {
+    if (num >= 1e12) return (num / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
+    if (num >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (num >= 1e6) return (num / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1e3) return (num / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return num.toString();
+}
+
+function formatFullNumber(num) {
+    return num.toLocaleString('en-GB');
+}
 
 // AI Control State
 let aiState = {
@@ -851,7 +891,11 @@ async function loadModel(force = false) {
     const cached = await DB.getModel(jsonURL);
     if (cached) {
       console.log("Loading model from cache:", jsonURL);
-      responses = cached;
+      if (cached.cached === true) {
+        responses = null;
+      } else {
+        responses = cached;
+      }
       return;
     }
   }
@@ -860,27 +904,151 @@ async function loadModel(force = false) {
   try {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
+    
     const contentLength = r.headers.get("Content-Length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
-    let loaded = 0;
+    const SIZE_THRESHOLD = 50 * 1024 * 1024; // 50MB threshold
+
+    if (total > 0 && total < SIZE_THRESHOLD) {
+      // SMALL MODEL: Use traditional in-memory loading
+      const allBytes = await r.arrayBuffer();
+      const modelData = JSON.parse(new TextDecoder().decode(allBytes));
+      responses = modelData;
+      await DB.setModel(jsonURL, modelData);
+      hideModelLoading();
+      return;
+    }
+
+    // LARGE MODEL: Use streaming + IndexedDB with robust state-machine parser
+    await DB.clearResponses();
     const reader = r.body.getReader();
-    const chunks = [];
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let loaded = 0;
+    
+    let state = 'expect_key_start';
+    let currentKey = '';
+    let currentValue = '';
+    let escape = false;
+    let braceDepth = 0;
+    let rootStarted = false;
+    let totalInserted = 0;
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      chunks.push(value);
+      
+      buffer += decoder.decode(value, { stream: true });
       loaded += value.length;
       if (total) showModelLoading(Math.round((loaded / total) * 100));
+      
+      let i = 0;
+      while (i < buffer.length) {
+        const ch = buffer[i];
+        if (state === 'expect_key_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '{' && !rootStarted) {
+            rootStarted = true;
+            braceDepth = 1;
+            i++;
+            continue;
+          }
+          if (rootStarted && (ch === ',' || ch === '}')) {
+            if (ch === '}') braceDepth--;
+            i++;
+            if (braceDepth === 0) break;
+            continue;
+          }
+          if (rootStarted && ch === '"') {
+            state = 'in_key';
+            currentKey = '';
+            i++;
+            continue;
+          }
+          i++;
+        }
+        else if (state === 'in_key') {
+          if (escape) {
+            currentKey += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_key';
+            i++;
+            continue;
+          }
+          currentKey += ch;
+          i++;
+        }
+        else if (state === 'after_key') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === ':') {
+            state = 'expect_value_start';
+            i++;
+            continue;
+          }
+          state = 'expect_key_start';
+          i++;
+        }
+        else if (state === 'expect_value_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '"') {
+            state = 'in_value';
+            currentValue = '';
+            i++;
+            continue;
+          } else {
+            state = 'after_value';
+            i++;
+          }
+        }
+        else if (state === 'in_value') {
+          if (escape) {
+            currentValue += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_value';
+            i++;
+            continue;
+          }
+          currentValue += ch;
+          i++;
+        }
+        else if (state === 'after_value') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (currentKey !== '' && currentValue !== '') {
+            await DB.setResponse(currentKey, currentValue);
+            totalInserted++;
+            if (totalInserted % 500 === 0) await new Promise(r => setTimeout(r, 0));
+          }
+          currentKey = '';
+          currentValue = '';
+          if (ch === ',') {
+            state = 'expect_key_start';
+            i++;
+          } else if (ch === '}') {
+            braceDepth--;
+            state = 'expect_key_start';
+            i++;
+            if (braceDepth === 0) break;
+          } else {
+            state = 'expect_key_start';
+            i++;
+          }
+        }
+      }
+      buffer = buffer.substring(i);
     }
-    const allBytes = new Uint8Array(loaded);
-    let pos = 0;
-    for (const chunk of chunks) {
-      allBytes.set(chunk, pos);
-      pos += chunk.length;
-    }
-    const modelData = JSON.parse(new TextDecoder().decode(allBytes));
-    responses = modelData;
-    await DB.setModel(jsonURL, modelData);
+    
+    await DB.setModel(jsonURL, { cached: true });
+    responses = null;
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
@@ -1711,9 +1879,9 @@ function getChatContext(history) {
     return context;
 }
 
-function findContextualMatch(input, context, keys) {
+async function findContextualMatch(input, context, keys) {
     const lowerInput = input.toLowerCase();
-
+    
     const followUpPatterns = [
         /tell me more/i, /explain further/i, /go on/i, /continue/i,
         /what about/i, /how about/i, /more about/i, /elaborate/i,
@@ -1722,32 +1890,32 @@ function findContextualMatch(input, context, keys) {
         /tell me about that/i, /i don't understand/i, /i dont understand/i,
         /can you explain/i
     ];
-
+    
     const pronounPatterns = [
         /\b(it|they|them|this|that|these|those|he|she|him|her)\b/i,
         /\b(there|its|their)\b/i
     ];
-
+    
     const isFollowUp = followUpPatterns.some(p => p.test(lowerInput));
     const hasPronouns = pronounPatterns.some(p => p.test(lowerInput));
-
+    
     if (isFollowUp && context.topics.length > 0) {
         for (const topic of context.topics) {
             const enrichedInput = `${lowerInput} ${topic}`;
-            const match = findFuzzyMatch(enrichedInput, keys, 4);
+            const match = await findFuzzyMatch(enrichedInput, keys, 4);
             if (match) {
                 match.contextUsed = `follow-up on "${topic}"`;
                 return match;
             }
         }
     }
-
+    
     if (isFollowUp && context.keyPhrases.length > 0) {
         for (const phrase of context.keyPhrases) {
             const phraseWords = phrase.split(/\s+/).filter(w => w.length > 3);
             for (const word of phraseWords) {
                 const enrichedInput = `${lowerInput} ${word}`;
-                const match = findFuzzyMatch(enrichedInput, keys, 4);
+                const match = await findFuzzyMatch(enrichedInput, keys, 4);
                 if (match) {
                     match.contextUsed = `follow-up phrase match`;
                     return match;
@@ -1755,19 +1923,19 @@ function findContextualMatch(input, context, keys) {
             }
         }
     }
-
+    
     if (hasPronouns && context.lastAiMessage) {
         const aiWords = context.lastAiMessage.split(/\s+/);
         const keyNouns = aiWords.filter(w => w.length > 4 && /^[A-Z]/.test(w));
         if (keyNouns.length > 0) {
             const enrichedInput = `${lowerInput} ${keyNouns[0]}`;
-            const match = findFuzzyMatch(enrichedInput, keys, 4);
+            const match = await findFuzzyMatch(enrichedInput, keys, 4);
             if (match) {
                 match.contextUsed = `pronoun reference to "${keyNouns[0]}"`;
                 return match;
             }
         }
-
+    
         const aiBigrams = [];
         for (let i = 0; i < aiWords.length - 1; i++) {
             if (aiWords[i].length > 3) aiBigrams.push(aiWords[i]);
@@ -1777,7 +1945,7 @@ function findContextualMatch(input, context, keys) {
         if (uniqueNouns.length > 0) {
             for (const noun of uniqueNouns.slice(0, 3)) {
                 const enrichedInput = `${lowerInput} ${noun}`;
-                const match = findFuzzyMatch(enrichedInput, keys, 4);
+                const match = await findFuzzyMatch(enrichedInput, keys, 4);
                 if (match) {
                     match.contextUsed = `pronoun reference to "${noun}"`;
                     return match;
@@ -1785,17 +1953,17 @@ function findContextualMatch(input, context, keys) {
             }
         }
     }
-
+    
     if (context.topics.length > 0) {
         const topicContext = context.topics.slice(0, 3).join(' ');
         const enrichedInput = `${lowerInput} ${topicContext}`;
-        const match = findFuzzyMatch(enrichedInput, keys, 5);
+        const match = await findFuzzyMatch(enrichedInput, keys, 5);
         if (match) {
             match.contextUsed = `topic context: "${context.topics[0]}"`;
             return match;
         }
     }
-
+    
     return null;
 }
 
@@ -1826,7 +1994,7 @@ function levenshteinDistance(a, b) {
   return matrix[b.length][a.length];
 }
 
-function findFuzzyMatch(input, keys, maxDistance = 3) {
+async function findFuzzyMatch(input, keys, maxDistance = 3) {
   const lowerInput = input.toLowerCase();
   let bestMatch = null;
   let bestDistance = Infinity;
@@ -1839,13 +2007,15 @@ function findFuzzyMatch(input, keys, maxDistance = 3) {
       const dist = Math.abs(lowerKey.length - lowerInput.length);
       if (dist < bestDistance) {
         bestDistance = dist;
-        bestMatch = { key, text: responses[key], distance: dist };
+        const text = responses ? responses[key] : await DB.getResponse(key);
+        bestMatch = { key, text, distance: dist };
       }
     } else {
       const dist = levenshteinDistance(lowerInput, lowerKey);
       if (dist <= maxDistance && dist < bestDistance) {
         bestDistance = dist;
-        bestMatch = { key, text: responses[key], distance: dist };
+        const text = responses ? responses[key] : await DB.getResponse(key);
+        bestMatch = { key, text, distance: dist };
       }
     }
   }
@@ -2121,17 +2291,31 @@ async function findResponses(input, history) {
   }
 
   const foundMatches = [];
-  const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
-  let tempInput = lowerInput;
-  sortedKeys.forEach(key => {
-    const lowerKey = key.toLowerCase();
-    let index = tempInput.indexOf(lowerKey);
-    while (index !== -1) {
-      foundMatches.push({ text: responses[key], index: index });
-      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
-      index = tempInput.indexOf(lowerKey);
+  if (responses) {
+    const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
+    let tempInput = lowerInput;
+    sortedKeys.forEach(key => {
+      const lowerKey = key.toLowerCase();
+      let index = tempInput.indexOf(lowerKey);
+      while (index !== -1) {
+        foundMatches.push({ text: responses[key], index: index });
+        tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+        index = tempInput.indexOf(lowerKey);
+      }
+    });
+  } else {
+    const words = lowerInput.split(/\s+/);
+    for (let n = 5; n >= 1; n--) {
+      for (let i = 0; i <= words.length - n; i++) {
+        const phrase = words.slice(i, i + n).join(' ');
+        if (phrase.length < 2) continue;
+        const val = await DB.getResponse(phrase);
+        if (val) {
+          foundMatches.push({ text: val, index: lowerInput.indexOf(phrase) });
+        }
+      }
     }
-  });
+  }
 
   if (foundMatches.length === 0) {
     // Only attempt Wikipedia if the flag is enabled
@@ -2146,7 +2330,7 @@ async function findResponses(input, history) {
           ];
           const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
-          const modelVer = (responses.ver || "").toLowerCase();
+          const modelVer = (responses && responses.ver) ? responses.ver.toLowerCase() : "";
           let allowWiki = true;
 
           if (modelVer.includes("1.0")) {
@@ -2236,14 +2420,14 @@ async function findResponses(input, history) {
     }
     // Contextual matching - use conversation history to understand context
     const context = getChatContext(history);
-    const ctxMatch = findContextualMatch(decodedInput, context, Object.keys(responses).filter(k => !k.startsWith('ver')));
+    const ctxMatch = await findContextualMatch(decodedInput, context, responses ? Object.keys(responses).filter(k => !k.startsWith('ver')) : []);
     if (ctxMatch) {
       return { role: "ai", text: ctxMatch.text, contextUsed: ctxMatch.contextUsed };
     }
 
     // Fuzzy matching fallback - find similar keys using Levenshtein distance
-    const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
-    const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
+    const fuzzyKeys = responses ? Object.keys(responses).filter(k => !k.startsWith('ver')) : [];
+    const fuzzyMatch = await findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
       return { role: "ai", text: fuzzyMatch.text };
     }
@@ -2555,14 +2739,14 @@ window.devAccess = function(password) {
     updateDevModalStatus();
 };
 
-function handleCustomModelUpload(event) {
+async function handleCustomModelUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
     if (statusEl) statusEl.textContent = `Reading ${file.name}...`;
     const reader = new FileReader();
 
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         const buffer = e.target.result;
         try {
             let newResponses;
@@ -2586,7 +2770,7 @@ function handleCustomModelUpload(event) {
                 document.getElementById("modelNameDisplay").textContent = responses.ver || "Unknown Version";
             }
             if (document.getElementById("modelParamsDisplay")) {
-                document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+                await updateParamsDisplay();
             }
             
             // Also update dev modal if it's open
@@ -2732,10 +2916,10 @@ userInput.addEventListener("keypress", e => {
         }
     }
 });
-settingsBtn.onclick = () => {
+settingsBtn.onclick = async () => {
     settingsModal.style.display = "flex";
     document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
-    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    await updateParamsDisplay();
     // Add upload status element if it doesn't exist
     if (modelSelect && !document.getElementById("customModelStatus")) {
         const statusEl = document.createElement('p');
@@ -2842,7 +3026,7 @@ if (redownloadModelBtn) {
         const modelNameDisplay = document.getElementById("modelNameDisplay");
         const modelParamsDisplay = document.getElementById("modelParamsDisplay");
         if (modelNameDisplay) modelNameDisplay.textContent = responses.ver || "Unknown";
-        if (modelParamsDisplay) modelParamsDisplay.textContent = Object.keys(responses).length;
+        await updateParamsDisplay();
         showInfoModal("Success", "Model re-downloaded successfully!");
     };
 }
