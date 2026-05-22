@@ -1546,8 +1546,7 @@ async function fetchPageImage(pageTitle) {
 
 async function fetchPageImages(pageTitle, maxImages = 8) {
     try {
-        // Get image file names from the page
-        const imgListUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`;
+        const imgListUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=${encodeURIComponent(pageTitle)}&piprop=name&format=json&origin=*`;
         const res = await fetch(imgListUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
         });
@@ -1558,14 +1557,10 @@ async function fetchPageImages(pageTitle, maxImages = 8) {
         const images = pages[pageId]?.images || [];
         if (images.length === 0) return [];
 
-        // Filter out icons, logos, and small images by title patterns
-        const skipPatterns = /[Ii]con|[Ll]ogo|[Ss]phere|[Bb]anner|[Ff]lag|[Mm]ap|Ambox|Commons|Wikidata|Edit|Nuvola|Red%|Question|Portal|Admin|Button|Stop hand|Padlock|Star|Symbol/;
-        const filtered = images.filter(img => !skipPatterns.test(img.title));
+        // Use images that appear in the article content (pageimages returns these by relevance)
+        const topImages = images.filter(img => !/\.svg$/i.test(img.title)).slice(0, maxImages);
+        if (topImages.length === 0) return [];
 
-        // Take up to maxImages, preferring first images (usually most relevant)
-        const topImages = filtered.slice(0, maxImages);
-
-        // Get actual URLs
         const titles = topImages.map(img => img.title).join('|');
         const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&titles=${encodeURIComponent(titles)}&iiprop=url&iiurlwidth=400&format=json&origin=*`;
         const infoRes = await fetch(infoUrl, {
@@ -1654,6 +1649,8 @@ async function fetchWikipediaSummary(topic) {
             const pageId = Object.keys(pages)[0];
             if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
             extract = pages[pageId].extract || '';
+            // Clean up extract: remove == section headers == and collapse whitespace
+            extract = extract.replace(/={2,}[^=]+={2,}\s*/g, '').replace(/\s+/g, ' ').trim();
         } else {
             // Full mode: fetch the entire page content via parse API
             const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`;
@@ -1664,23 +1661,41 @@ async function fetchWikipediaSummary(topic) {
             const parseData = await parseRes.json();
             if (!parseData.parse || !parseData.parse.text) return null;
             const html = parseData.parse.text['*'];
-            // Strip HTML tags and clean up
+            // Convert HTML to clean formatted text
             extract = html
                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                // Block-level tags → newlines
+                .replace(/<\/(?:p|div|h[1-6]|blockquote|tr|table|section|article|nav|header|footer)>/gi, '\n')
+                .replace(/<(?:br|li)\s*\/?>/gi, '\n')
+                // Format headings
+                .replace(/<h1[^>]*>/gi, '\n\n')
+                .replace(/<h2[^>]*>/gi, '\n\n')
+                .replace(/<h3[^>]*>/gi, '\n\n')
+                .replace(/<\/h[1-6]>/gi, '\n')
+                // List items
+                .replace(/<li[^>]*>/gi, '\n\u2022 ')
+                // Strip remaining HTML tags
                 .replace(/<[^>]+>/g, ' ')
+                // Decode entities
                 .replace(/&amp;/g, '&')
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&quot;/g, '"')
                 .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(c))
-                .replace(/\s+/g, ' ')
+                // Clean whitespace but preserve paragraphs
+                .replace(/[ \t]+/g, ' ')
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/\n[ \t]+/g, '\n')
+                .replace(/[ \t]+\n/g, '\n')
                 .trim();
-            // Remove reference sections and similar cruft
-            const refMarkers = /(?:==+\s*(?:References|Notes|Bibliography|External links|See also|Further reading|Sources|Citations|Footnotes)\s*==+[\s\S]*)$/i;
+            // Remove reference/cruft sections (using ## format from converted HTML)
+            const refMarkers = /(?:\n\n(?:References|Notes|Bibliography|External links|See also|Further reading|Sources|Citations|Footnotes)\s*[\s\S]*)$/i;
             extract = extract.replace(refMarkers, '').trim();
         }
 
+        // Strip citation brackets: [1], [2 3], [citation needed], [edit], etc.
+        extract = extract.replace(/\s*\[\d+(?:\s*[-\s,]\s*\d+)*\]|\s*\[(?:citation needed|page needed|dead link|failed verification|verification needed|better source needed|primary source needed|not in citation given|full citation needed|edit|permanent dead link)\]|\s*\[(?:note|nb|lower-alpha|lower-greek|lower-roman)\s*\d*\]/gi, '');
         if (!extract) return null;
         return { text: extract, title: pageTitle, imageUrl, wikiUrl };
     } catch (error) {
@@ -2066,11 +2081,11 @@ async function findResponses(input, history) {
                   }
                   return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl, wikiImageDataUrl };
               }
-              const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
               let summaryText;
               if (!shortened) {
-                  summaryText = clean;
+                  summaryText = cleanText;
               } else {
+                  const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
                   const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
                   if (sentences.length <= 3) {
                       summaryText = clean;
@@ -2215,13 +2230,13 @@ async function findResponses(input, history) {
                     wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
                 }
                 const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
-                const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
                 let summaryText;
                 if (!shortened) {
-                    summaryText = clean;
+                    summaryText = cleanText;
                 } else {
+                    const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
                     const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
                     if (sentences.length <= 3) {
                         summaryText = clean;
