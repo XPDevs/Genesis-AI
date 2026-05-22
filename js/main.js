@@ -4,6 +4,7 @@ const DB = {
     dbVersion: 2,
     storeName: "settings",
     modelStore: "models",
+    responsesStore: "responses",
     db: null,
 
     async init() {
@@ -16,6 +17,9 @@ const DB = {
                 }
                 if (!db.objectStoreNames.contains(this.modelStore)) {
                     db.createObjectStore(this.modelStore);
+                }
+                if (!db.objectStoreNames.contains(this.responsesStore)) {
+                    db.createObjectStore(this.responsesStore);
                 }
             };
             request.onsuccess = (e) => {
@@ -65,6 +69,39 @@ const DB = {
             const transaction = this.db.transaction([this.modelStore], "readwrite");
             const store = transaction.objectStore(this.modelStore);
             const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getResponse(key) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readonly");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async setResponse(key, value) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async clearResponses() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.clear();
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
@@ -851,7 +888,11 @@ async function loadModel(force = false) {
     const cached = await DB.getModel(jsonURL);
     if (cached) {
       console.log("Loading model from cache:", jsonURL);
-      responses = cached;
+      if (cached.cached === true) {
+        responses = null;
+      } else {
+        responses = cached;
+      }
       return;
     }
   }
@@ -860,27 +901,51 @@ async function loadModel(force = false) {
   try {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
+    
     const contentLength = r.headers.get("Content-Length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
-    let loaded = 0;
+    const SIZE_THRESHOLD = 50 * 1024 * 1024; // 50MB threshold
+
+    if (total > 0 && total < SIZE_THRESHOLD) {
+      // SMALL MODEL: Use traditional in-memory loading
+      const allBytes = await r.arrayBuffer();
+      const modelData = JSON.parse(new TextDecoder().decode(allBytes));
+      responses = modelData;
+      await DB.setModel(jsonURL, modelData);
+      hideModelLoading();
+      return;
+    }
+
+    // LARGE MODEL: Use streaming + IndexedDB
+    await DB.clearResponses();
     const reader = r.body.getReader();
-    const chunks = [];
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let loaded = 0;
+    
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      chunks.push(value);
+      
+      buffer += decoder.decode(value, { stream: true });
       loaded += value.length;
       if (total) showModelLoading(Math.round((loaded / total) * 100));
+      
+      let match;
+      const regex = /"([^"]+)":\s*"([^"]*)"/g;
+      while ((match = regex.exec(buffer)) !== null) {
+        const [fullMatch, key, value] = match;
+        await DB.setResponse(key, value);
+        buffer = buffer.substring(match.index + fullMatch.length);
+        regex.lastIndex = 0;
+      }
+      if (buffer.length > 10000) {
+        buffer = buffer.substring(buffer.length - 1000);
+      }
     }
-    const allBytes = new Uint8Array(loaded);
-    let pos = 0;
-    for (const chunk of chunks) {
-      allBytes.set(chunk, pos);
-      pos += chunk.length;
-    }
-    const modelData = JSON.parse(new TextDecoder().decode(allBytes));
-    responses = modelData;
-    await DB.setModel(jsonURL, modelData);
+    
+    await DB.setModel(jsonURL, { cached: true });
+    responses = null;
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
@@ -1711,9 +1776,9 @@ function getChatContext(history) {
     return context;
 }
 
-function findContextualMatch(input, context, keys) {
+async function findContextualMatch(input, context, keys) {
     const lowerInput = input.toLowerCase();
-
+    
     const followUpPatterns = [
         /tell me more/i, /explain further/i, /go on/i, /continue/i,
         /what about/i, /how about/i, /more about/i, /elaborate/i,
@@ -1722,32 +1787,32 @@ function findContextualMatch(input, context, keys) {
         /tell me about that/i, /i don't understand/i, /i dont understand/i,
         /can you explain/i
     ];
-
+    
     const pronounPatterns = [
         /\b(it|they|them|this|that|these|those|he|she|him|her)\b/i,
         /\b(there|its|their)\b/i
     ];
-
+    
     const isFollowUp = followUpPatterns.some(p => p.test(lowerInput));
     const hasPronouns = pronounPatterns.some(p => p.test(lowerInput));
-
+    
     if (isFollowUp && context.topics.length > 0) {
         for (const topic of context.topics) {
             const enrichedInput = `${lowerInput} ${topic}`;
-            const match = findFuzzyMatch(enrichedInput, keys, 4);
+            const match = await findFuzzyMatch(enrichedInput, keys, 4);
             if (match) {
                 match.contextUsed = `follow-up on "${topic}"`;
                 return match;
             }
         }
     }
-
+    
     if (isFollowUp && context.keyPhrases.length > 0) {
         for (const phrase of context.keyPhrases) {
             const phraseWords = phrase.split(/\s+/).filter(w => w.length > 3);
             for (const word of phraseWords) {
                 const enrichedInput = `${lowerInput} ${word}`;
-                const match = findFuzzyMatch(enrichedInput, keys, 4);
+                const match = await findFuzzyMatch(enrichedInput, keys, 4);
                 if (match) {
                     match.contextUsed = `follow-up phrase match`;
                     return match;
@@ -1755,19 +1820,19 @@ function findContextualMatch(input, context, keys) {
             }
         }
     }
-
+    
     if (hasPronouns && context.lastAiMessage) {
         const aiWords = context.lastAiMessage.split(/\s+/);
         const keyNouns = aiWords.filter(w => w.length > 4 && /^[A-Z]/.test(w));
         if (keyNouns.length > 0) {
             const enrichedInput = `${lowerInput} ${keyNouns[0]}`;
-            const match = findFuzzyMatch(enrichedInput, keys, 4);
+            const match = await findFuzzyMatch(enrichedInput, keys, 4);
             if (match) {
                 match.contextUsed = `pronoun reference to "${keyNouns[0]}"`;
                 return match;
             }
         }
-
+    
         const aiBigrams = [];
         for (let i = 0; i < aiWords.length - 1; i++) {
             if (aiWords[i].length > 3) aiBigrams.push(aiWords[i]);
@@ -1777,7 +1842,7 @@ function findContextualMatch(input, context, keys) {
         if (uniqueNouns.length > 0) {
             for (const noun of uniqueNouns.slice(0, 3)) {
                 const enrichedInput = `${lowerInput} ${noun}`;
-                const match = findFuzzyMatch(enrichedInput, keys, 4);
+                const match = await findFuzzyMatch(enrichedInput, keys, 4);
                 if (match) {
                     match.contextUsed = `pronoun reference to "${noun}"`;
                     return match;
@@ -1785,17 +1850,17 @@ function findContextualMatch(input, context, keys) {
             }
         }
     }
-
+    
     if (context.topics.length > 0) {
         const topicContext = context.topics.slice(0, 3).join(' ');
         const enrichedInput = `${lowerInput} ${topicContext}`;
-        const match = findFuzzyMatch(enrichedInput, keys, 5);
+        const match = await findFuzzyMatch(enrichedInput, keys, 5);
         if (match) {
             match.contextUsed = `topic context: "${context.topics[0]}"`;
             return match;
         }
     }
-
+    
     return null;
 }
 
@@ -1826,7 +1891,7 @@ function levenshteinDistance(a, b) {
   return matrix[b.length][a.length];
 }
 
-function findFuzzyMatch(input, keys, maxDistance = 3) {
+async function findFuzzyMatch(input, keys, maxDistance = 3) {
   const lowerInput = input.toLowerCase();
   let bestMatch = null;
   let bestDistance = Infinity;
@@ -1839,13 +1904,15 @@ function findFuzzyMatch(input, keys, maxDistance = 3) {
       const dist = Math.abs(lowerKey.length - lowerInput.length);
       if (dist < bestDistance) {
         bestDistance = dist;
-        bestMatch = { key, text: responses[key], distance: dist };
+        const text = responses ? responses[key] : await DB.getResponse(key);
+        bestMatch = { key, text, distance: dist };
       }
     } else {
       const dist = levenshteinDistance(lowerInput, lowerKey);
       if (dist <= maxDistance && dist < bestDistance) {
         bestDistance = dist;
-        bestMatch = { key, text: responses[key], distance: dist };
+        const text = responses ? responses[key] : await DB.getResponse(key);
+        bestMatch = { key, text, distance: dist };
       }
     }
   }
@@ -2121,17 +2188,31 @@ async function findResponses(input, history) {
   }
 
   const foundMatches = [];
-  const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
-  let tempInput = lowerInput;
-  sortedKeys.forEach(key => {
-    const lowerKey = key.toLowerCase();
-    let index = tempInput.indexOf(lowerKey);
-    while (index !== -1) {
-      foundMatches.push({ text: responses[key], index: index });
-      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
-      index = tempInput.indexOf(lowerKey);
+  if (responses) {
+    const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
+    let tempInput = lowerInput;
+    sortedKeys.forEach(key => {
+      const lowerKey = key.toLowerCase();
+      let index = tempInput.indexOf(lowerKey);
+      while (index !== -1) {
+        foundMatches.push({ text: responses[key], index: index });
+        tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+        index = tempInput.indexOf(lowerKey);
+      }
+    });
+  } else {
+    const words = lowerInput.split(/\s+/);
+    for (let n = 5; n >= 1; n--) {
+      for (let i = 0; i <= words.length - n; i++) {
+        const phrase = words.slice(i, i + n).join(' ');
+        if (phrase.length < 2) continue;
+        const val = await DB.getResponse(phrase);
+        if (val) {
+          foundMatches.push({ text: val, index: lowerInput.indexOf(phrase) });
+        }
+      }
     }
-  });
+  }
 
   if (foundMatches.length === 0) {
     // Only attempt Wikipedia if the flag is enabled
@@ -2146,7 +2227,7 @@ async function findResponses(input, history) {
           ];
           const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
-          const modelVer = (responses.ver || "").toLowerCase();
+          const modelVer = (responses && responses.ver) ? responses.ver.toLowerCase() : "";
           let allowWiki = true;
 
           if (modelVer.includes("1.0")) {
@@ -2236,14 +2317,14 @@ async function findResponses(input, history) {
     }
     // Contextual matching - use conversation history to understand context
     const context = getChatContext(history);
-    const ctxMatch = findContextualMatch(decodedInput, context, Object.keys(responses).filter(k => !k.startsWith('ver')));
+    const ctxMatch = await findContextualMatch(decodedInput, context, responses ? Object.keys(responses).filter(k => !k.startsWith('ver')) : []);
     if (ctxMatch) {
       return { role: "ai", text: ctxMatch.text, contextUsed: ctxMatch.contextUsed };
     }
 
     // Fuzzy matching fallback - find similar keys using Levenshtein distance
-    const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
-    const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
+    const fuzzyKeys = responses ? Object.keys(responses).filter(k => !k.startsWith('ver')) : [];
+    const fuzzyMatch = await findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
       return { role: "ai", text: fuzzyMatch.text };
     }
