@@ -106,6 +106,16 @@
                 leadingSpaces += spaces;
                 continue;
             }
+            if (ch === '\n' || ch === '\r') {
+                if (leadingSpaces) {
+                    tokens.push(leadingSpaces);
+                    leadingSpaces = '';
+                }
+                if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+                tokens.push('\n');
+                i++;
+                continue;
+            }
             if (/[^\w\s]/.test(ch)) {
                 tokens.push(leadingSpaces + ch);
                 leadingSpaces = '';

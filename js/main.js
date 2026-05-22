@@ -1637,65 +1637,25 @@ async function fetchWikipediaSummary(topic) {
         const imageUrl = await fetchPageImage(pageTitle);
 
         let extract;
+        const excerptChars = shortened ? 2000 : 12000;
+        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const extRes = await fetch(extractUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
+        const extData = await extRes.json();
+        const pages = extData.query.pages;
+        const pageId = Object.keys(pages)[0];
+        if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
+        extract = pages[pageId].extract || '';
         if (shortened) {
-            // Short mode: use extracts API with 2000 char limit
-            const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
-            const extRes = await fetch(extractUrl, {
-                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
-            });
-            if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
-            const extData = await extRes.json();
-            const pages = extData.query.pages;
-            const pageId = Object.keys(pages)[0];
-            if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
-            extract = pages[pageId].extract || '';
-            // Clean up extract: remove == section headers == and collapse whitespace
             extract = extract.replace(/={2,}[^=]+={2,}\s*/g, '').replace(/\s+/g, ' ').trim();
-        } else {
-            // Full mode: fetch the entire page content via parse API
-            const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`;
-            const parseRes = await fetch(parseUrl, {
-                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
-            });
-            if (!parseRes.ok) throw new Error(`Parse HTTP ${parseRes.status}`);
-            const parseData = await parseRes.json();
-            if (!parseData.parse || !parseData.parse.text) return null;
-            const html = parseData.parse.text['*'];
-            // Convert HTML to clean formatted text
-            extract = html
-                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                // Block-level tags → newlines
-                .replace(/<\/(?:p|div|h[1-6]|blockquote|tr|table|section|article|nav|header|footer)>/gi, '\n')
-                .replace(/<(?:br|li)\s*\/?>/gi, '\n')
-                // Format headings
-                .replace(/<h1[^>]*>/gi, '\n\n')
-                .replace(/<h2[^>]*>/gi, '\n\n')
-                .replace(/<h3[^>]*>/gi, '\n\n')
-                .replace(/<\/h[1-6]>/gi, '\n')
-                // List items
-                .replace(/<li[^>]*>/gi, '\n\u2022 ')
-                // Strip remaining HTML tags
-                .replace(/<[^>]+>/g, ' ')
-                // Decode entities
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(c))
-                // Clean whitespace but preserve paragraphs
-                .replace(/[ \t]+/g, ' ')
-                .replace(/\n{3,}/g, '\n\n')
-                .replace(/\n[ \t]+/g, '\n')
-                .replace(/[ \t]+\n/g, '\n')
-                .trim();
-            // Remove reference/cruft sections (using ## format from converted HTML)
-            const refMarkers = /(?:\n\n(?:References|Notes|Bibliography|External links|See also|Further reading|Sources|Citations|Footnotes)\s*[\s\S]*)$/i;
-            extract = extract.replace(refMarkers, '').trim();
         }
 
-        // Strip citation brackets: [1], [2 3], [citation needed], [edit], etc.
-        extract = extract.replace(/\s*\[\d+(?:\s*[-\s,]\s*\d+)*\]|\s*\[(?:citation needed|page needed|dead link|failed verification|verification needed|better source needed|primary source needed|not in citation given|full citation needed|edit|permanent dead link)\]|\s*\[(?:note|nb|lower-alpha|lower-greek|lower-roman)\s*\d*\]/gi, '');
+        // Strip citation brackets: [1], [ 2 ], [a], [ a ], [nb 1], [citation needed], [edit], etc.
+        extract = extract.replace(/\s*\[\s*(?:\d+(?:\s*[-\s,]\s*\d+\s*)*|[a-z]|note\s*\d*|nb\s*\d*|lower-alpha|lower-greek|lower-roman)\s*\]|\s*\[(?:citation needed|page needed|dead link|failed verification|verification needed|better source needed|primary source needed|not in citation given|full citation needed|edit|permanent dead link)\]/gi, '');
+        // Remove ellipsis (...) from truncated text
+        extract = extract.replace(/\u2026|\.{3,}/g, '');
         if (!extract) return null;
         return { text: extract, title: pageTitle, imageUrl, wikiUrl };
     } catch (error) {
