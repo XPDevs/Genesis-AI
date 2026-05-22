@@ -1,26 +1,8 @@
-/**
- * Genesis-AI: Tokenizer Module (Decode‑Only)
- * 
- * Decodes standard hex escape sequences in a string:
- *   - \xHH  → UTF‑8 byte (multiple consecutive bytes form a character)
- *   - \uXXXX → Unicode code point (supports BMP)
- *   - \u{H...} → Any Unicode code point (supports astral planes)
- * 
- * All other text is preserved as‑is.
- */
-
 (function() {
     'use strict';
 
     const textDecoder = new TextDecoder('utf-8', { fatal: false });
 
-    /**
-     * Decodes a string by replacing all \xHH, \uXXXX, and \u{H...} escapes
-     * with their actual characters. Non‑escape text stays the same.
-     * 
-     * @param {string} input The input string (may contain hex escapes).
-     * @returns {string} The decoded string.
-     */
     function decode(input) {
         if (typeof input !== 'string') return '';
 
@@ -32,10 +14,8 @@
             if (input[i] === '\\' && i + 1 < len) {
                 const next = input[i + 1];
 
-                // ---- \xHH (UTF-8 byte) ----
                 if (next === 'x' && i + 3 < len && /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
                     const bytes = [];
-                    // Collect consecutive \xHH sequences
                     while (i + 3 < len && input[i] === '\\' && input[i + 1] === 'x' &&
                            /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
                         const hex = input.substr(i + 2, 2);
@@ -46,7 +26,6 @@
                     continue;
                 }
 
-                // ---- \uXXXX (BMP Unicode) ----
                 if (next === 'u' && i + 5 < len && /[0-9a-fA-F]{4}/.test(input.substr(i + 2, 4))) {
                     const hex = input.substr(i + 2, 4);
                     const codePoint = parseInt(hex, 16);
@@ -55,7 +34,6 @@
                     continue;
                 }
 
-                // ---- \u{H...} (any Unicode, ES6) ----
                 if (next === 'u' && i + 3 < len && input[i + 2] === '{') {
                     let end = i + 3;
                     while (end < len && input[end] !== '}') end++;
@@ -70,7 +48,6 @@
                     }
                 }
 
-                // Not a recognized escape – treat as literal backslash
                 result += input[i];
                 i++;
             } else {
@@ -81,28 +58,94 @@
         return result;
     }
 
-    /**
-     * Types text into an element with a realistic typewriter effect.
-     * Randomly varies speed per character, with occasional pauses.
-     *
-     * @param {HTMLElement} element The DOM element to type into.
-     * @param {string} text The full text to display.
-     * @param {number} speed Base delay per character in ms (default 30).
-     * @param {function} [onDone] Optional callback when typing finishes.
-     */
-    function typewriter(element, text, speed = 30, onDone, onChar) {
+    function tokenizeLikeLLM(text) {
+        const tokens = [];
+        let i = 0;
+
+        function splitCamelCase(word) {
+            const parts = [];
+            let j = 0;
+            while (j < word.length) {
+                if (/[a-z]/.test(word[j])) {
+                    let k = j + 1;
+                    while (k < word.length && /[a-z]/.test(word[k])) k++;
+                    parts.push(word.slice(j, k));
+                    j = k;
+                } else if (/[A-Z]/.test(word[j])) {
+                    let k = j + 1;
+                    if (k < word.length && /[a-z]/.test(word[k])) {
+                        while (k < word.length && /[a-z]/.test(word[k])) k++;
+                        parts.push(word.slice(j, k));
+                        j = k;
+                    } else {
+                        while (k < word.length && /[A-Z]/.test(word[k])) k++;
+                        const cluster = word.slice(j, k);
+                        if (k < word.length && /[a-z]/.test(word[k])) {
+                            for (let l = 0; l < cluster.length; l++) parts.push(cluster[l]);
+                        } else if (cluster.length === 1) {
+                            parts.push(cluster);
+                        } else {
+                            parts.push(cluster[0]);
+                            parts.push(cluster.slice(1));
+                        }
+                        j = k;
+                    }
+                } else {
+                    j++;
+                }
+            }
+            return parts;
+        }
+
+        while (i < text.length) {
+            const ch = text[i];
+            if (ch === ' ') {
+                let spaces = '';
+                while (i < text.length && text[i] === ' ') spaces += text[i++];
+                tokens.push(spaces);
+                continue;
+            }
+            if (/[^\w\s]/.test(ch)) {
+                tokens.push(ch);
+                i++;
+                continue;
+            }
+            if (/\d/.test(ch)) {
+                let num = '';
+                while (i < text.length && /\d/.test(text[i])) num += text[i++];
+                tokens.push(num);
+                continue;
+            }
+            if (/[a-zA-Z]/.test(ch)) {
+                let word = '';
+                while (i < text.length && /[a-zA-Z]/.test(text[i])) word += text[i++];
+                tokens.push(...splitCamelCase(word));
+                continue;
+            }
+            i++;
+        }
+        return tokens;
+    }
+
+    function getTokenDelay(token, baseSpeed) {
+        let delay = baseSpeed + (Math.random() - 0.5) * baseSpeed * 0.6;
+        if (Math.random() < 0.02) delay += 400;
+        return delay;
+    }
+
+    function typewriter(element, text, speed = 60, onDone, onToken) {
+        const tokens = tokenizeLikeLLM(text);
         let index = 0;
         let timeoutId = null;
         let stopped = false;
         element.textContent = '';
         function tick() {
             if (stopped) return;
-            if (index < text.length) {
-                element.textContent += text[index++];
-                if (onChar) onChar();
-                let delay = speed + (Math.random() - 0.5) * speed * 0.8;
-                if (Math.random() < 0.08) delay += 300 + Math.random() * 500;
-                if (index % 5 === 0 && Math.random() < 0.15) delay += 200 + Math.random() * 300;
+            if (index < tokens.length) {
+                element.textContent += tokens[index];
+                if (onToken) onToken();
+                const delay = getTokenDelay(tokens[index], speed);
+                index++;
                 timeoutId = setTimeout(tick, delay);
             } else if (onDone) {
                 onDone();
@@ -118,7 +161,6 @@
         };
     }
 
-    // Expose decode and typewriter
-    window.tokenizer = { decode, typewriter };
-    console.log("Tokenizer Module Loaded (decodes \\xHH, \\uXXXX, \\u{H...})");
+    window.tokenizer = { decode, tokenizeLikeLLM, typewriter };
+    console.log("Tokenizer Module Loaded");
 })();
