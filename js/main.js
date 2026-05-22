@@ -2481,8 +2481,18 @@ async function sendMessage() {
   }
 
   const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message loading-container";
-  loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
+  loadingDiv.className = "message ai wiki-loading";
+  loadingDiv.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+      <span style="opacity: 0.7; font-size: 0.9em;">Thinking</span>
+    </div>
+  `;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
   aiState.loadingDiv = loadingDiv;
 
