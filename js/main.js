@@ -1450,13 +1450,28 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   }
 
   if (role === "ai" && isNew) {
+    const scheduleReset = () => {
+      const capturedId = aiState.currentRequestId;
+      aiState.resetTimeout = setTimeout(() => {
+        if (capturedId !== aiState.currentRequestId) return;
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = "1";
+        userInput.focus();
+        aiState.isResponding = false;
+        sendBtn.innerHTML = aiState.originalSendIcon;
+        updateSendButton();
+      }, 1000);
+    };
+
     if (hasHTML || (hasMath && !processedText.includes('\n'))) {
         if (hasMath && window.katex) {
             renderTextWithMath(textSpan, processedText);
         } else {
             textSpan.innerHTML = processedText;
         }
-        aiState.currentAiMessage = null; // Finished rendering immediately
+        aiState.currentAiMessage = null;
+        scheduleReset();
     } else {
         const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
             if (hasMath && window.katex) {
@@ -1465,6 +1480,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
             }
             aiState.currentAiMessage = null;
             aiState.cancelTyping = null;
+            scheduleReset();
         }, () => {
             chatBox.scrollTop = chatBox.scrollHeight;
         });
@@ -2390,14 +2406,6 @@ async function sendMessage() {
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
 
-        const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
-        aiState.resetTimeout = setTimeout(() => { 
-            if (requestId !== aiState.currentRequestId) return;
-            userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; 
-            userInput.focus();
-            aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
-            updateSendButton(); // Restore button based on input content
-        }, timeout);
     }, 1500);
     
     if (currentUploadFile) { currentUploadFile = null; if(uploadBtn) uploadBtn.style.color = ""; }
