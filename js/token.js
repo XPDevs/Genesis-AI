@@ -81,7 +81,44 @@
         return result;
     }
 
-    // Expose only the decode function
-    window.tokenizer = { decode };
+    /**
+     * Types text into an element with a realistic typewriter effect.
+     * Randomly varies speed per character, with occasional pauses.
+     *
+     * @param {HTMLElement} element The DOM element to type into.
+     * @param {string} text The full text to display.
+     * @param {number} speed Base delay per character in ms (default 30).
+     * @param {function} [onDone] Optional callback when typing finishes.
+     */
+    function typewriter(element, text, speed = 30, onDone, onChar) {
+        let index = 0;
+        let timeoutId = null;
+        let stopped = false;
+        element.textContent = '';
+        function tick() {
+            if (stopped) return;
+            if (index < text.length) {
+                element.textContent += text[index++];
+                if (onChar) onChar();
+                let delay = speed + (Math.random() - 0.5) * speed * 0.8;
+                if (Math.random() < 0.08) delay += 300 + Math.random() * 500;
+                if (index % 5 === 0 && Math.random() < 0.15) delay += 200 + Math.random() * 300;
+                timeoutId = setTimeout(tick, delay);
+            } else if (onDone) {
+                onDone();
+            }
+        }
+        tick();
+        return function cancel() {
+            stopped = true;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+        };
+    }
+
+    // Expose decode and typewriter
+    window.tokenizer = { decode, typewriter };
     console.log("Tokenizer Module Loaded (decodes \\xHH, \\uXXXX, \\u{H...})");
 })();

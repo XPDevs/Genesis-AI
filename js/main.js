@@ -524,7 +524,7 @@ let aiState = {
     isResponding: false,
     currentRequestId: 0,
     loadingDiv: null,
-    typingInterval: null,
+    cancelTyping: null,
     thinkingTimeout: null,
     resetTimeout: null,
     originalSendIcon: null,
@@ -563,9 +563,9 @@ function stopGeneration() {
 
     aiState.currentRequestId++; // Invalidate pending operations
     
-    if (aiState.typingInterval) {
-        clearInterval(aiState.typingInterval);
-        aiState.typingInterval = null;
+    if (aiState.cancelTyping) {
+        aiState.cancelTyping();
+        aiState.cancelTyping = null;
     }
     
     if (aiState.thinkingTimeout) {
@@ -1458,24 +1458,17 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         }
         aiState.currentAiMessage = null; // Finished rendering immediately
     } else {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < processedText.length) {
-          textSpan.textContent += processedText[i]; 
-          i++;
-          chatBox.scrollTop = chatBox.scrollHeight;
-      }
-      if (i === processedText.length) {
-          clearInterval(interval);
-          if (hasMath && window.katex) {
-              textSpan.textContent = ""; // Clear typed text before rendering math
-              renderTextWithMath(textSpan, processedText);
-          }
-          aiState.currentAiMessage = null;
-          aiState.typingInterval = null;
-      }
-    }, 30);
-    aiState.typingInterval = interval;
+        const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
+            if (hasMath && window.katex) {
+                textSpan.textContent = "";
+                renderTextWithMath(textSpan, processedText);
+            }
+            aiState.currentAiMessage = null;
+            aiState.cancelTyping = null;
+        }, () => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        aiState.cancelTyping = cancel;
     }
   } else { 
       if (hasMath && window.katex) {
