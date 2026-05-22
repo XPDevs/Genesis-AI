@@ -1562,7 +1562,9 @@ async function fetchWikipediaSummary(topic) {
         const pageTitle = bestPage.title;
         const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
 
-        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const shortened = (await DB.get("shortenedAnswers")) === "true";
+        const excerptChars = shortened ? 2000 : 8000;
+        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
         const extRes = await fetch(extractUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
         });
@@ -1953,25 +1955,30 @@ async function findResponses(input, history) {
                   return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl, wikiImageDataUrl };
               }
               const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-              const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+              const shortened = (await DB.get("shortenedAnswers")) === "true";
               let summaryText;
-              if (sentences.length <= 3) {
+              if (!shortened) {
                   summaryText = clean;
               } else {
-                  const scored = sentences.map((text, i) => {
-                      let score = 0;
-                      const c = text.toLowerCase();
-                      if (i === 0) score += 10;
-                      if (i === 1) score += 3;
-                      if (/\d+/.test(text)) score += 3;
-                      if (/[A-Z]{2,}/.test(text)) score += 2;
-                      const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
-                      markers.forEach(m => { if (c.includes(m)) score += 2; });
-                      return { text: text.trim(), score, index: i };
-                  });
-                  const topSentences = scored.sort((a, b) => b.score - a.score).slice(0, 8).sort((a, b) => a.index - b.index).map(s => s.text);
-                  summaryText = topSentences.join(' ');
-                  if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                  const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+                  if (sentences.length <= 3) {
+                      summaryText = clean;
+                  } else {
+                      const scored = sentences.map((text, i) => {
+                          let score = 0;
+                          const c = text.toLowerCase();
+                          if (i === 0) score += 10;
+                          if (i === 1) score += 3;
+                          if (/\d+/.test(text)) score += 3;
+                          if (/[A-Z]{2,}/.test(text)) score += 2;
+                          const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
+                          markers.forEach(m => { if (c.includes(m)) score += 2; });
+                          return { text: text.trim(), score, index: i };
+                      });
+                      const topSentences = scored.sort((a, b) => b.score - a.score).slice(0, 8).sort((a, b) => a.index - b.index).map(s => s.text);
+                      summaryText = topSentences.join(' ');
+                      if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                  }
               }
               return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
           }
@@ -2092,35 +2099,39 @@ async function findResponses(input, history) {
                 const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
                 const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
                 const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
-                
+                const shortened = (await DB.get("shortenedAnswers")) === "true";
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
                 let summaryText;
-                if (sentences.length <= 3) {
+                if (!shortened) {
                     summaryText = clean;
                 } else {
-                    const maxSentences = isUserSummary ? 4 : 8;
-                    const scored = sentences.map((text, i) => {
-                        let score = 0;
-                        const cl = text.toLowerCase();
-                        if (i === 0) score += 10;
-                        if (i === 1) score += 3;
-                        if (/\d+/.test(text)) score += 3;
-                        if (/[A-Z]{2,}/.test(text)) score += 2;
-                        const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
-                        markers.forEach(m => { if (cl.includes(m)) score += 2; });
-                        return { text: text.trim(), score, index: i };
-                    });
-                    
-                    const topSentences = scored
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, maxSentences)
-                        .sort((a, b) => a.index - b.index)
-                        .map(s => s.text);
-                    
-                    summaryText = topSentences.join(' ');
-                    if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                    const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+                    if (sentences.length <= 3) {
+                        summaryText = clean;
+                    } else {
+                        const maxSentences = isUserSummary ? 4 : 8;
+                        const scored = sentences.map((text, i) => {
+                            let score = 0;
+                            const cl = text.toLowerCase();
+                            if (i === 0) score += 10;
+                            if (i === 1) score += 3;
+                            if (/\d+/.test(text)) score += 3;
+                            if (/[A-Z]{2,}/.test(text)) score += 2;
+                            const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
+                            markers.forEach(m => { if (cl.includes(m)) score += 2; });
+                            return { text: text.trim(), score, index: i };
+                        });
+                        
+                        const topSentences = scored
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, maxSentences)
+                            .sort((a, b) => a.index - b.index)
+                            .map(s => s.text);
+                        
+                        summaryText = topSentences.join(' ');
+                        if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                    }
                 }
                 
                 return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
@@ -2129,6 +2140,8 @@ async function findResponses(input, history) {
         } catch (e) {
           console.error("Wikipedia fetch failed:", e);
         }
+    } else {
+        var webSearchOff = true;
     }
     // Contextual matching - use conversation history to understand context
     const context = getChatContext(history);
@@ -2142,6 +2155,9 @@ async function findResponses(input, history) {
     const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
       return { role: "ai", text: fuzzyMatch.text };
+    }
+    if (webSearchOff) {
+        return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know.\n\nI'm not quite sure I follow. Could you give me a bit more detail?" };
     }
     return { role: "ai", text: "I'm not quite sure I follow. Could you give me a bit more detail?" };
   }
@@ -2392,9 +2408,12 @@ async function sendMessage() {
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
             if (botMsg.isWikipedia && window.summariseConversation) {
-                const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
-                const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
-                botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
+                const shortened = (await DB.get("shortenedAnswers")) === "true";
+                if (shortened) {
+                    const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
+                    const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
+                    botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
+                }
             }
         }
 
