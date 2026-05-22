@@ -184,6 +184,19 @@ async function initializeApp() {
     window.dispatchEvent(new Event('app-ready'));
     setupSwipeGestures();
 
+    // Scroll-to-bottom button logic
+    const scrollBtn = document.getElementById('scrollToBottomBtn');
+    if (scrollBtn && chatBox) {
+        chatBox.addEventListener('scroll', () => {
+            const threshold = 200;
+            const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
+            scrollBtn.style.display = isNearBottom ? 'none' : 'flex';
+        });
+        scrollBtn.addEventListener('click', () => {
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        });
+    }
+
     // Show feature modal after everything is loaded
     if (typeof showFeatureModal === 'function') {
         showFeatureModal();
@@ -385,6 +398,67 @@ function injectCSS() {
         #chatBox::-webkit-scrollbar-thumb:hover {
             background: rgba(128, 128, 128, 0.5);
         }
+        .scroll-bottom-btn {
+            position: fixed;
+            bottom: 100px;
+            right: max(calc((100% - 800px) / 2 + 20px), 20px);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+            padding: 0;
+            opacity: 0.85;
+        }
+        .scroll-bottom-btn:hover {
+            background: var(--active-chat);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        #greeting {
+            text-align: center !important;
+        }
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .quick-action-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .quick-action-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+        @media (max-width: 768px) {
+            .scroll-bottom-btn {
+                bottom: 90px;
+                right: 16px;
+                width: 36px;
+                height: 36px;
+            }
+        }
     `;
     document.head.appendChild(style);
 }
@@ -434,9 +508,6 @@ const uploadStatus = document.getElementById("uploadStatus");
 // NEW: Search toggle button
 const searchToggleBtn = document.getElementById("searchToggleBtn");
 
-// NEW: Live Mode button
-const liveModeBtn = document.getElementById("liveModeBtn");
-
 // State
 let chats = [];
 let activeChatId = null;
@@ -453,7 +524,7 @@ let aiState = {
     isResponding: false,
     currentRequestId: 0,
     loadingDiv: null,
-    typingInterval: null,
+    cancelTyping: null,
     thinkingTimeout: null,
     resetTimeout: null,
     originalSendIcon: null,
@@ -462,9 +533,6 @@ let aiState = {
 
 // Wikipedia Search flag (default false)
 let useWikipedia = false;
-
-// Neural Mode flag (default false)
-let useNeuralMode = false;
 
 // Function to update send button based on input content
 function updateSendButton() {
@@ -475,18 +543,13 @@ function updateSendButton() {
         // If responding, show stop square (same on both mobile and desktop)
         sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
     } else if (isMobile) {
-        // On mobile: if no text, show live button; if has text, show send button
         if (userInput.value.trim() === '') {
-            sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"></line><line x1="6" y1="9" x2="6" y2="15"></line><line x1="18" y1="9" x2="18" y2="15"></line></svg>';
-            sendBtn.classList.add('live-mode');
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
         } else {
             sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-            sendBtn.classList.remove('live-mode');
         }
     } else {
-        // Desktop: always show send icon
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/></svg>';
-        sendBtn.classList.remove('live-mode');
     }
 }
 
@@ -500,9 +563,9 @@ function stopGeneration() {
 
     aiState.currentRequestId++; // Invalidate pending operations
     
-    if (aiState.typingInterval) {
-        clearInterval(aiState.typingInterval);
-        aiState.typingInterval = null;
+    if (aiState.cancelTyping) {
+        aiState.cancelTyping();
+        aiState.cancelTyping = null;
     }
     
     if (aiState.thinkingTimeout) {
@@ -550,10 +613,8 @@ function stopGeneration() {
     if (aiState.originalSendIcon) sendBtn.innerHTML = aiState.originalSendIcon;
     sendBtn.disabled = false;
     sendBtn.style.opacity = "1";
-    if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
-        userInput.focus();
-    }
-    
+    userInput.focus();
+
     if (currentUploadFile) { 
         currentUploadFile = null; 
         if(uploadBtn) uploadBtn.style.color = ""; 
@@ -937,6 +998,12 @@ function renderChatList() {
   });
 }
 
+function updatePlaceholder() {
+    const chat = chats.find(c => c.id === activeChatId);
+    const hasReplies = chat && chat.messages && chat.messages.some(m => m.role === 'ai');
+    userInput.placeholder = hasReplies ? 'Reply to Genesis AI' : 'Ask Genesis AI';
+}
+
 async function updateChatView() {
     const chat = chats.find(c => c.id === activeChatId);
     let greetingEl = document.getElementById('greeting');
@@ -968,9 +1035,30 @@ async function updateChatView() {
         }
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
-        const hour = new Date().getHours();
-        const greetingText = hour < 12 ? 'Good Morning' : 'Good Afternoon';
-        greetingEl.textContent = `${greetingText}, ${name}`;
+        const greetingText = typeof getRandomGreeting === 'function' ? getRandomGreeting() : 'Hello';
+        greetingEl.innerHTML = `${greetingText}, ${name}`;
+        const qaSetting = await DB.get("quickActionsEnabled", "false");
+        if (qaSetting === "true" || qaSetting === "new") {
+          greetingEl.innerHTML += `<div class="quick-actions"></div>`;
+          const actionsContainer = greetingEl.querySelector('.quick-actions');
+          if (actionsContainer && !actionsContainer.dataset.initialized) {
+            actionsContainer.dataset.initialized = 'true';
+            const quickActions = [
+              { label: '🐱 Image of a cat', msg: 'image of a cat' },
+              { label: '🌌 What is a black hole', msg: 'what is a black hole' },
+              { label: '😂 Tell me a joke', msg: 'tell me a joke' },
+              { label: '💡 Who created you', msg: 'who made you' },
+              { label: '🌊 Tell me about the ocean', msg: 'tell me about the ocean' },
+            ];
+            quickActions.forEach(a => {
+              const btn = document.createElement('button');
+              btn.className = 'quick-action-btn';
+              btn.textContent = a.label;
+              btn.onclick = () => sendQuickAction(a.msg);
+              actionsContainer.appendChild(btn);
+            });
+          }
+        }
     } else {
         document.body.classList.remove('is-new-chat');
         if (chatHeader) {
@@ -985,16 +1073,171 @@ async function updateChatView() {
     }
 }
 
+function showQuickActionsGuide() {
+  if (document.getElementById('quick-actions-guide')) return;
+  const modal = document.createElement('div');
+  modal.id = 'quick-actions-guide';
+  modal.innerHTML = `
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h2>Welcome! Try Quick Actions</h2>
+      <p>Get started quickly with these suggested prompts. Quick actions are available for your first chat. You can always enable them again in Settings.</p>
+      <div class="qa-guide-buttons">
+        <button class="quick-action-btn" data-qa="image of a cat">🐱 Image of a cat</button>
+        <button class="quick-action-btn" data-qa="what is a black hole">🌌 What is a black hole</button>
+        <button class="quick-action-btn" data-qa="tell me a joke">😂 Tell me a joke</button>
+        <button class="quick-action-btn" data-qa="who made you">💡 Who created you</button>
+        <button class="quick-action-btn" data-qa="tell me about the ocean">🌊 Tell me about the ocean</button>
+      </div>
+      <div class="modal-actions">
+        <button id="qa-guide-ok" class="confirm">Got it</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('.quick-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.remove();
+      sendQuickAction(btn.dataset.qa);
+    });
+  });
+
+  const overlay = modal.querySelector('.modal-overlay');
+  const okBtn = modal.querySelector('#qa-guide-ok');
+
+  const dismiss = () => {
+    modal.remove();
+  };
+
+  okBtn.addEventListener('click', dismiss);
+  overlay.addEventListener('click', dismiss);
+
+  const style = document.createElement('style');
+  style.id = 'qa-guide-style';
+  style.textContent = `
+    #quick-actions-guide {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+      padding: 20px;
+    }
+    #quick-actions-guide .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+    }
+    #quick-actions-guide .modal-content {
+      background: var(--modal-bg, #1e1e1e);
+      padding: 30px;
+      border-radius: 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      color: var(--text, #fff);
+      text-align: center;
+    }
+    #quick-actions-guide h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+    #quick-actions-guide p {
+      margin: 0 0 18px;
+      font-size: 14px;
+      color: var(--text-secondary, #aaa);
+      line-height: 1.5;
+    }
+    #quick-actions-guide .qa-guide-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #quick-actions-guide .qa-guide-buttons .quick-action-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    #quick-actions-guide .qa-guide-buttons .quick-action-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    #quick-actions-guide .modal-actions {
+      margin-top: 0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    #qa-guide-ok {
+      padding: 10px 28px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 15px;
+      border: none;
+      background-color: var(--primary, #007bff);
+      color: #ffffff;
+    }
+    #qa-guide-ok:hover {
+      filter: brightness(0.9);
+      transform: translateY(-1px);
+    }
+    @media (max-width: 480px) {
+      #quick-actions-guide {
+        padding: 16px;
+        align-items: flex-end;
+      }
+      #quick-actions-guide .modal-content {
+        padding: 24px;
+        border-radius: 24px 24px 0 0;
+        max-width: none;
+      }
+    }
+  `;
+  if (!document.getElementById('qa-guide-style')) {
+    document.head.appendChild(style);
+  }
+}
+
+function sendQuickAction(text) {
+  if (aiState.isResponding) return;
+  if (!activeChatId) {
+    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+    chats.unshift(newChat);
+    activeChatId = newChat.id;
+    DB.set("activeChatId", activeChatId);
+    saveChats();
+    renderChatList();
+  }
+  userInput.value = text;
+  sendMessage();
+}
+
 async function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
   chatBox.innerHTML = "";
   if (!chat) { await updateChatView(); return; }
-  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer));
+  chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer, msg));
   chatBox.scrollTop = chatBox.scrollHeight;
   if (chat) await updateURL(chat.title);
   await updateChatView();
+  updatePlaceholder();
 }
 
 function renderTextWithMath(element, text) {
@@ -1067,6 +1310,56 @@ function renderTextWithMath(element, text) {
                  break;
             }
         }
+    }
+}
+
+function renderWikiHeader(div, msg) {
+    if (!msg || !div) return;
+    const existing = div.querySelector('.wiki-header');
+    if (existing) existing.remove();
+    const wikiHeader = document.createElement('div');
+    wikiHeader.className = 'wiki-header';
+    wikiHeader.style.cssText = 'margin-bottom:10px;';
+    if (msg.wikiImageDataUrls && msg.wikiImageDataUrls.length > 0) {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:10px;';
+        for (const url of msg.wikiImageDataUrls) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'width:100%;height:140px;border-radius:8px;object-fit:cover;';
+            img.loading = 'lazy';
+            grid.appendChild(img);
+        }
+        wikiHeader.appendChild(grid);
+    }
+    if (msg.wikiImageDataUrl) {
+        if (!msg.wikiImageDataUrls || msg.wikiImageDataUrls.length === 0) {
+            const img = document.createElement('img');
+            img.src = msg.wikiImageDataUrl;
+            img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+            img.loading = 'lazy';
+            wikiHeader.appendChild(img);
+        }
+    } else if (msg.wikiImageUrl) {
+        if (!msg.wikiImageDataUrls || msg.wikiImageDataUrls.length === 0) {
+            const img = document.createElement('img');
+            img.src = msg.wikiImageUrl;
+            img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+            img.loading = 'lazy';
+            wikiHeader.appendChild(img);
+        }
+    }
+    if (msg.wikiUrl) {
+        const wikiBtn = document.createElement('button');
+        wikiBtn.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/250px-Wikipedia-logo-v2.svg.png" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;">View on WikiPedia<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+        wikiBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(26,115,232,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(26,115,232,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;';
+        wikiBtn.onmouseenter = () => wikiBtn.style.background = 'rgba(26,115,232,0.2)';
+        wikiBtn.onmouseleave = () => wikiBtn.style.background = 'rgba(26,115,232,0.12)';
+        wikiBtn.onclick = () => showExternalLinkModal(msg.wikiUrl);
+        wikiHeader.appendChild(wikiBtn);
+    }
+    if (wikiHeader.children.length > 0) {
+        div.insertBefore(wikiHeader, div.firstChild);
     }
 }
 
@@ -1154,52 +1447,8 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     if (isNew && window.shouldSpeakResponse) {
         if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(processedText);
-        const ball = document.getElementById('pulsing-ball');
-        const captionEl = document.getElementById('live-caption-text');
-
-        // Split text into sentences for chunked captioning
-        const sentences = processedText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [processedText];
-        let currentSentenceIdx = -1;
-
-        utterance.onboundary = (event) => {
-             if (event.name === 'word') {
-                let charCount = 0;
-                let newIndex = 0;
-                for (let i = 0; i < sentences.length; i++) {
-                    charCount += sentences[i].length;
-                    if (event.charIndex < charCount) {
-                        newIndex = i;
-                        break;
-                    }
-                }
-                if (newIndex !== currentSentenceIdx) {
-                    currentSentenceIdx = newIndex;
-                    if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
-                        let text = sentences[currentSentenceIdx];
-                        if (sentences[currentSentenceIdx + 1]) text += " " + sentences[currentSentenceIdx + 1];
-                        captionEl.textContent = text;
-                    }
-                }
-             }
-        };
-
-        utterance.onstart = () => {
-            if (ball) ball.classList.add('speaking');
-            if (captionEl && document.getElementById('live-mode-overlay')?.style.display === 'flex') {
-                let text = sentences[0];
-                if (sentences[1]) text += " " + sentences[1];
-                captionEl.textContent = text;
-                captionEl.className = 'ai-caption';
-            }
-        };
-        utterance.onend = () => {
-            if (ball) ball.classList.remove('speaking');
-            // This global function is defined in speech.js to restart the listening loop
-            if (window.startListeningAfterSpeech) window.startListeningAfterSpeech();
-        };
-
         window.speechSynthesis.speak(utterance);
-        window.shouldSpeakResponse = false; // Reset the flag
+        window.shouldSpeakResponse = false;
     }
 
     const existingLatest = chatBox.querySelectorAll('.message.ai.latest');
@@ -1212,33 +1461,46 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
+  if (messageObj && messageObj.isWikipedia) {
+      renderWikiHeader(div, messageObj);
+  }
+
   if (role === "ai" && isNew) {
+    const scheduleReset = () => {
+      const capturedId = aiState.currentRequestId;
+      aiState.resetTimeout = setTimeout(() => {
+        if (capturedId !== aiState.currentRequestId) return;
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = "1";
+        userInput.focus();
+        aiState.isResponding = false;
+        sendBtn.innerHTML = aiState.originalSendIcon;
+        updateSendButton();
+      }, 1000);
+    };
+
     if (hasHTML || (hasMath && !processedText.includes('\n'))) {
         if (hasMath && window.katex) {
             renderTextWithMath(textSpan, processedText);
         } else {
             textSpan.innerHTML = processedText;
         }
-        aiState.currentAiMessage = null; // Finished rendering immediately
+        aiState.currentAiMessage = null;
+        scheduleReset();
     } else {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < processedText.length) {
-          textSpan.textContent += processedText[i]; 
-          i++;
-          chatBox.scrollTop = chatBox.scrollHeight;
-      }
-      if (i === processedText.length) {
-          clearInterval(interval);
-          if (hasMath && window.katex) {
-              textSpan.textContent = ""; // Clear typed text before rendering math
-              renderTextWithMath(textSpan, processedText);
-          }
-          aiState.currentAiMessage = null;
-          aiState.typingInterval = null;
-      }
-    }, 30);
-    aiState.typingInterval = interval;
+        const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
+            if (hasMath && window.katex) {
+                textSpan.textContent = "";
+                renderTextWithMath(textSpan, processedText);
+            }
+            aiState.currentAiMessage = null;
+            aiState.cancelTyping = null;
+            scheduleReset();
+        }, () => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        aiState.cancelTyping = cancel;
     }
   } else { 
       if (hasMath && window.katex) {
@@ -1250,39 +1512,154 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 }
 
 // --- WIKIPEDIA API ---
-async function fetchWikipediaSummary(topic) {
-    const encodedTopic = encodeURIComponent(topic);
-    const apiUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&format=json&titles=${encodedTopic}&redirects=1&origin=*`;
-
+async function fetchImageAsDataUrl(url) {
+    if (!url) return null;
     try {
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': 'GenesisAI/1.0 (bot@example.com)'
-            }
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
         });
+    } catch {
+        return null;
+    }
+}
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+async function fetchPageImage(pageTitle) {
+    try {
+        const imgUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=400&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const res = await fetch(imgUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
         const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
-        const page = pages[pageId];
+        return pages[pageId]?.thumbnail?.source || null;
+    } catch {
+        return null;
+    }
+}
 
-        if (pageId === "-1" || page.missing) {
-            console.warn(`Warning: No Wikipedia page for '${topic}'`);
-            return null;
+async function fetchPageImages(pageTitle, maxImages = 8) {
+    try {
+        const imgListUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=${encodeURIComponent(pageTitle)}&piprop=name&format=json&origin=*`;
+        const res = await fetch(imgListUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const images = pages[pageId]?.images || [];
+        if (images.length === 0) return [];
+
+        // Use images that appear in the article content (pageimages returns these by relevance)
+        const topImages = images.filter(img => !/\.svg$/i.test(img.title)).slice(0, maxImages);
+        if (topImages.length === 0) return [];
+
+        const titles = topImages.map(img => img.title).join('|');
+        const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&titles=${encodeURIComponent(titles)}&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+        const infoRes = await fetch(infoUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!infoRes.ok) return [];
+        const infoData = await infoRes.json();
+        const infoPages = infoData.query.pages;
+
+        const urls = [];
+        for (const id of Object.keys(infoPages)) {
+            const info = infoPages[id]?.imageinfo?.[0]?.url;
+            if (info && !info.includes('.svg')) urls.push(info);
+        }
+        return urls;
+    } catch {
+        return [];
+    }
+}
+
+async function fetchWikipediaSummary(topic) {
+    const questionPrefixes = [
+        "how to", "what is", "who is", "where is", "when is", "why is",
+        "tell me about", "define", "explain", "what are", "who are",
+        "how do i", "how can i", "steps to", "guide for", "tutorial on",
+        "method to", "process for", "meaning of", "describe", "summarize",
+        "overview of", "details on", "concept of", "basics of",
+        "difference between", "compare", "list of", "examples of",
+        "pros and cons of", "who was", "where are", "origin of",
+        "source of", "background on", "is there a", "whats", "what is a",
+        "what is an", "what does", "how does", "how is", "can you",
+        "do you know", "have you heard", "what about"
+    ];
+
+    let searchTopic = topic.trim();
+    for (const prefix of questionPrefixes) {
+        const regex = new RegExp('^' + prefix + '\\s*', 'i');
+        if (regex.test(searchTopic)) {
+            searchTopic = searchTopic.replace(regex, '').trim();
+            break;
+        }
+    }
+
+    searchTopic = searchTopic.replace(/[?.,!;:]+$/g, '').trim();
+    if (!searchTopic || searchTopic.length < 2) searchTopic = topic.replace(/[?.,!;:]+$/g, '').trim();
+
+    try {
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTopic)}&srlimit=5&srprop=snippet&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!searchRes.ok) throw new Error(`Search HTTP ${searchRes.status}`);
+
+        const searchData = await searchRes.json();
+        let results = searchData.query?.search;
+
+        if (!results || results.length === 0) {
+            const fallbackUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=5&srprop=snippet&format=json&origin=*`;
+            const fbRes = await fetch(fallbackUrl, {
+                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+            });
+            const fbData = await fbRes.json();
+            results = fbData.query?.search;
+            if (!results || results.length === 0) return null;
         }
 
-        if (page.invalid) {
-            console.warn(`Warning: Invalid title for '${topic}'`);
-            return null;
+        const bestPage = results[0];
+        const pageTitle = bestPage.title;
+        const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
+
+        const shortened = (await DB.get("shortenedAnswers")) === "true";
+
+        // Always fetch the page image
+        const imageUrl = await fetchPageImage(pageTitle);
+
+        let extract;
+        const excerptChars = shortened ? 2000 : 12000;
+        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const extRes = await fetch(extractUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
+        const extData = await extRes.json();
+        const pages = extData.query.pages;
+        const pageId = Object.keys(pages)[0];
+        if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
+        extract = pages[pageId].extract || '';
+        if (shortened) {
+            extract = extract.replace(/={2,}[^=]+={2,}\s*/g, '').replace(/\s+/g, ' ').trim();
         }
 
-        return page.extract || null;
+        // Strip citation brackets: [1], [ 2 ], [a], [ a ], [nb 1], [citation needed], [edit], etc.
+        extract = extract.replace(/\s*\[\s*(?:\d+(?:\s*[-\s,]\s*\d+\s*)*|[a-z]|note\s*\d*|nb\s*\d*|lower-alpha|lower-greek|lower-roman)\s*\]|\s*\[(?:citation needed|page needed|dead link|failed verification|verification needed|better source needed|primary source needed|not in citation given|full citation needed|edit|permanent dead link)\]/gi, '');
+        // Remove ellipsis (...) from truncated text
+        extract = extract.replace(/\u2026|\.{3,}/g, '');
+        if (!extract) return null;
+        return { text: extract, title: pageTitle, imageUrl, wikiUrl };
     } catch (error) {
-        console.error(`Failed to download '${topic}':`, error);
+        console.error(`Wikipedia failed for '${topic}':`, error);
         return null;
     }
 }
@@ -1486,6 +1863,42 @@ async function loadBannedWords() {
 }
 loadBannedWords();
 
+function showInfoModal(title, message) {
+    const modal = document.getElementById('infoModal');
+    if (!modal) return;
+    document.getElementById('infoModalTitle').textContent = title;
+    document.getElementById('infoModalMessage').textContent = message;
+    modal.style.display = 'flex';
+    document.getElementById('infoModalOk').onclick = () => { modal.style.display = 'none'; };
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+}
+
+function showExternalLinkModal(url) {
+    const existing = document.getElementById('externalLinkModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'externalLinkModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2 style="margin: 0 0 10px 0;">Leaving Genesis AI</h2>
+            <p style="margin: 0 0 20px 0; line-height: 1.6; opacity: 0.9;">You are about to leave the site. This will open an external website.</p>
+            <div class="modal-actions" style="display:flex;gap:12px;justify-content:center;">
+                <button id="externalLinkNo" class="confirm" style="background:var(--bg-card,#444);">No</button>
+                <button id="externalLinkYes" class="confirm">Yes</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.getElementById('externalLinkNo').onclick = () => modal.remove();
+    document.getElementById('externalLinkYes').onclick = () => {
+        modal.remove();
+        window.open(url, '_blank', 'noopener');
+    };
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
 function showWarningModal(message, onDismiss) {
     const existing = document.getElementById('warningModal');
     if (existing) existing.remove();
@@ -1493,10 +1906,10 @@ function showWarningModal(message, onDismiss) {
     modal.id = 'warningModal';
     modal.className = 'modal';
     modal.innerHTML = `
-        <div class="modal-content warning-modal-content">
-            <h3>Content Warning</h3>
-            <p>${message}</p>
-            <div class="modal-actions">
+        <div class="modal-content">
+            <h2 style="margin: 0 0 10px 0;">Content Warning</h2>
+            <p style="margin: 0 0 20px 0; line-height: 1.6; opacity: 0.9;">${message}</p>
+            <div class="modal-actions" style="justify-content: center;">
                 <button id="warningModalOk" class="confirm">OK</button>
             </div>
         </div>
@@ -1551,35 +1964,111 @@ async function findResponses(input, history) {
   const decodedInput = window.tokenizer.decode(input);
   const lowerInput = decodedInput.toLowerCase();
 
-  // Neural AI Mode — use the real neural network transformer
-  if (useNeuralMode && typeof GenesisNeuralModel !== 'undefined' && GenesisNeuralModel.isReady()) {
-      try {
-          const result = await GenesisNeuralModel.generate(decodedInput, {
-              maxTokens: 200,
-              temperature: 0.85,
-              topK: 50,
-              topP: 0.92,
-              repeatPenalty: 1.1
-          });
-          if (result && result.text && result.text.length > 0) {
-              return { role: "ai", text: result.text, isNeural: true };
+  // Calculator Integration
+  if (typeof window.calc === 'function') {
+      // Check for $$...$$ LaTeX math first
+      const latexMatch = decodedInput.match(/\$\$([\s\S]*?)\$\$/);
+      if (latexMatch && typeof window.solveLatex === 'function') {
+          const result = window.solveLatex(latexMatch[1]);
+          if (result && result.katex) {
+              return { role: "ai", text: `$$ ${result.katex} $$` };
           }
-      } catch (e) {
-          console.warn("Neural mode inference failed, falling back:", e);
+          if (result && result.error) {
+              return { role: "ai", text: `Cannot solve: ${result.error}` };
+          }
+      }
+      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
+      const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
+      const hasMathFunc = /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(cleaned);
+      const isMathExpression = /^[\d\s().+\-*/^x,!%]+$/.test(cleaned) && /[\d]/.test(cleaned) && /[-+*/^!]/.test(cleaned);
+      const hasPiE = /\b(pi|e)\b/i.test(cleaned) && cleaned.length < 30;
+      
+      if (isExplicit || isMathExpression || hasMathFunc || hasPiE) {
+          const result = window.calc(decodedInput);
+          if (result && result.katex) {
+              return { role: "ai", text: `The answer is:\n\n$$ ${result.katex} $$` };
+          }
       }
   }
 
-  // Calculator Integration
-  if (typeof window.calc === 'function') {
-      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
-      const isMathExpression = /^[\d\s().+\-*/^x]+$/i.test(decodedInput) && /[\d]/.test(decodedInput) && /[-+*/^x]/.test(decodedInput);
-      
-      if (isExplicit || isMathExpression) {
-          const result = window.calc(decodedInput);
-          if (result !== "Error" && result !== "Invalid input") {
-              // Encode the response before returning
-              return { role: "ai", text: `The answer is: ${result}` };
+  // Explicit Wikipedia search commands
+  const wikiCmdPatterns = [
+      /^(?:search|find|look up)\s+(?:wikipedia|wiki|wkpedia|wp)\s+(?:for\s+)?(.+)/i,
+      /^(?:wikipedia|wiki|wkpedia)\s+(?:search\s+)?(?:for\s+)?(.+)/i,
+      /^look\s+up\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
+      /^find\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
+      /^(?:image|picture|photo|img)\s+(?:of\s+)?(.+)/i
+  ];
+  for (const pattern of wikiCmdPatterns) {
+      const match = decodedInput.match(pattern);
+      if (match && match[1] && match[1].trim()) {
+          const query = match[1].trim();
+          const isImageOnly = /^(?:image|picture|photo|img)/i.test(decodedInput);
+          if (!useWikipedia) {
+              return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know." };
           }
+          const spinnerDiv = document.createElement("div");
+          spinnerDiv.className = "message ai wiki-loading";
+          spinnerDiv.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 10px;">
+                  <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+                          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+                      </circle>
+                  </svg>
+                  <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+                  <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
+              </div>
+          `;
+          document.getElementById('chatBox')?.appendChild(spinnerDiv);
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          const wikiResult = await fetchWikipediaSummary(query);
+          if (spinnerDiv.parentNode) spinnerDiv.remove();
+
+          if (wikiResult) {
+              const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+              const shortened = (await DB.get("shortenedAnswers")) === "true";
+              let wikiImageDataUrls = [];
+              if (!shortened) {
+                  const imageUrls = await fetchPageImages(pageTitle);
+                  wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
+              }
+              const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
+              if (isImageOnly) {
+                  if (imageUrl) {
+                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls, wikiImageOnly: true };
+                  }
+                  return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl, wikiImageDataUrl };
+              }
+              let summaryText;
+              if (!shortened) {
+                  summaryText = cleanText;
+              } else {
+                  const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                  const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+                  if (sentences.length <= 3) {
+                      summaryText = clean;
+                  } else {
+                      const scored = sentences.map((text, i) => {
+                          let score = 0;
+                          const c = text.toLowerCase();
+                          if (i === 0) score += 10;
+                          if (i === 1) score += 3;
+                          if (/\d+/.test(text)) score += 3;
+                          if (/[A-Z]{2,}/.test(text)) score += 2;
+                          const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
+                          markers.forEach(m => { if (c.includes(m)) score += 2; });
+                          return { text: text.trim(), score, index: i };
+                      });
+                      const topSentences = scored.sort((a, b) => b.score - a.score).slice(0, 8).sort((a, b) => a.index - b.index).map(s => s.text);
+                      summaryText = topSentences.join(' ');
+                      if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                  }
+              }
+              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+          }
+          return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
   }
 
@@ -1668,8 +2157,6 @@ async function findResponses(input, history) {
           }
 
           if (isQuestion && allowWiki) {
-            playThinkingSound();
-            // Show spinner with icon while fetching from Wikipedia
             const chatBox = document.getElementById('chatBox');
             const spinnerDiv = document.createElement("div");
             spinnerDiv.className = "message ai wiki-loading";
@@ -1681,7 +2168,7 @@ async function findResponses(input, history) {
                   </circle>
                 </svg>
                 <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-                <span style="opacity: 0.7; font-size: 0.9em;">Searching Wikipedia...</span>
+                <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
               </div>
             `;
             if (chatBox) {
@@ -1689,68 +2176,63 @@ async function findResponses(input, history) {
               chatBox.scrollTop = chatBox.scrollHeight;
             }
             
-            const wikiSummary = await fetchWikipediaSummary(decodedInput);
+            const wikiResult = await fetchWikipediaSummary(decodedInput);
             
             // Remove spinner
             if (spinnerDiv.parentNode) spinnerDiv.remove();
             
-            if (wikiSummary) {
-                const cleanText = wikiSummary.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
-                
+            if (wikiResult) {
+                const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+                const shortened = (await DB.get("shortenedAnswers")) === "true";
+                let wikiImageDataUrls = [];
+                if (!shortened) {
+                    const imageUrls = await fetchPageImages(pageTitle);
+                    wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
+                }
+                const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
-                let targetPercent = 0.4;
-                let targetSentences = Math.max(1, Math.ceil(sentences.length * targetPercent));
-                
-                if (isUserSummary) {
-                    targetPercent = 0.3;
-                    targetSentences = Math.max(2, Math.ceil(sentences.length * targetPercent));
-                }
-                
                 let summaryText;
-                if (sentences.length <= 2) {
+                if (!shortened) {
                     summaryText = cleanText;
                 } else {
-                    const scoredSentences = sentences.map((text, i) => {
-                        let score = 0;
-                        const clean = text.toLowerCase();
-                        if (i === 0) score += 10;
-                        if (i === sentences.length - 1) score += 5;
-                        if (/\d+/.test(text)) score += 3;
-                        if (/[A-Z]{2,}/.test(text)) score += 2;
-                        const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built"];
-                        markers.forEach(m => { if (clean.includes(m)) score += 2; });
-                        return { text: text.trim(), score, index: i };
-                    });
-                    
-                    const topSentences = scoredSentences
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, targetSentences)
-                        .sort((a, b) => a.index - b.index)
-                        .map(s => s.text);
-                    
-                    summaryText = topSentences.join(' ');
+                    const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
+                    const sentences = clean.match(/[^.!?]+[.!?]+/g) || [clean];
+                    if (sentences.length <= 3) {
+                        summaryText = clean;
+                    } else {
+                        const maxSentences = isUserSummary ? 4 : 8;
+                        const scored = sentences.map((text, i) => {
+                            let score = 0;
+                            const cl = text.toLowerCase();
+                            if (i === 0) score += 10;
+                            if (i === 1) score += 3;
+                            if (/\d+/.test(text)) score += 3;
+                            if (/[A-Z]{2,}/.test(text)) score += 2;
+                            const markers = ["is", "was", "are", "were", "known", "famous", "important", "created", "founded", "built", "defined", "refers to", "consists of"];
+                            markers.forEach(m => { if (cl.includes(m)) score += 2; });
+                            return { text: text.trim(), score, index: i };
+                        });
+                        
+                        const topSentences = scored
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, maxSentences)
+                            .sort((a, b) => a.index - b.index)
+                            .map(s => s.text);
+                        
+                        summaryText = topSentences.join(' ');
+                        if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
+                    }
                 }
                 
-                const wordCount = summaryText.split(/\s+/).length;
-                let shortSentence = '';
-                if (wordCount > 100) {
-                    shortSentence = '\n\nHere is a comprehensive overview based on Wikipedia.';
-                } else if (wordCount > 50) {
-                    shortSentence = '\n\nHere is a brief summary from Wikipedia.';
-                } else {
-                    shortSentence = '\n\nHere is a quick summary.';
-                }
-                
-                const formattedSummary = `${summaryText}${shortSentence}`;
-                
-                return { role: "ai", text: `\n\n${formattedSummary}\n\n`, isWikipedia: true };
+                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
           console.error("Wikipedia fetch failed:", e);
         }
+    } else {
+        var webSearchOff = true;
     }
     // Contextual matching - use conversation history to understand context
     const context = getChatContext(history);
@@ -1765,6 +2247,9 @@ async function findResponses(input, history) {
     if (fuzzyMatch) {
       return { role: "ai", text: fuzzyMatch.text };
     }
+    if (webSearchOff) {
+        return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know.\n\nI'm not quite sure I follow. Could you give me a bit more detail?" };
+    }
     return { role: "ai", text: "I'm not quite sure I follow. Could you give me a bit more detail?" };
   }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
@@ -1777,9 +2262,7 @@ async function sendMessage() {
   if (isReadOnlyMode) return;
   if (await isCurrentlyBanned()) { await showBanModal(); return; }
 
-  // Removed the live mode trigger for empty input
   if (userInput.value.trim() === "") {
-    // Do nothing – live mode is separate
     return;
   }
 
@@ -1797,7 +2280,6 @@ async function sendMessage() {
   const requestId = ++aiState.currentRequestId;
   // Change send button to stop square
   sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>';
-  sendBtn.classList.remove('live-mode');
   userInput.value = "";
 
   const continueSend = async (imgSrc) => {
@@ -1857,6 +2339,7 @@ async function sendMessage() {
                   const botMsg = { role: "ai", text: result };
                   chat.messages.push(botMsg);
                   await saveChats();
+                  updatePlaceholder();
                   appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);                  
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                   currentUploadFile = null;
@@ -1931,6 +2414,7 @@ async function sendMessage() {
               const botMsg = { role: "ai", text: result };
               chat.messages.push(botMsg);
               await saveChats();
+              updatePlaceholder();
               appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);              
               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
               aiState.isResponding = false;
@@ -1990,11 +2474,25 @@ async function sendMessage() {
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
     typeChatTitle(newTitle, async () => { chat.title = newTitle; await saveChats(); renderChatList(); await updateURL(newTitle); });
+    const qaSetting = await DB.get("quickActionsEnabled");
+    if (qaSetting === "new") {
+      await DB.set("quickActionsEnabled", "false");
+    }
   }
 
   const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message loading-container";
-  loadingDiv.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">Thinking...</span>`;
+  loadingDiv.className = "message ai wiki-loading";
+  loadingDiv.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+      <span style="opacity: 0.7; font-size: 0.9em;">Thinking</span>
+    </div>
+  `;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
   aiState.loadingDiv = loadingDiv;
 
@@ -2010,31 +2508,24 @@ async function sendMessage() {
         // Decode the AI's response before displaying
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
-            const shortenedEnabled = (await DB.get("shortenedAnswers")) === "true";
-            if (shortenedEnabled && botMsg.role === "ai" && window.summariseConversation && botMsg.isWikipedia) {
-                const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
-                const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
-                botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
+            if (botMsg.isWikipedia && window.summariseConversation) {
+                const shortened = (await DB.get("shortenedAnswers")) === "true";
+                if (shortened) {
+                    const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
+                    const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
+                    botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
+                }
             }
         }
 
         // Add to history and then append to UI
         chat.messages.push(botMsg);
         await saveChats();
+        updatePlaceholder();
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
 
-        const timeout = !botMsg.text ? 500 : (botMsg.text.length * 30) + 500;
-        aiState.resetTimeout = setTimeout(() => { 
-            if (requestId !== aiState.currentRequestId) return;
-            userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; 
-            if (!window.isSpeechLiveModeActive || !window.isSpeechLiveModeActive()) {
-                userInput.focus(); 
-            }
-            aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon;
-            updateSendButton(); // Restore button based on input content
-        }, timeout);
     }, 1500);
     
     if (currentUploadFile) { currentUploadFile = null; if(uploadBtn) uploadBtn.style.color = ""; }
@@ -2227,8 +2718,7 @@ sendBtn.onclick = () => {
     }
     const isMobile = window.innerWidth <= 768;
     if (isMobile && userInput.value.trim() === '') {
-        // On mobile with empty input, start live mode
-        if (window.startLiveMode) window.startLiveMode();
+        userInput.focus();
     } else {
         sendMessage();
     }
@@ -2244,14 +2734,8 @@ userInput.addEventListener("keypress", e => {
 });
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    if (useNeuralMode && typeof GenesisNeuralModel !== 'undefined') {
-        const info = GenesisNeuralModel.info();
-        document.getElementById("modelNameDisplay").textContent = info.name + ' v' + info.version;
-        document.getElementById("modelParamsDisplay").textContent = (info.parameters / 1e6).toFixed(0) + 'M (' + info.architecture + ')';
-    } else {
-        document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
-        document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
-    }
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
+    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
     // Add upload status element if it doesn't exist
     if (modelSelect && !document.getElementById("customModelStatus")) {
         const statusEl = document.createElement('p');
@@ -2350,29 +2834,6 @@ document.getElementById("refreshCancel").onclick = async () => {
     modelSelect.value = await DB.get("selectedModel", defaultModel);
 };
 
-// Neural Mode Toggle
-const neuralModeToggle = document.getElementById("neuralModeToggle");
-if (neuralModeToggle) {
-    (async () => {
-        useNeuralMode = (await DB.get("neuralMode")) === "true";
-        neuralModeToggle.checked = useNeuralMode;
-        if (useNeuralMode) {
-            console.log("Neural AI Mode enabled");
-        }
-    })();
-    neuralModeToggle.onchange = async () => {
-        useNeuralMode = neuralModeToggle.checked;
-        await DB.set("neuralMode", useNeuralMode ? "true" : "false");
-        if (useNeuralMode) {
-            console.log("Neural AI Mode enabled");
-            // Warm up the neural model
-            if (typeof GenesisNeuralModel !== 'undefined' && GenesisNeuralModel.warmup) {
-                GenesisNeuralModel.warmup();
-            }
-        }
-    };
-}
-
 const redownloadModelBtn = document.getElementById("redownloadModelBtn");
 if (redownloadModelBtn) {
     redownloadModelBtn.onclick = async () => {
@@ -2382,7 +2843,7 @@ if (redownloadModelBtn) {
         const modelParamsDisplay = document.getElementById("modelParamsDisplay");
         if (modelNameDisplay) modelNameDisplay.textContent = responses.ver || "Unknown";
         if (modelParamsDisplay) modelParamsDisplay.textContent = Object.keys(responses).length;
-        alert("Model re-downloaded successfully!");
+        showInfoModal("Success", "Model re-downloaded successfully!");
     };
 }
 
@@ -2446,39 +2907,175 @@ document.getElementById("deleteAllConfirm").onclick = async () => {
 };
 
 const exportDataBtn = document.getElementById("exportDataBtn");
-if (exportDataBtn) {
-    exportDataBtn.onclick = async () => {
-        const userInfo = await DB.get("userInfo", {});
-        const banInfo = await DB.get("genesisBanInfo", {});
+const importExportModal = document.getElementById("importExportModal");
+
+if (exportDataBtn && importExportModal) {
+    exportDataBtn.onclick = () => {
+        document.getElementById("accountModal").style.display = "none";
+        importExportModal.style.display = "flex";
+    };
+}
+
+// --- Export Option ---
+document.getElementById("exportOptionBtn").onclick = async () => {
+    const userInfo = await DB.get("userInfo", {});
+    const banInfo = await DB.get("genesisBanInfo", {});
+    
+    const data = {
+        exportDate: new Date().toISOString(),
+        source: "genesis-ai",
+        version: 1,
+        user: {
+            name: userInfo.name || null,
+            email: userInfo.email || null,
+            googleId: userInfo.googleId || null,
+            picture: userInfo.picture || null
+        },
+        stats: {
+            totalChats: chats.length,
+            totalWarnings: banInfo.consecutiveViolations || 0,
+            banHistoryCount: banInfo.banHistoryCount || 0
+        },
+        chats: chats
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `genesis-export-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    importExportModal.style.display = "none";
+};
+
+// --- Import Functionality ---
+async function importAccountData(file) {
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
         
-        const data = {
-            exportDate: new Date().toISOString(),
-            user: {
-                name: userInfo.name || null,
-                email: userInfo.email || null,
-                googleId: userInfo.googleId || null,
-                picture: userInfo.picture || null
-            },
-            stats: {
-                totalChats: chats.length,
-                totalWarnings: banInfo.consecutiveViolations || 0,
-                banHistoryCount: banInfo.banHistoryCount || 0
-            },
-            chats: chats
-        };
+        let importedChats = [];
+        let importedUserInfo = null;
         
-        const dataStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `genesis-data-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (data.source === "genesis-ai" || (data.chats && Array.isArray(data.chats))) {
+            importedChats = data.chats || [];
+            importedUserInfo = data.user || null;
+        } else {
+            const { chats: xChats, user: xUser, conversations } = extractExternalChats(data);
+            importedChats = xChats;
+            importedUserInfo = xUser;
+            if (conversations && conversations.length > importedChats.length) {
+                importedChats = conversations;
+            }
+        }
         
-        if (accountModal) accountModal.style.display = "none";
+        if (!importedChats.length && !importedUserInfo) {
+            throw new Error("No recognizable chat data found in this file.");
+        }
+        
+        const existingIds = new Set(chats.map(c => c.id));
+        let addedCount = 0;
+        
+        for (const chat of importedChats) {
+            if (!chat.id) {
+                chat.id = "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+            }
+            if (!existingIds.has(chat.id)) {
+                if (!chat.title) chat.title = "Imported Chat";
+                if (!chat.messages) chat.messages = [];
+                chats.push(chat);
+                existingIds.add(chat.id);
+                addedCount++;
+            }
+        }
+        
+        await saveChats();
+        
+        if (importedUserInfo && importedUserInfo.name && !(await DB.get("userInfo", {})).name) {
+            await DB.set("userInfo", importedUserInfo);
+        }
+        
+        renderChatList();
+        
+        showInfoModal(
+            "Import Complete",
+            addedCount > 0
+                ? `Successfully imported ${addedCount} chat${addedCount > 1 ? 's' : ''}!${importedUserInfo && importedUserInfo.name ? ' User profile was also restored.' : ''}`
+                : "No new chats were imported (they may already exist in your account)."
+        );
+    } catch (e) {
+        showInfoModal("Import Failed", e.message + " Please make sure you selected a valid export file.");
+    }
+}
+
+function extractExternalChats(data) {
+    const chats = [];
+    let user = null;
+    
+    let messages = data.messages || data.history || data.conversations || [];
+    
+    if (data.title || data.name) {
+        const title = data.title || data.name || "Imported Chat";
+        const msgs = Array.isArray(data.messages) ? data.messages
+                  : Array.isArray(data.history) ? data.history
+                  : Array.isArray(data.conversations) ? data.conversations
+                  : [];
+        if (msgs.length) {
+            chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
+            return { chats, user };
+        }
+    }
+    
+    if (Array.isArray(data)) {
+        for (const item of data) {
+            if (item.messages || item.history || item.conversations) {
+                const title = item.title || item.name || "Imported Chat";
+                const msgs = item.messages || item.history || item.conversations || [];
+                chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
+            }
+        }
+    }
+    
+    if (data.user || data.userInfo || data.profile) {
+        user = data.user || data.userInfo || data.profile;
+    }
+    
+    return { chats, user };
+}
+
+function normalizeMessage(msg) {
+    if (typeof msg === "string") {
+        return { role: msg.startsWith("http") || msg.startsWith("!") ? "ai" : "user", text: msg };
+    }
+    const text = msg.text || msg.content || msg.message || "";
+    let role = msg.role || msg.from || msg.sender || "user";
+    role = role.toLowerCase();
+    if (role === "assistant" || role === "bot" || role === "ai" || role === "model" || role === "genesis") role = "ai";
+    if (role === "human" || role === "me") role = "user";
+    return { role, text };
+}
+
+const importOptionBtn = document.getElementById("importOptionBtn");
+const importFileInput = document.getElementById("importFileInput");
+if (importOptionBtn && importFileInput) {
+    importOptionBtn.onclick = () => importFileInput.click();
+    importFileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        importOptionBtn.textContent = "Importing...";
+        importOptionBtn.style.opacity = "0.6";
+        importOptionBtn.disabled = true;
+        await importAccountData(file);
+        importFileInput.value = "";
+        importOptionBtn.textContent = "Import Data";
+        importOptionBtn.style.opacity = "1";
+        importOptionBtn.disabled = false;
+        importExportModal.style.display = "none";
     };
 }
 
@@ -2539,9 +3136,114 @@ if (editNameBtn) {
     editNameBtn.onclick = async () => {
         const userInfo = await DB.get("userInfo", {});
         const currentName = userInfo.name || "User";
-        const newName = prompt("Enter your name:", currentName);
-        if (newName && newName.trim() !== "") {
-            await updateUserProfile(newName.trim());
+        document.getElementById('editNameInput').value = currentName;
+        document.getElementById('editNameModal').style.display = 'flex';
+    };
+}
+
+const editNameCancel = document.getElementById('editNameCancel');
+const editNameConfirm = document.getElementById('editNameConfirm');
+const editNameInput = document.getElementById('editNameInput');
+if (editNameCancel) editNameCancel.onclick = () => { document.getElementById('editNameModal').style.display = 'none'; };
+if (editNameConfirm) editNameConfirm.onclick = async () => {
+    const newName = editNameInput ? editNameInput.value.trim() : '';
+    if (newName) {
+        await updateUserProfile(newName);
+    }
+    document.getElementById('editNameModal').style.display = 'none';
+};
+if (editNameInput) editNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && editNameConfirm) editNameConfirm.click();
+});
+
+// --- PFP Change Modal ---
+const pfpModal = document.getElementById('pfpModal');
+const pfpUploadInput = document.getElementById('pfpUploadInput');
+const pfpUploadBtn = document.getElementById('pfpUploadBtn');
+const pfpRemoveBtn = document.getElementById('pfpRemoveBtn');
+const pfpGoogleBtn = document.getElementById('pfpGoogleBtn');
+const pfpCancel = document.getElementById('pfpCancel');
+const pfpPreview = document.getElementById('pfpPreview');
+const pfpRemoveContainer = document.getElementById('pfpRemoveContainer');
+const pfpGoogleContainer = document.getElementById('pfpGoogleContainer');
+
+function updatePfpPreview() {
+    const userInfo = DB.get("userInfo", {});
+    userInfo.then(info => {
+        const name = info.name || "User";
+        const initial = name.charAt(0).toUpperCase();
+        if (info.picture && pfpPreview) {
+            pfpPreview.textContent = "";
+            pfpPreview.style.background = `url('${info.picture}') center/cover no-repeat`;
+        } else if (pfpPreview) {
+            pfpPreview.textContent = initial;
+            pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        }
+        if (pfpRemoveContainer) pfpRemoveContainer.style.display = info.picture ? 'block' : 'none';
+        if (pfpGoogleContainer) pfpGoogleContainer.style.display = info.googleId ? 'block' : 'none';
+    });
+}
+
+// Click avatar in account modal -> open PFP modal
+const accAvatar = document.getElementById('accountAvatar');
+if (accAvatar) {
+    accAvatar.addEventListener('click', async () => {
+        const userInfo = await DB.get("userInfo", {});
+        const name = userInfo.name || "User";
+        const initial = name.charAt(0).toUpperCase();
+        if (pfpPreview) {
+            if (userInfo.picture) {
+                pfpPreview.textContent = "";
+                pfpPreview.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
+            } else {
+                pfpPreview.textContent = initial;
+                pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+            }
+        }
+        if (pfpRemoveContainer) pfpRemoveContainer.style.display = userInfo.picture ? 'block' : 'none';
+        if (pfpGoogleContainer) pfpGoogleContainer.style.display = userInfo.googleId ? 'block' : 'none';
+        if (pfpModal) pfpModal.style.display = 'flex';
+    });
+}
+
+if (pfpCancel) pfpCancel.onclick = () => { if (pfpModal) pfpModal.style.display = 'none'; };
+if (pfpModal) pfpModal.onclick = (e) => { if (e.target === pfpModal) pfpModal.style.display = 'none'; };
+
+if (pfpUploadBtn && pfpUploadInput) {
+    pfpUploadBtn.onclick = () => pfpUploadInput.click();
+    pfpUploadInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+            await updateUserProfile((await DB.get("userInfo", {})).name || "User", dataUrl);
+            updatePfpPreview();
+            if (pfpModal) pfpModal.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+}
+
+if (pfpRemoveBtn) {
+    pfpRemoveBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        delete userInfo.picture;
+        await DB.set("userInfo", userInfo);
+        await updateUserProfile(userInfo.name || "User");
+        updatePfpPreview();
+        if (pfpModal) pfpModal.style.display = 'none';
+    };
+}
+
+if (pfpGoogleBtn) {
+    pfpGoogleBtn.onclick = async () => {
+        const userInfo = await DB.get("userInfo", {});
+        if (userInfo.googleId && userInfo.picture) {
+            await updateUserProfile(userInfo.name || "User", userInfo.picture);
+            updatePfpPreview();
+            if (pfpModal) pfpModal.style.display = 'none';
         }
     };
 }
@@ -2689,9 +3391,9 @@ async function startApp() {
             title: 'Shortened Answers',
             text: 'When enabled, Wikipedia-sourced responses will be reduced to 60% of their original length using intelligent text summarization, plus a short concluding sentence. Only applies to answers fetched from Wikipedia.'
         },
-        'neural-mode': {
-            title: 'Neural AI Mode',
-            text: 'Enables the real transformer neural network (23-layer, 1280-dim, ~516M parameters) instead of the keyword-matching engine. The neural model generates responses using a full transformer forward pass with attention, rotary position embeddings, and autoregressive sampling. It can understand context better but may be slower.'
+        'quick-actions': {
+            title: 'Quick Actions',
+            text: 'Suggested prompts shown on empty chats to help you get started. New users see these on their first chat only. Enable this setting to always show quick actions.'
         }
     };
 
@@ -2737,34 +3439,28 @@ async function startApp() {
         };
     }
 
+    // Initialize Quick Actions setting
+    let qaSetting = await DB.get("quickActionsEnabled");
+    if (qaSetting === null) {
+      const hasSentMessages = chats.some(c => c.messages && c.messages.length > 0);
+      await DB.set("quickActionsEnabled", hasSentMessages ? "false" : "new");
+      qaSetting = hasSentMessages ? "false" : "new";
+    }
+
+    const quickActionsToggle = document.getElementById("quickActionsToggle");
+    if (quickActionsToggle) {
+      quickActionsToggle.checked = qaSetting === "true";
+      quickActionsToggle.onchange = async () => {
+        await DB.set("quickActionsEnabled", quickActionsToggle.checked ? "true" : "false");
+      };
+    }
+
+    if (qaSetting === "new") {
+      setTimeout(showQuickActionsGuide, 600);
+    }
+
     // Set initial send button state
     updateSendButton();
-
-    // NEW: Live Mode button handler - for desktop separate button
-    if (liveModeBtn && window.innerWidth > 768) {
-        liveModeBtn.onclick = () => {
-            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
-                if (window.stopLiveMode) window.stopLiveMode();
-                liveModeBtn.classList.remove('active');
-            } else {
-                if (window.startLiveMode) window.startLiveMode();
-                liveModeBtn.classList.add('active');
-            }
-        };
-    }
-    
-    // Mobile: Update send button when live mode state changes
-    if (window.innerWidth <= 768) {
-        const originalUpdateSendButton = updateSendButton;
-        window.addEventListener('liveModeStateChange', () => {
-            if (window.isSpeechLiveModeActive && window.isSpeechLiveModeActive()) {
-                sendBtn.classList.add('live-mode');
-            } else {
-                sendBtn.classList.remove('live-mode');
-            }
-            updateSendButton();
-        });
-    }
 }
 
 window.addEventListener('app-ready', startApp);
