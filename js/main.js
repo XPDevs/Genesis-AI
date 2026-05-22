@@ -1512,6 +1512,22 @@ async function fetchImageAsDataUrl(url) {
     }
 }
 
+async function fetchPageImage(pageTitle) {
+    try {
+        const imgUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=400&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const res = await fetch(imgUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        return pages[pageId]?.thumbnail?.source || null;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchWikipediaSummary(topic) {
     const questionPrefixes = [
         "how to", "what is", "who is", "where is", "when is", "why is",
@@ -1563,23 +1579,52 @@ async function fetchWikipediaSummary(topic) {
         const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle.replace(/ /g, '_'))}`;
 
         const shortened = (await DB.get("shortenedAnswers")) === "true";
-        const excerptChars = shortened ? 2000 : 8000;
-        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
-        const extRes = await fetch(extractUrl, {
-            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
-        });
-        if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
 
-        const extData = await extRes.json();
-        const pages = extData.query.pages;
-        const pageId = Object.keys(pages)[0];
-        const page = pages[pageId];
+        // Always fetch the page image
+        const imageUrl = await fetchPageImage(pageTitle);
 
-        if (pageId === "-1" || page.missing || page.invalid) return null;
+        let extract;
+        if (shortened) {
+            // Short mode: use extracts API with 2000 char limit
+            const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+            const extRes = await fetch(extractUrl, {
+                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+            });
+            if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
+            const extData = await extRes.json();
+            const pages = extData.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
+            extract = pages[pageId].extract || '';
+        } else {
+            // Full mode: fetch the entire page content via parse API
+            const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`;
+            const parseRes = await fetch(parseUrl, {
+                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+            });
+            if (!parseRes.ok) throw new Error(`Parse HTTP ${parseRes.status}`);
+            const parseData = await parseRes.json();
+            if (!parseData.parse || !parseData.parse.text) return null;
+            const html = parseData.parse.text['*'];
+            // Strip HTML tags and clean up
+            extract = html
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(c))
+                .replace(/\s+/g, ' ')
+                .trim();
+            // Remove reference sections and similar cruft
+            const refMarkers = /(?:==+\s*(?:References|Notes|Bibliography|External links|See also|Further reading|Sources|Citations|Footnotes)\s*==+[\s\S]*)$/i;
+            extract = extract.replace(refMarkers, '').trim();
+        }
 
-        const extract = page.extract || '';
-        const imageUrl = page.thumbnail?.source || null;
-        return extract ? { text: extract, title: pageTitle, imageUrl, wikiUrl } : null;
+        if (!extract) return null;
+        return { text: extract, title: pageTitle, imageUrl, wikiUrl };
     } catch (error) {
         console.error(`Wikipedia failed for '${topic}':`, error);
         return null;
@@ -1926,6 +1971,9 @@ async function findResponses(input, history) {
       if (match && match[1] && match[1].trim()) {
           const query = match[1].trim();
           const isImageOnly = /^(?:image|picture|photo|img)/i.test(decodedInput);
+          if (!useWikipedia) {
+              return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know." };
+          }
           const spinnerDiv = document.createElement("div");
           spinnerDiv.className = "message ai wiki-loading";
           spinnerDiv.innerHTML = `
