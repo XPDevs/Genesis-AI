@@ -1320,18 +1320,34 @@ function renderWikiHeader(div, msg) {
     const wikiHeader = document.createElement('div');
     wikiHeader.className = 'wiki-header';
     wikiHeader.style.cssText = 'margin-bottom:10px;';
+    if (msg.wikiImageDataUrls && msg.wikiImageDataUrls.length > 0) {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:10px;';
+        for (const url of msg.wikiImageDataUrls) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'width:100%;height:140px;border-radius:8px;object-fit:cover;';
+            img.loading = 'lazy';
+            grid.appendChild(img);
+        }
+        wikiHeader.appendChild(grid);
+    }
     if (msg.wikiImageDataUrl) {
-        const img = document.createElement('img');
-        img.src = msg.wikiImageDataUrl;
-        img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
-        img.loading = 'lazy';
-        wikiHeader.appendChild(img);
+        if (!msg.wikiImageDataUrls || msg.wikiImageDataUrls.length === 0) {
+            const img = document.createElement('img');
+            img.src = msg.wikiImageDataUrl;
+            img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+            img.loading = 'lazy';
+            wikiHeader.appendChild(img);
+        }
     } else if (msg.wikiImageUrl) {
-        const img = document.createElement('img');
-        img.src = msg.wikiImageUrl;
-        img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
-        img.loading = 'lazy';
-        wikiHeader.appendChild(img);
+        if (!msg.wikiImageDataUrls || msg.wikiImageDataUrls.length === 0) {
+            const img = document.createElement('img');
+            img.src = msg.wikiImageUrl;
+            img.style.cssText = 'max-width:100%;max-height:300px;border-radius:12px;display:block;object-fit:contain;margin-bottom:10px;';
+            img.loading = 'lazy';
+            wikiHeader.appendChild(img);
+        }
     }
     if (msg.wikiUrl) {
         const wikiBtn = document.createElement('button');
@@ -1525,6 +1541,48 @@ async function fetchPageImage(pageTitle) {
         return pages[pageId]?.thumbnail?.source || null;
     } catch {
         return null;
+    }
+}
+
+async function fetchPageImages(pageTitle, maxImages = 8) {
+    try {
+        // Get image file names from the page
+        const imgListUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&imlimit=50&format=json&origin=*`;
+        const res = await fetch(imgListUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const images = pages[pageId]?.images || [];
+        if (images.length === 0) return [];
+
+        // Filter out icons, logos, and small images by title patterns
+        const skipPatterns = /[Ii]con|[Ll]ogo|[Ss]phere|[Bb]anner|[Ff]lag|[Mm]ap|Ambox|Commons|Wikidata|Edit|Nuvola|Red%|Question|Portal|Admin|Button|Stop hand|Padlock|Star|Symbol/;
+        const filtered = images.filter(img => !skipPatterns.test(img.title));
+
+        // Take up to maxImages, preferring first images (usually most relevant)
+        const topImages = filtered.slice(0, maxImages);
+
+        // Get actual URLs
+        const titles = topImages.map(img => img.title).join('|');
+        const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&titles=${encodeURIComponent(titles)}&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+        const infoRes = await fetch(infoUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!infoRes.ok) return [];
+        const infoData = await infoRes.json();
+        const infoPages = infoData.query.pages;
+
+        const urls = [];
+        for (const id of Object.keys(infoPages)) {
+            const info = infoPages[id]?.imageinfo?.[0]?.url;
+            if (info && !info.includes('.svg')) urls.push(info);
+        }
+        return urls;
+    } catch {
+        return [];
     }
 }
 
@@ -1995,15 +2053,20 @@ async function findResponses(input, history) {
 
           if (wikiResult) {
               const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+              const shortened = (await DB.get("shortenedAnswers")) === "true";
+              let wikiImageDataUrls = [];
+              if (!shortened) {
+                  const imageUrls = await fetchPageImages(pageTitle);
+                  wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
+              }
               const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
               if (isImageOnly) {
                   if (imageUrl) {
-                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageOnly: true };
+                      return { role: "ai", text: "", isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls, wikiImageOnly: true };
                   }
                   return { role: "ai", text: `No image found on Wikipedia for "${query}".`, isWikipedia: true, wikiUrl, wikiImageDataUrl };
               }
               const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-              const shortened = (await DB.get("shortenedAnswers")) === "true";
               let summaryText;
               if (!shortened) {
                   summaryText = clean;
@@ -2028,7 +2091,7 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
+              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
           return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -2145,9 +2208,14 @@ async function findResponses(input, history) {
             
             if (wikiResult) {
                 const { text: cleanText, title: pageTitle, imageUrl, wikiUrl } = wikiResult;
+                const shortened = (await DB.get("shortenedAnswers")) === "true";
+                let wikiImageDataUrls = [];
+                if (!shortened) {
+                    const imageUrls = await fetchPageImages(pageTitle);
+                    wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
+                }
                 const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
                 const clean = cleanText.replace(/={2,}[^=]+={2,}/g, '').replace(/\s+/g, ' ').trim();
-                const shortened = (await DB.get("shortenedAnswers")) === "true";
                 const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
                 let summaryText;
@@ -2182,7 +2250,7 @@ async function findResponses(input, history) {
                     }
                 }
                 
-                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl };
+                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
