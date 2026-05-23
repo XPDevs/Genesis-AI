@@ -2737,7 +2737,7 @@ function handleCustomModelUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
-    if (statusEl) statusEl.textContent = `Reading ${file.name}...`;
+    if (statusEl) statusEl.innerHTML = `Reading ${file.name}...<br>`;
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -2757,7 +2757,7 @@ function handleCustomModelUpload(event) {
             }
 
             responses = newResponses; // Override for session
-            if (statusEl) statusEl.textContent = `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
+            if (statusEl) statusEl.innerHTML += `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
             
             // Update settings modal display
             if (document.getElementById("modelNameDisplay")) {
@@ -2772,12 +2772,12 @@ function handleCustomModelUpload(event) {
 
         } catch (err) {
             console.error("Custom modal load failed:", err);
-            if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+            if (statusEl) statusEl.innerHTML += `Error: ${err.message}`;
         }
     };
 
     reader.onerror = function() {
-        if (statusEl) statusEl.textContent = "Error reading file.";
+        if (statusEl) statusEl.innerHTML += "Error reading file.";
     };
 
     reader.readAsArrayBuffer(file);
