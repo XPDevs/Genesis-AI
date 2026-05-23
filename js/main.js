@@ -514,38 +514,20 @@ function injectCSS() {
         .msg-stats {
             display: flex;
             align-items: center;
-            gap: 4px;
-            margin-top: 4px;
-            opacity: 0;
-            transition: opacity 0.2s ease 0.3s;
-            pointer-events: none;
-            position: absolute;
-            bottom: -32px;
-            right: 0;
-        }
-        .message:hover .msg-stats,
-        .msg-stats:hover,
-        .message.ai.latest .msg-stats {
-            opacity: 1;
-            pointer-events: auto;
+            gap: 6px;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            opacity: 0.6;
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text);
+            justify-content: flex-end;
         }
         .stats-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.5;
-            cursor: default;
-            padding: 4px;
+            font-size: 10px;
         }
-        .stats-icon svg {
-            display: block;
-        }
-        .stats-tooltip {
-            font-size: 11px;
-            opacity: 0.6;
+        .stats-value {
             white-space: nowrap;
-            font-family: monospace;
-            letter-spacing: 0.02em;
         }
     `;
     document.head.appendChild(style);
@@ -677,11 +659,20 @@ function stopGeneration() {
         const chat = chats.find(c => c.id === activeChatId);
         if (chat && chat.messages.includes(aiState.currentAiMessage)) {
             // Find the message element in the DOM to see how much was typed
-            const latestMsg = chatBox.querySelector('.message.ai.latest span');
-            if (latestMsg) {
-                aiState.currentAiMessage.text = latestMsg.textContent;
+            const latestMsgDiv = chatBox.querySelector('.message.ai.latest');
+            const latestMsgSpan = latestMsgDiv ? latestMsgDiv.querySelector('span') : null;
+            if (latestMsgSpan) {
+                const typedText = latestMsgSpan.textContent;
+                aiState.currentAiMessage.text = typedText;
                 saveChats();
+                
+                if (latestMsgDiv && aiState.firstTokenTime) {
+                    const elapsed = Date.now() - aiState.firstTokenTime;
+                    showMsgStats(latestMsgDiv, typedText, elapsed);
+                }
             }
+        }
+    }
         }
     }
     aiState.currentAiMessage = null;
@@ -1610,6 +1601,27 @@ function renderWikiHeader(div, msg) {
     }
 }
 
+function showMsgStats(div, text, elapsedMs) {
+    if (!text) return;
+    const tokens = window.tokenizer.tokenizeLikeLLM(text).length;
+    const tps = elapsedMs > 0 ? (tokens / (elapsedMs / 1000)).toFixed(1) : "0.0";
+    const elapsedStr = elapsedMs >= 1000 ? (elapsedMs / 1000).toFixed(1) + "s" : elapsedMs + "ms";
+
+    const statsDiv = document.createElement("div");
+    statsDiv.className = "msg-stats";
+    statsDiv.innerHTML = `<span class="stats-icon">⚡</span><span class="stats-value">${tokens} tok · ${elapsedStr} · ${tps} tok/s</span>`;
+
+    const existing = div.querySelector('.msg-stats');
+    if (existing) existing.remove();
+
+    const actions = div.querySelector('.msg-actions');
+    if (actions) {
+        div.insertBefore(statsDiv, actions);
+    } else {
+        div.appendChild(statsDiv);
+    }
+}
+
 function appendMessage(text, role, isNew = false, imageUrl = null, footerText = null, messageObj = null) {
   let finalString = (text && typeof text === 'object') ? (text.text || text.message || JSON.stringify(text)) : String(text || "");
   const now = new Date();
@@ -1706,15 +1718,8 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
   div.appendChild(actionsDiv);
 
-  if (role === "ai" && messageObj && (messageObj.tokenCount !== undefined || messageObj.elapsedTime !== undefined)) {
-      const statsDiv = document.createElement("div");
-      statsDiv.className = "msg-stats";
-      const tokens = messageObj.tokenCount || 0;
-      const elapsed = messageObj.elapsedTime || 0;
-      const tps = messageObj.tokensPerSecond || "0.0";
-      const elapsedStr = elapsed >= 1000 ? (elapsed / 1000).toFixed(1) + "s" : elapsed + "ms";
-      statsDiv.innerHTML = `<span class="stats-icon" title="${tokens} tokens · ${elapsedStr} · ${tps} tok/s"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="stats-tooltip">${tokens} tok · ${elapsedStr} · ${tps} tok/s</span>`;
-      div.appendChild(statsDiv);
+  if (role === "ai" && !isNew && messageObj && messageObj.elapsedTime !== undefined) {
+      showMsgStats(div, messageObj.text, messageObj.elapsedTime);
   }
 
   chatBox.append(div);
@@ -1745,14 +1750,19 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         } else {
             textSpan.innerHTML = processedText;
         }
+        const elapsed = Date.now() - aiState.responseStartTime;
+        showMsgStats(div, processedText, elapsed);
         aiState.currentAiMessage = null;
         scheduleReset();
     } else {
+        aiState.firstTokenTime = Date.now();
         const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
             if (hasMath && window.katex) {
                 textSpan.textContent = "";
                 renderTextWithMath(textSpan, processedText);
             }
+            const elapsed = Date.now() - aiState.firstTokenTime;
+            showMsgStats(div, processedText, elapsed);
             aiState.currentAiMessage = null;
             aiState.cancelTyping = null;
             scheduleReset();
@@ -2804,7 +2814,7 @@ async function sendMessage() {
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
   aiState.loadingDiv = loadingDiv;
 
-    const responseStartTime = Date.now();
+    aiState.responseStartTime = Date.now();
     aiState.thinkingTimeout = setTimeout(async () => {
         if (requestId !== aiState.currentRequestId) return;
         loadingDiv.remove();
@@ -2829,7 +2839,7 @@ async function sendMessage() {
 
         // Calculate response stats
         if (botMsg && botMsg.text) {
-            const elapsedMs = Date.now() - responseStartTime;
+            const elapsedMs = Date.now() - aiState.responseStartTime;
             const tokens = window.tokenizer.tokenizeLikeLLM(botMsg.text).length;
             const tokPerSec = elapsedMs > 0 ? (tokens / (elapsedMs / 1000)).toFixed(1) : "0.0";
             botMsg.tokenCount = tokens;
