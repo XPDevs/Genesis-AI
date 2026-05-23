@@ -530,9 +530,12 @@ function injectCSS() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 4px;
             width: 100%;
             gap: 10px;
+        }
+        .message.user .message-footer {
+            justify-content: flex-end;
         }
         .msg-actions {
             position: static !important;
@@ -542,6 +545,12 @@ function injectCSS() {
             gap: 6px !important;
             padding: 0 !important;
             margin: 0 !important;
+        }
+        .msg-actions .action-btn {
+            margin-top: 0 !important;
+        }
+        .msg-actions .action-btn:hover {
+            transform: none !important;
         }
         .message:hover .msg-actions,
         .msg-actions:hover,
@@ -687,6 +696,13 @@ function stopGeneration() {
                 
                 if (latestMsgDiv && aiState.firstTokenTime) {
                     const elapsed = Date.now() - aiState.firstTokenTime;
+                    const tokens = window.tokenizer.tokenizeLikeLLM(typedText).length;
+                    const tps = elapsed > 0 ? (tokens / (elapsed / 1000)).toFixed(1) : "0.0";
+                    
+                    aiState.currentAiMessage.elapsedTime = elapsed;
+                    aiState.currentAiMessage.tokenCount = tokens;
+                    aiState.currentAiMessage.tokensPerSecond = tps;
+                    
                     showMsgStats(latestMsgDiv, typedText, elapsed);
                 }
             }
