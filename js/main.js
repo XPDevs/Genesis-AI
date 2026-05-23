@@ -4,6 +4,7 @@ const DB = {
     dbVersion: 2,
     storeName: "settings",
     modelStore: "models",
+    responsesStore: "responses",
     db: null,
 
     async init() {
@@ -16,6 +17,9 @@ const DB = {
                 }
                 if (!db.objectStoreNames.contains(this.modelStore)) {
                     db.createObjectStore(this.modelStore);
+                }
+                if (!db.objectStoreNames.contains(this.responsesStore)) {
+                    db.createObjectStore(this.responsesStore);
                 }
             };
             request.onsuccess = (e) => {
@@ -65,6 +69,39 @@ const DB = {
             const transaction = this.db.transaction([this.modelStore], "readwrite");
             const store = transaction.objectStore(this.modelStore);
             const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getResponse(key) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readonly");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async setResponse(key, value) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async clearResponses() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readwrite");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.clear();
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
@@ -851,7 +888,11 @@ async function loadModel(force = false) {
     const cached = await DB.getModel(jsonURL);
     if (cached) {
       console.log("Loading model from cache:", jsonURL);
-      responses = cached;
+      if (cached.cached === true) {
+        responses = null;
+      } else {
+        responses = cached;
+      }
       return;
     }
   }
@@ -860,39 +901,160 @@ async function loadModel(force = false) {
   try {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
+    
     const contentLength = r.headers.get("Content-Length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
-    let loaded = 0;
+    const SIZE_THRESHOLD = 50 * 1024 * 1024; // 50MB
+
+    if (total > 0 && total < SIZE_THRESHOLD) {
+      // SMALL MODEL: Use traditional in-memory loading
+      const allBytes = await r.arrayBuffer();
+      const modelData = JSON.parse(new TextDecoder().decode(allBytes));
+      responses = modelData;
+      await DB.setModel(jsonURL, modelData);
+      hideModelLoading();
+      return;
+    }
+
+    // LARGE MODEL: Use streaming + IndexedDB with robust state-machine parser
+    await DB.clearResponses();
     const reader = r.body.getReader();
-    const chunks = [];
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let loaded = 0;
+    
+    let state = 'expect_key_start';
+    let currentKey = '';
+    let currentValue = '';
+    let escape = false;
+    let braceDepth = 0;
+    let rootStarted = false;
+    let totalInserted = 0;
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      chunks.push(value);
+      
+      buffer += decoder.decode(value, { stream: true });
       loaded += value.length;
       if (total) showModelLoading(Math.round((loaded / total) * 100));
+      
+      let i = 0;
+      while (i < buffer.length) {
+        const ch = buffer[i];
+        if (state === 'expect_key_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '{' && !rootStarted) {
+            rootStarted = true;
+            braceDepth = 1;
+            i++;
+            continue;
+          }
+          if (rootStarted && (ch === ',' || ch === '}')) {
+            if (ch === '}') braceDepth--;
+            i++;
+            if (braceDepth === 0) break;
+            continue;
+          }
+          if (rootStarted && ch === '"') {
+            state = 'in_key';
+            currentKey = '';
+            i++;
+            continue;
+          }
+          i++;
+        }
+        else if (state === 'in_key') {
+          if (escape) {
+            currentKey += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_key';
+            i++;
+            continue;
+          }
+          currentKey += ch;
+          i++;
+        }
+        else if (state === 'after_key') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === ':') {
+            state = 'expect_value_start';
+            i++;
+            continue;
+          }
+          state = 'expect_key_start';
+          i++;
+        }
+        else if (state === 'expect_value_start') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (ch === '"') {
+            state = 'in_value';
+            currentValue = '';
+            i++;
+            continue;
+          } else {
+            state = 'after_value';
+            i++;
+          }
+        }
+        else if (state === 'in_value') {
+          if (escape) {
+            currentValue += ch;
+            escape = false;
+            i++;
+            continue;
+          }
+          if (ch === '\\') { escape = true; i++; continue; }
+          if (ch === '"') {
+            state = 'after_value';
+            i++;
+            continue;
+          }
+          currentValue += ch;
+          i++;
+        }
+        else if (state === 'after_value') {
+          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+          if (currentKey !== '' && currentValue !== '') {
+            await DB.setResponse(currentKey, currentValue);
+            totalInserted++;
+            if (totalInserted % 500 === 0) await new Promise(r => setTimeout(r, 0));
+          }
+          currentKey = '';
+          currentValue = '';
+          if (ch === ',') {
+            state = 'expect_key_start';
+            i++;
+          } else if (ch === '}') {
+            braceDepth--;
+            state = 'expect_key_start';
+            i++;
+            if (braceDepth === 0) break;
+          } else {
+            state = 'expect_key_start';
+            i++;
+          }
+        }
+      }
+      buffer = buffer.substring(i);
     }
-    const allBytes = new Uint8Array(loaded);
-    let pos = 0;
-    for (const chunk of chunks) {
-      allBytes.set(chunk, pos);
-      pos += chunk.length;
-    }
-    const modelData = JSON.parse(new TextDecoder().decode(allBytes));
-    responses = modelData;
-    await DB.setModel(jsonURL, modelData);
+    
+    await DB.setModel(jsonURL, { cached: true });
+    responses = null;
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
     console.error("Model load error:", err);
-    try {
-      const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
-      const data = await r.json();
-      responses = data; 
-      if (typeof showLegacyModal === "function") showLegacyModal();
-    } catch (e) {
-      console.error("Final fallback failed:", e);
-    }
+    // fallback to default model
+    const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
+    const data = await r.json();
+    responses = data; 
+    if (typeof showLegacyModal === "function") showLegacyModal();
   }
 }
 
@@ -2121,17 +2283,33 @@ async function findResponses(input, history) {
   }
 
   const foundMatches = [];
-  const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
-  let tempInput = lowerInput;
-  sortedKeys.forEach(key => {
-    const lowerKey = key.toLowerCase();
-    let index = tempInput.indexOf(lowerKey);
-    while (index !== -1) {
-      foundMatches.push({ text: responses[key], index: index });
-      tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
-      index = tempInput.indexOf(lowerKey);
+  if (responses) {
+    // Small model: direct in-memory object access
+    const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
+    let tempInput = lowerInput;
+    sortedKeys.forEach(key => {
+      const lowerKey = key.toLowerCase();
+      let index = tempInput.indexOf(lowerKey);
+      while (index !== -1) {
+        foundMatches.push({ text: responses[key], index: index });
+        tempInput = tempInput.substring(0, index) + ' '.repeat(lowerKey.length) + tempInput.substring(index + lowerKey.length);
+        index = tempInput.indexOf(lowerKey);
+      }
+    });
+  } else {
+    // Large model: query IndexedDB for each phrase
+    const words = lowerInput.split(/\s+/);
+    for (let n = 5; n >= 1; n--) {
+      for (let i = 0; i <= words.length - n; i++) {
+        const phrase = words.slice(i, i + n).join(' ');
+        if (phrase.length < 2) continue;
+        const val = await DB.getResponse(phrase);
+        if (val) {
+          foundMatches.push({ text: val, index: lowerInput.indexOf(phrase) });
+        }
+      }
     }
-  });
+  }
 
   if (foundMatches.length === 0) {
     // Only attempt Wikipedia if the flag is enabled
