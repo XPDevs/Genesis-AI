@@ -515,19 +515,38 @@ function injectCSS() {
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-top: 8px;
-            margin-bottom: 4px;
             opacity: 0.6;
             font-size: 11px;
             font-family: monospace;
             color: var(--text);
-            justify-content: flex-end;
         }
         .stats-icon {
             font-size: 10px;
         }
         .stats-value {
             white-space: nowrap;
+        }
+        .message-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            width: 100%;
+            gap: 10px;
+        }
+        .msg-actions {
+            position: static !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            gap: 6px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .message:hover .msg-actions,
+        .msg-actions:hover,
+        .message.ai.latest .msg-actions {
+            opacity: 1 !important;
         }
     `;
     document.head.appendChild(style);
@@ -1607,16 +1626,23 @@ function showMsgStats(div, text, elapsedMs) {
 
     const statsDiv = document.createElement("div");
     statsDiv.className = "msg-stats";
-    statsDiv.innerHTML = `<span class="stats-icon">⚡</span><span class="stats-value">${tokens} tok · ${elapsedStr} · ${tps} tok/s</span>`;
+    statsDiv.innerHTML = `<span class="stats-icon">⏱</span><span class="stats-value">${tokens} tok · ${elapsedStr} · ${tps} tok/s</span>`;
 
     const existing = div.querySelector('.msg-stats');
     if (existing) existing.remove();
 
-    const actions = div.querySelector('.msg-actions');
-    if (actions) {
-        div.insertBefore(statsDiv, actions);
+    const footer = div.querySelector('.message-footer');
+    if (footer) {
+        footer.appendChild(statsDiv);
     } else {
-        div.appendChild(statsDiv);
+        const newFooter = document.createElement("div");
+        newFooter.className = "message-footer";
+        const actions = div.querySelector('.msg-actions');
+        if (actions) {
+            newFooter.appendChild(actions);
+        }
+        newFooter.appendChild(statsDiv);
+        div.appendChild(newFooter);
     }
 }
 
@@ -1715,10 +1741,15 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   }
 
   div.appendChild(actionsDiv);
-
-  if (role === "ai" && !isNew && messageObj && messageObj.elapsedTime !== undefined) {
-      showMsgStats(div, messageObj.text, messageObj.elapsedTime);
-  }
+  
+  // Wrap actions in footer for better layout and static positioning
+  const footer = document.createElement("div");
+  footer.className = "message-footer";
+  
+  // Move actionsDiv into footer
+  div.removeChild(actionsDiv);
+  footer.appendChild(actionsDiv);
+  div.appendChild(footer);
 
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
