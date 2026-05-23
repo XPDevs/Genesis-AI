@@ -1848,7 +1848,7 @@ async function fetchWikipediaSummary(topic) {
         const imageUrl = await fetchPageImage(pageTitle);
 
         let extract;
-        const excerptChars = shortened ? 2000 : 12000;
+        const excerptChars = shortened ? 2000 : 999999;
         const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
         const extRes = await fetch(extractUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
@@ -2228,7 +2228,7 @@ async function findResponses(input, history) {
                       </circle>
                   </svg>
                   <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-                  <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
+                  <span style="opacity: 0.7; font-size: 0.9em;">Searching the web</span>
               </div>
           `;
           document.getElementById('chatBox')?.appendChild(spinnerDiv);
@@ -2395,7 +2395,7 @@ async function findResponses(input, history) {
                   </circle>
                 </svg>
                 <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-                <span style="opacity: 0.7; font-size: 0.9em;">Searching the web...</span>
+                <span style="opacity: 0.7; font-size: 0.9em;">Searching the web</span>
               </div>
             `;
             if (chatBox) {
@@ -2547,7 +2547,7 @@ async function sendMessage() {
             </circle>
           </svg>
           <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-          <span style="opacity: 0.7; font-size: 0.9em;">Scanning image...</span>
+          <span style="opacity: 0.7; font-size: 0.9em;">Scanning image</span>
         </div>
       `;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
@@ -2627,7 +2627,7 @@ async function sendMessage() {
             </circle>
           </svg>
           <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-          <span style="opacity: 0.7; font-size: 0.9em;">Analyzing text...</span>
+          <span style="opacity: 0.7; font-size: 0.9em;">Analyzing text</span>
         </div>
       `;
       chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
