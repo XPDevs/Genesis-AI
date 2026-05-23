@@ -2914,15 +2914,8 @@ settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
     document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
     document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
-    // Add upload status element if it doesn't exist
-    if (modelSelect && !document.getElementById("customModelStatus")) {
-        const statusEl = document.createElement('p');
-        statusEl.id = "customModelStatus";
-        statusEl.style.fontSize = "0.8em";
-        statusEl.style.marginTop = "5px";
-        statusEl.style.opacity = "0.7";
-        modelSelect.parentElement.insertBefore(statusEl, modelSelect.nextSibling);
-    }
+    const statusEl = document.getElementById("customModelStatus");
+    if (statusEl) statusEl.innerHTML = "";
 };
 settingsModal.onclick = e => { if (e.target === settingsModal) settingsModal.style.display = "none"; };
 if (accountModal) accountModal.onclick = e => { if (e.target === accountModal) accountModal.style.display = "none"; };
