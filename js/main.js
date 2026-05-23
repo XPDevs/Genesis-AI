@@ -673,8 +673,6 @@ function stopGeneration() {
             }
         }
     }
-        }
-    }
     aiState.currentAiMessage = null;
     
     // Show stop message
