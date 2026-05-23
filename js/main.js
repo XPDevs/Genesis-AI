@@ -1848,19 +1848,52 @@ async function fetchWikipediaSummary(topic) {
         const imageUrl = await fetchPageImage(pageTitle);
 
         let extract;
-        const excerptChars = shortened ? 2000 : 999999;
-        const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=${excerptChars}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
-        const extRes = await fetch(extractUrl, {
-            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
-        });
-        if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
-        const extData = await extRes.json();
-        const pages = extData.query.pages;
-        const pageId = Object.keys(pages)[0];
-        if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
-        extract = pages[pageId].extract || '';
         if (shortened) {
+            // Summary mode: use extracts API with limited chars
+            const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&piprop=thumbnail&pithumbsize=400&explaintext&exlimit=1&exchars=2000&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+            const extRes = await fetch(extractUrl, {
+                headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+            });
+            if (!extRes.ok) throw new Error(`Extract HTTP ${extRes.status}`);
+            const extData = await extRes.json();
+            const pages = extData.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pageId === "-1" || pages[pageId].missing || pages[pageId].invalid) return null;
+            extract = pages[pageId].extract || '';
             extract = extract.replace(/={2,}[^=]+={2,}\s*/g, '').replace(/\s+/g, ' ').trim();
+        } else {
+            // Full article mode: use parse API for the complete page content
+            try {
+                const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`;
+                const parseRes = await fetch(parseUrl, {
+                    headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+                });
+                if (!parseRes.ok) throw new Error(`Parse HTTP ${parseRes.status}`);
+                const parseData = await parseRes.json();
+                const html = parseData.parse?.text?.['*'];
+                if (!html) throw new Error('No HTML content returned');
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Remove navigation, reference, and decorative elements
+                const unwanted = doc.querySelectorAll('script, style, .mw-editsection, .reference, ol.references, .navbox, .navbox-styles, .sistertable, .mbox-small, .metadata, .noprint, .sistersitebox, .plainlinks, .mw-empty-elt, .toc, #toc, .thumb, .gallery, .mw-jump-link, .shortdescription, .infobox, table.ambox, .mw-references-wrap, .reflist, .citation, .error, .magnify');
+                unwanted.forEach(el => el.remove());
+
+                extract = doc.body.textContent || '';
+                extract = extract.replace(/\s+/g, ' ').trim();
+            } catch (parseErr) {
+                console.warn('Parse API failed, falling back to extracts:', parseErr);
+                const fallbackUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&exlimit=1&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+                const fbRes = await fetch(fallbackUrl, {
+                    headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+                });
+                const fbData = await fbRes.json();
+                const fbPages = fbData.query.pages;
+                const fbPageId = Object.keys(fbPages)[0];
+                if (fbPageId === "-1" || fbPages[fbPageId].missing || fbPages[fbPageId].invalid) return null;
+                extract = fbPages[fbPageId].extract || '';
+            }
         }
 
         // Strip citation brackets: [1], [ 2 ], [a], [ a ], [nb 1], [citation needed], [edit], etc.
