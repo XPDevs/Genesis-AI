@@ -55,6 +55,10 @@ body {
   box-sizing: border-box;
 }
 
+#headerModelSelect {
+  display: none;
+}
+
 #chatTitle {
   margin: 0;
   font-size: 1.2rem;
