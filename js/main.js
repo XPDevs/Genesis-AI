@@ -2819,6 +2819,14 @@ function handleCustomModelUpload(event) {
             // Also update dev modal if it's open
             if (isDevMode) updateDevModalStatus();
 
+            // Update desktop dropdown trigger if visible
+            const nameEl = document.getElementById("modelSelectName");
+            const descEl = document.getElementById("modelSelectDesc");
+            if (nameEl) nameEl.textContent = newResponses.ver || file.name;
+            if (descEl) descEl.textContent = "Custom session model";
+            const dd = document.getElementById("modelSelectDropdown");
+            if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
+
         } catch (err) {
             console.error("Custom modal load failed:", err);
             if (statusEl) statusEl.innerHTML += `Error: ${err.message}`;
@@ -3023,17 +3031,17 @@ const MODELS = [
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
     name: "Genesis SPT 5.0",
-    desc: "Latest and most advanced model with superior accuracy"
+    desc: "Latest model with improved response quality"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
     name: "Genesis SPT 4.6",
-    desc: "Fast and reliable model for everyday conversations"
+    desc: "Balanced model for general conversations"
   },
   {
     value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
     name: "Genesis SPT 1.0 (Legacy)",
-    desc: "Original legacy model for basic interactions"
+    desc: "Original model for simple interactions"
   }
 ];
 
@@ -3109,7 +3117,12 @@ if (headerModelSelect) {
       <span class="model-option-name">${m.name}</span>
       <span class="model-option-desc">${m.desc}</span>
     </button>
-  `).join("");
+  `).join("") + `
+    <div class="model-dropdown-divider"></div>
+    <button class="model-dropdown-option" data-value="custom">
+      <span class="model-option-name">Load from file...</span>
+      <span class="model-option-desc">Upload a custom .json model file</span>
+    </button>`;
 
   (async () => {
     const saved = await DB.get("selectedModel", defaultModel);
@@ -3137,6 +3150,13 @@ if (headerModelSelect) {
     if (!option) return;
 
     const value = option.dataset.value;
+
+    if (value === "custom") {
+      headerModelSelect.classList.remove("open");
+      if (customModelInput) customModelInput.click();
+      return;
+    }
+
     const currentModel = await DB.get("selectedModel", defaultModel);
     if (value === currentModel) {
       headerModelSelect.classList.remove("open");
