@@ -79,20 +79,20 @@ body {
 
 #headerModelSelect {
   display: none;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #444);
+  background: var(--input-bg, #222);
+  color: var(--text, #fff);
+  font-size: 0.85rem;
+  max-width: 170px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 @media (min-width: 769px) {
   #headerModelSelect {
     display: block;
-    padding: 4px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border, #444);
-    background: var(--input-bg, #222);
-    color: var(--text, #fff);
-    font-size: 0.8rem;
-    max-width: 170px;
-    cursor: pointer;
-    flex-shrink: 0;
   }
 }
 

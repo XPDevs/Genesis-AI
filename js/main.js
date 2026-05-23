@@ -1179,7 +1179,40 @@ function renderChatList() {
 function updatePlaceholder() {
     const chat = chats.find(c => c.id === activeChatId);
     const hasReplies = chat && chat.messages && chat.messages.some(m => m.role === 'ai');
-    userInput.placeholder = hasReplies ? 'Reply to Genesis AI' : 'Ask Genesis AI';
+    const newText = hasReplies ? 'Reply to Genesis AI' : 'Ask Genesis AI';
+    const oldText = userInput.placeholder;
+    if (oldText === 'Ask Genesis AI' && newText === 'Reply to Genesis AI') {
+        animatePlaceholderTransition('Ask Genesis AI', 'Reply to Genesis AI');
+    } else {
+        userInput.placeholder = newText;
+    }
+}
+
+function animatePlaceholderTransition(fromText, toText) {
+    let phase = 'delete';
+    let i = fromText.length;
+    function tick() {
+        if (phase === 'delete') {
+            userInput.placeholder = fromText.substring(0, i);
+            i--;
+            if (i < 0) {
+                phase = 'pause';
+                setTimeout(tick, 150);
+                return;
+            }
+            setTimeout(tick, 40);
+        } else if (phase === 'pause') {
+            phase = 'type';
+            i = 0;
+            setTimeout(tick, 50);
+        } else if (phase === 'type') {
+            userInput.placeholder = toText.substring(0, i + 1);
+            i++;
+            if (i >= toText.length) return;
+            setTimeout(tick, 50);
+        }
+    }
+    tick();
 }
 
 async function updateChatView() {
