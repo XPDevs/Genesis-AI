@@ -60,6 +60,42 @@ body {
   color: var(--text);
 }
 
+@media (min-width: 769px) {
+  .chat-header {
+    position: relative;
+    gap: 8px;
+  }
+  #chatTitle {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 50%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+}
+
+#headerModelSelect {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  #headerModelSelect {
+    display: block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border, #444);
+    background: var(--input-bg, #222);
+    color: var(--text, #fff);
+    font-size: 0.8rem;
+    max-width: 170px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
 .chat-box {
   width: 100%;
   max-width: 800px;

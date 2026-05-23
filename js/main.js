@@ -496,6 +496,21 @@ function injectCSS() {
                 height: 36px;
             }
         }
+        @media (min-width: 769px) {
+            .chat-header {
+                position: relative;
+            }
+            #chatTitle {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                max-width: 50%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin: 0;
+            }
+        }
     `;
     document.head.appendChild(style);
 }
@@ -515,6 +530,7 @@ const themeToggle = document.getElementById("themeToggle");
 const autoThemeToggle = document.getElementById("autoThemeToggle");
 const modelSelect = document.getElementById("modelSelect");
 const chatTitle = document.getElementById("chatTitle");
+const headerModelSelect = document.getElementById("headerModelSelect");
 const readOnlyBanner = document.getElementById("readOnlyBanner");
 const renameModal = document.getElementById("renameModal");
 const renameInput = document.getElementById("renameInput");
@@ -1179,9 +1195,9 @@ async function updateChatView() {
             if (chatTitle) chatTitle.style.display = 'none'; // Hide "New Chat" title
             
             // On mobile, we want sidebar toggle on left and settings on right
-            // On desktop, sidebar toggle is hidden, so we just want settings on right
+            // On desktop, model select on left, settings on right (CSS default)
             const isMobile = window.innerWidth <= 768;
-            chatHeader.style.justifyContent = isMobile ? 'space-between' : 'flex-end';
+            chatHeader.style.justifyContent = isMobile ? 'space-between' : '';
             
             chatHeader.style.alignItems = 'center'; // Vertically center button in header
             chatHeader.style.paddingTop = '8px';
@@ -2988,21 +3004,57 @@ if (modelSelect) {
         const currentModel = await DB.get("selectedModel", defaultModel);
         if (selectedValue === "custom") {
             if (customModelInput) customModelInput.click();
-            // Reset dropdown to current model after opening file dialog
             setTimeout(() => { modelSelect.value = currentModel; }, 100);
         } else if (selectedValue !== currentModel) {
             document.getElementById("refreshWarningModal").style.display = "flex";
         }
     };
 }
+
+if (headerModelSelect) {
+    if (!headerModelSelect.querySelector('option[value="custom"]')) {
+        const customOption = document.createElement('option');
+        customOption.value = "custom";
+        customOption.textContent = "Load from file...";
+        headerModelSelect.appendChild(customOption);
+    }
+
+    (async () => {
+        headerModelSelect.value = await DB.get("selectedModel", defaultModel);
+    })();
+
+    headerModelSelect.onchange = async () => {
+        const selectedValue = headerModelSelect.value;
+        const currentModel = await DB.get("selectedModel", defaultModel);
+        if (selectedValue === "custom") {
+            if (customModelInput) customModelInput.click();
+            setTimeout(() => { headerModelSelect.value = currentModel; }, 100);
+        } else if (selectedValue !== currentModel) {
+            document.getElementById("refreshWarningModal").style.display = "flex";
+        }
+    };
+}
+
+// On desktop, hide the AI Modal row in settings; on mobile leave it
+const isDesktop = window.innerWidth > 768;
+if (isDesktop) {
+    const aiModalRow = modelSelect ? modelSelect.closest('div') : null;
+    if (aiModalRow) aiModalRow.style.display = 'none';
+}
+const getActiveModelSelect = () => {
+    return (isDesktop && headerModelSelect) ? headerModelSelect : modelSelect;
+};
+
 document.getElementById("refreshConfirm").onclick = async () => {
-    const selectedValue = modelSelect.value;
+    const active = getActiveModelSelect();
+    const selectedValue = active ? active.value : defaultModel;
     await DB.set("selectedModel", selectedValue);
     window.location.reload();
 };
 document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    modelSelect.value = await DB.get("selectedModel", defaultModel);
+    const active = getActiveModelSelect();
+    if (active) active.value = await DB.get("selectedModel", defaultModel);
 };
 
 const redownloadModelBtn = document.getElementById("redownloadModelBtn");
