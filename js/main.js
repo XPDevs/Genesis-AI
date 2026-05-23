@@ -3019,8 +3019,44 @@ if (userIcon) {
     })();
 }
 
+const MODELS = [
+  {
+    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
+    name: "Genesis SPT 5.0",
+    desc: "Latest and most advanced model with superior accuracy"
+  },
+  {
+    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
+    name: "Genesis SPT 4.6",
+    desc: "Fast and reliable model for everyday conversations"
+  },
+  {
+    value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
+    name: "Genesis SPT 1.0 (Legacy)",
+    desc: "Original legacy model for basic interactions"
+  }
+];
+
+function getModelInfo(value) {
+  return MODELS.find(m => m.value === value) || MODELS[0];
+}
+
+function updateModelInfoDisplay() {
+  const modelNameDisplay = document.getElementById("modelNameDisplay");
+  const modelParamsDisplay = document.getElementById("modelParamsDisplay");
+  if (modelNameDisplay) modelNameDisplay.textContent = (responses && responses.ver) || "Unknown";
+  if (modelParamsDisplay) modelParamsDisplay.textContent = responses ? Object.keys(responses).length : 0;
+}
+
+async function switchModel(value) {
+  if (aiState.isResponding) stopGeneration();
+  await DB.set("selectedModel", value);
+  await loadModel(true);
+  updateModelInfoDisplay();
+}
+
+// Settings modal model select
 if (modelSelect) {
-    // Add custom model upload option
     if (!modelSelect.querySelector('option[value="custom"]')) {
         const customOption = document.createElement('option');
         customOption.value = "custom";
@@ -3039,31 +3075,17 @@ if (modelSelect) {
             if (customModelInput) customModelInput.click();
             setTimeout(() => { modelSelect.value = currentModel; }, 100);
         } else if (selectedValue !== currentModel) {
-            document.getElementById("refreshWarningModal").style.display = "flex";
-        }
-    };
-}
-
-if (headerModelSelect) {
-    if (!headerModelSelect.querySelector('option[value="custom"]')) {
-        const customOption = document.createElement('option');
-        customOption.value = "custom";
-        customOption.textContent = "Load from file...";
-        headerModelSelect.appendChild(customOption);
-    }
-
-    (async () => {
-        headerModelSelect.value = await DB.get("selectedModel", defaultModel);
-    })();
-
-    headerModelSelect.onchange = async () => {
-        const selectedValue = headerModelSelect.value;
-        const currentModel = await DB.get("selectedModel", defaultModel);
-        if (selectedValue === "custom") {
-            if (customModelInput) customModelInput.click();
-            setTimeout(() => { headerModelSelect.value = currentModel; }, 100);
-        } else if (selectedValue !== currentModel) {
-            document.getElementById("refreshWarningModal").style.display = "flex";
+            // Sync desktop dropdown if visible
+            if (window.innerWidth > 768) {
+                const info = getModelInfo(selectedValue);
+                const nameEl = document.getElementById("modelSelectName");
+                const descEl = document.getElementById("modelSelectDesc");
+                if (nameEl) nameEl.textContent = info.name;
+                if (descEl) descEl.textContent = info.desc;
+                const dd = document.getElementById("modelSelectDropdown");
+                if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.toggle("active", o.dataset.value === selectedValue));
+            }
+            await switchModel(selectedValue);
         }
     };
 }
@@ -3074,20 +3096,72 @@ if (isDesktop) {
     const aiModalRow = modelSelect ? modelSelect.closest('div') : null;
     if (aiModalRow) aiModalRow.style.display = 'none';
 }
-const getActiveModelSelect = () => {
-    return (isDesktop && headerModelSelect) ? headerModelSelect : modelSelect;
-};
 
+// Desktop rich dropdown
+if (headerModelSelect) {
+  const trigger = document.getElementById("modelSelectTrigger");
+  const dropdown = document.getElementById("modelSelectDropdown");
+  const nameEl = document.getElementById("modelSelectName");
+  const descEl = document.getElementById("modelSelectDesc");
+
+  dropdown.innerHTML = MODELS.map(m => `
+    <button class="model-dropdown-option" data-value="${m.value}">
+      <span class="model-option-name">${m.name}</span>
+      <span class="model-option-desc">${m.desc}</span>
+    </button>
+  `).join("");
+
+  (async () => {
+    const saved = await DB.get("selectedModel", defaultModel);
+    const info = getModelInfo(saved);
+    nameEl.textContent = info.name;
+    descEl.textContent = info.desc;
+    dropdown.querySelectorAll(".model-dropdown-option").forEach(opt => {
+      opt.classList.toggle("active", opt.dataset.value === saved);
+    });
+  })();
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    headerModelSelect.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!headerModelSelect.contains(e.target)) {
+      headerModelSelect.classList.remove("open");
+    }
+  });
+
+  dropdown.addEventListener("click", async (e) => {
+    const option = e.target.closest(".model-dropdown-option");
+    if (!option) return;
+
+    const value = option.dataset.value;
+    const currentModel = await DB.get("selectedModel", defaultModel);
+    if (value === currentModel) {
+      headerModelSelect.classList.remove("open");
+      return;
+    }
+
+    const info = getModelInfo(value);
+    nameEl.textContent = info.name;
+    descEl.textContent = info.desc;
+    dropdown.querySelectorAll(".model-dropdown-option").forEach(opt => {
+      opt.classList.toggle("active", opt.dataset.value === value);
+    });
+    headerModelSelect.classList.remove("open");
+
+    if (modelSelect) modelSelect.value = value;
+    await switchModel(value);
+  });
+}
+
+// Keep refreshWarningModal handlers for potential external use
 document.getElementById("refreshConfirm").onclick = async () => {
-    const active = getActiveModelSelect();
-    const selectedValue = active ? active.value : defaultModel;
-    await DB.set("selectedModel", selectedValue);
-    window.location.reload();
+    document.getElementById("refreshWarningModal").style.display = "none";
 };
 document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
-    const active = getActiveModelSelect();
-    if (active) active.value = await DB.get("selectedModel", defaultModel);
 };
 
 const redownloadModelBtn = document.getElementById("redownloadModelBtn");
