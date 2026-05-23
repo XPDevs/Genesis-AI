@@ -1767,6 +1767,10 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   footer.appendChild(actionsDiv);
   div.appendChild(footer);
 
+  if (role === "ai" && !isNew && messageObj && messageObj.elapsedTime !== undefined) {
+      showMsgStats(div, messageObj.text, messageObj.elapsedTime);
+  }
+
   chatBox.append(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 
