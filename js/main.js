@@ -1246,8 +1246,8 @@ async function updateChatView() {
         }
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
-        const greetingText = typeof getRandomGreeting === 'function' ? getRandomGreeting() : 'Hello';
-        greetingEl.innerHTML = `${greetingText}, ${name}`;
+        const greetingResult = typeof getRandomGreeting === 'function' ? getRandomGreeting() : { text: 'Hello', appendName: false };
+        greetingEl.innerHTML = greetingResult.appendName ? `${greetingResult.text}, ${name}` : greetingResult.text;
         const qaSetting = await DB.get("quickActionsEnabled", "false");
         if (qaSetting === "true" || qaSetting === "new") {
           greetingEl.innerHTML += `<div class="quick-actions"></div>`;

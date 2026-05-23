@@ -1,4 +1,9 @@
 const MORNING_GREETINGS = [
+  { text: "Good morning", appendName: true },
+  { text: "Morning", appendName: true },
+  { text: "Hey there", appendName: true },
+  { text: "Hello", appendName: true },
+  { text: "Hi", appendName: true },
   "Good morning! How can I help you today?",
   "Good morning! What can I do for you?",
   "Good morning! Ready to help with whatever you need.",
@@ -181,6 +186,11 @@ const MORNING_GREETINGS = [
 ];
 
 const AFTERNOON_GREETINGS = [
+  { text: "Good afternoon", appendName: true },
+  { text: "Afternoon", appendName: true },
+  { text: "Good day", appendName: true },
+  { text: "Hi there", appendName: true },
+  { text: "Hello there", appendName: true },
   "Good afternoon! How can I help you today?",
   "Good afternoon! What can I do for you?",
   "Good afternoon! How can I assist you this afternoon?",
@@ -366,6 +376,11 @@ const AFTERNOON_GREETINGS = [
 ];
 
 const EVENING_GREETINGS = [
+  { text: "Good evening", appendName: true },
+  { text: "Evening", appendName: true },
+  { text: "Good night", appendName: true },
+  { text: "Hey", appendName: true },
+  { text: "Hi", appendName: true },
   "Good evening! How can I help you today?",
   "Good evening! What can I do for you?",
   "Good evening! How can I assist you this evening?",
@@ -550,6 +565,12 @@ const EVENING_GREETINGS = [
 ];
 
 const GENERAL_GREETINGS = [
+  { text: "Hi there", appendName: true },
+  { text: "Hello", appendName: true },
+  { text: "Hey", appendName: true },
+  { text: "Hi", appendName: true },
+  { text: "Hey there", appendName: true },
+  { text: "Hello there", appendName: true },
   "Hi there! How can I help you today?",
   "Hello! What can I do for you?",
   "Hi! How can I assist you today?",
@@ -718,7 +739,7 @@ function getRandomGreeting() {
   const day = now.getDate();
 
   if (month === 4 && day === 23 && hour >= 14 && hour < 15 && Math.random() < 0.1) {
-    return "Happy Birthday";
+    return { text: "Happy Birthday", appendName: true };
   }
 
   let pool;
@@ -730,5 +751,9 @@ function getRandomGreeting() {
     pool = EVENING_GREETINGS;
   }
 
-  return pool[Math.floor(Math.random() * pool.length)];
+  const entry = pool[Math.floor(Math.random() * pool.length)];
+  if (typeof entry === 'string') {
+    return { text: entry, appendName: false };
+  }
+  return { text: entry.text, appendName: entry.appendName };
 }
