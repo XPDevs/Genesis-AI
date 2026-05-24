@@ -2328,14 +2328,23 @@ async function findResponses(input, history) {
               return { role: "ai", text: `Cannot solve: ${result.error}` };
           }
       }
-      const isExplicit = /^(calc|calculate|solve|math)\b/i.test(decodedInput);
-      const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
-      const hasMathFunc = /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(cleaned);
-      const isMathExpression = /^[\d\s().+\-*/^x,!%]+$/.test(cleaned) && /[\d]/.test(cleaned) && /[-+*/^!]/.test(cleaned);
-      const hasPiE = /\b(pi|e)\b/i.test(cleaned) && cleaned.length < 30;
+      const mathExpression = (() => {
+          const explicitCmd = decodedInput.match(/^(?:calc|calculate|solve|math|compute|evaluate|simplify|find|work\s+out)\s+(.+)/i);
+          if (explicitCmd) return explicitCmd[1];
+          const whatMatch = decodedInput.match(/^what(?:'s|\s+is)(?:\s+the)?(?:\s+(?:value|result|answer)\s+(?:of|to|for))?\s+(.+)/i);
+          if (whatMatch) return whatMatch[1];
+          const whatDoesMatch = decodedInput.match(/^what\s+does\s+(.+?)\s+equal\b/i);
+          if (whatDoesMatch) return whatDoesMatch[1];
+          const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
+          const isMathLike = /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(cleaned)
+              || (/^[\d\s().+\-*/^x,!%]+$/.test(cleaned) && /[\d]/.test(cleaned) && /[-+*/^!]/.test(cleaned))
+              || (/\b(pi|e)\b/i.test(cleaned) && cleaned.length < 30);
+          if (isMathLike) return cleaned;
+          return null;
+      })();
       
-      if (isExplicit || isMathExpression || hasMathFunc || hasPiE) {
-          const result = window.calc(decodedInput);
+      if (mathExpression) {
+          const result = window.calc(mathExpression);
           if (result && result.katex) {
               return { role: "ai", text: `The answer is:\n\n$$ ${result.katex} $$` };
           }
@@ -2847,6 +2856,22 @@ async function sendMessage() {
     }
   }
 
+  const decodedInput = window.tokenizer.decode(text);
+  const isCalcQuery = typeof window.calc === 'function' && (() => {
+      const isMathLike = (s) => /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(s)
+          || (/^[\d\s().+\-*/^x,!%]+$/.test(s) && /[\d]/.test(s) && /[-+*/^!]/.test(s))
+          || (/\b(pi|e)\b/i.test(s) && s.length < 30);
+      const explicitCmd = decodedInput.match(/^(?:calc|calculate|solve|math|compute|evaluate|simplify|find|work\s+out)\s+(.+)/i);
+      if (explicitCmd) return isMathLike(explicitCmd[1]);
+      const whatMatch = decodedInput.match(/^what(?:'s|\s+is)(?:\s+the)?(?:\s+(?:value|result|answer)\s+(?:of|to|for))?\s+(.+)/i);
+      if (whatMatch) return isMathLike(whatMatch[1].trim());
+      const whatDoesMatch = decodedInput.match(/^what\s+does\s+(.+?)\s+equal\b/i);
+      if (whatDoesMatch) return isMathLike(whatDoesMatch[1].trim());
+      const cleaned = decodedInput.replace(/^(?:calc|calculate|solve|math)\s*/i, '').trim();
+      return isMathLike(cleaned);
+  })();
+  const loadingLabel = isCalcQuery ? "Calculating" : "Thinking";
+
   const loadingDiv = document.createElement("div");
   loadingDiv.className = "message ai wiki-loading";
   loadingDiv.innerHTML = `
@@ -2857,7 +2882,7 @@ async function sendMessage() {
         </circle>
       </svg>
       <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-      <span style="opacity: 0.7; font-size: 0.9em;">Thinking</span>
+      <span style="opacity: 0.7; font-size: 0.9em;">${loadingLabel}</span>
     </div>
   `;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
