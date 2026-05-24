@@ -1171,6 +1171,10 @@ function renderChatList() {
   }
 
   displayChats.sort((a, b) => {
+      const aIsNew = a.title === "New Chat" && a.messages.length === 0;
+      const bIsNew = b.title === "New Chat" && b.messages.length === 0;
+      if (aIsNew && !bIsNew) return -1;
+      if (!aIsNew && bIsNew) return 1;
       if (b.pinned !== a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
       return (b.lastActive || 0) - (a.lastActive || 0);
   });
