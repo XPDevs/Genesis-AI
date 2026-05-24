@@ -610,6 +610,7 @@ const searchToggleBtn = document.getElementById("searchToggleBtn");
 // State
 let chats = [];
 let activeChatId = null;
+let chatDisplayCount = 5;
 let responses = {};
 let currentRenameId = null;
 let currentDeleteId = null;
@@ -1170,7 +1171,20 @@ function renderChatList() {
   }
 
   displayChats.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-  displayChats.forEach(chat => {
+
+  // Show only chatDisplayCount chats unless searching
+  let showCount = searchQuery.trim() ? displayChats.length : Math.min(chatDisplayCount, displayChats.length);
+
+  // Ensure active chat is always visible
+  if (!searchQuery.trim() && activeChatId) {
+      const activeIdx = displayChats.findIndex(c => c.id === activeChatId);
+      if (activeIdx >= showCount) {
+          showCount = activeIdx + 1;
+          chatDisplayCount = showCount;
+      }
+  }
+
+  displayChats.slice(0, showCount).forEach(chat => {
     const li = document.createElement("li");
     li.className = "chat-item" + (chat.id === activeChatId ? " active" : "");
     
@@ -1234,6 +1248,22 @@ function renderChatList() {
     li.append(span, options);
     chatList.append(li);
   });
+
+  // Load More button
+  if (!searchQuery.trim() && showCount < displayChats.length) {
+      const remaining = displayChats.length - showCount;
+      const loadMoreLi = document.createElement("li");
+      loadMoreLi.className = "load-more-item";
+      const loadMoreBtn = document.createElement("button");
+      loadMoreBtn.textContent = `Load More (${remaining})`;
+      loadMoreBtn.className = "load-more-btn";
+      loadMoreBtn.onclick = () => {
+          chatDisplayCount += 5;
+          renderChatList();
+      };
+      loadMoreLi.appendChild(loadMoreBtn);
+      chatList.append(loadMoreLi);
+  }
 }
 
 function updatePlaceholder() {
