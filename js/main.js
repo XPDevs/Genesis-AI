@@ -1862,6 +1862,39 @@ async function fetchPageImage(pageTitle) {
     }
 }
 
+async function fetchAnyPageImage(pageTitle) {
+    try {
+        const url = `https://en.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        if (pageId === "-1") return null;
+        const images = pages[pageId]?.images || [];
+        if (images.length === 0) return null;
+        const imageTitles = images.map(img => img.title).filter(title => !/\.(ogg|oga|wav|mp3)$/i.test(title)).slice(0, 5);
+        if (imageTitles.length === 0) return null;
+        const titles = imageTitles.join('|');
+        const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&titles=${encodeURIComponent(titles)}&iiprop=url&format=json&origin=*`;
+        const infoRes = await fetch(infoUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (!infoRes.ok) return null;
+        const infoData = await infoRes.json();
+        const infoPages = infoData.query.pages;
+        for (const id of Object.keys(infoPages)) {
+            const info = infoPages[id]?.imageinfo?.[0]?.url;
+            if (info) return info;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchPageImages(pageTitle, maxImages = 8) {
     try {
         const imgListUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=${encodeURIComponent(pageTitle)}&piprop=name&format=json&origin=*`;
@@ -1952,7 +1985,10 @@ async function fetchWikipediaSummary(topic) {
         const shortened = (await DB.get("shortenedAnswers")) === "true";
 
         // Always fetch the page image
-        const imageUrl = await fetchPageImage(pageTitle);
+        let imageUrl = await fetchPageImage(pageTitle);
+        if (!imageUrl) {
+            imageUrl = await fetchAnyPageImage(pageTitle);
+        }
 
         let extract;
         if (shortened) {
