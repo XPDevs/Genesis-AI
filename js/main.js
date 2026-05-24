@@ -1864,6 +1864,18 @@ async function fetchPageImage(pageTitle) {
 
 async function fetchAnyPageImage(pageTitle) {
     try {
+        const origUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=original&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
+        const origRes = await fetch(origUrl, {
+            headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
+        });
+        if (origRes.ok) {
+            const data = await origRes.json();
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            const source = pages[pageId]?.original?.source || pages[pageId]?.thumbnail?.source;
+            if (source) return source;
+        }
+
         const url = `https://en.wikipedia.org/w/api.php?action=query&prop=images&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`;
         const res = await fetch(url, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
@@ -1875,9 +1887,14 @@ async function fetchAnyPageImage(pageTitle) {
         if (pageId === "-1") return null;
         const images = pages[pageId]?.images || [];
         if (images.length === 0) return null;
-        const imageTitles = images.map(img => img.title).filter(title => !/\.(ogg|oga|wav|mp3)$/i.test(title)).slice(0, 5);
-        if (imageTitles.length === 0) return null;
-        const titles = imageTitles.join('|');
+
+        let candidates = images.map(img => img.title).filter(t => !/\.svg$/i.test(t) && !/\.(ogg|oga|wav|mp3)$/i.test(t)).slice(0, 5);
+        if (candidates.length === 0) {
+            candidates = images.map(img => img.title).filter(t => !/\.(ogg|oga|wav|mp3)$/i.test(t)).slice(0, 5);
+        }
+        if (candidates.length === 0) return null;
+
+        const titles = candidates.join('|');
         const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&titles=${encodeURIComponent(titles)}&iiprop=url&format=json&origin=*`;
         const infoRes = await fetch(infoUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
