@@ -790,7 +790,7 @@ async function loadAndSaveSharedChat(messages, originalTitle) {
     const sidebarHeader = document.querySelector(".sidebar-header");
     if (sidebarHeader) sidebarHeader.style.display = 'flex';
     const newChatTitle = `${originalTitle} (shared)`;
-    const newChat = { id: Date.now().toString(), title: newChatTitle, messages: messages };
+    const newChat = { id: Date.now().toString(), title: newChatTitle, messages: messages, lastActive: Date.now() };
     chats.unshift(newChat);
     activeChatId = newChat.id;
     await DB.set("activeChatId", activeChatId);
@@ -1170,7 +1170,10 @@ function renderChatList() {
       );
   }
 
-  displayChats.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  displayChats.sort((a, b) => {
+      if (b.pinned !== a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+      return (b.lastActive || 0) - (a.lastActive || 0);
+  });
 
   // Show only chatDisplayCount chats unless searching
   let showCount = searchQuery.trim() ? displayChats.length : Math.min(chatDisplayCount, displayChats.length);
@@ -1517,7 +1520,7 @@ function showQuickActionsGuide() {
 function sendQuickAction(text) {
   if (aiState.isResponding) return;
   if (!activeChatId) {
-    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
     chats.unshift(newChat);
     activeChatId = newChat.id;
     DB.set("activeChatId", activeChatId);
@@ -2753,7 +2756,7 @@ async function sendMessage() {
       userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
       if (!activeChatId) {
-        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
         chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
         await saveChats(); renderChatList();
       }
@@ -2761,6 +2764,7 @@ async function sendMessage() {
       const chat = chats.find(c => c.id === activeChatId);
       const userMsg = { role: "user", text: text };
       if (imgSrc) userMsg.imageUrl = imgSrc;
+      chat.lastActive = Date.now();
       chat.messages.push(userMsg);
       await renderMessages(); await saveChats();
 
@@ -2796,10 +2800,11 @@ async function sendMessage() {
                   loadingDiv.remove();
                   aiState.loadingDiv = null;
                   const botMsg = { role: "ai", text: result };
-                  chat.messages.push(botMsg);
-                  await saveChats();
-                  updatePlaceholder();
-                  appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);                  
+                   chat.lastActive = Date.now();
+                   chat.messages.push(botMsg);
+                   await saveChats();
+                   updatePlaceholder();
+                   appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);                  
                   userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
                   currentUploadFile = null;
                   if(uploadBtn) uploadBtn.style.color = "";
@@ -2839,15 +2844,21 @@ async function sendMessage() {
       userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
       if (!activeChatId) {
-        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+        const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
         chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
         await saveChats(); renderChatList();
       }
 
       const chat = chats.find(c => c.id === activeChatId);
       const userMsg = { role: "user", text: text };
+      chat.lastActive = Date.now();
       chat.messages.push(userMsg);
       await renderMessages(); await saveChats();
+
+      if (chat.messages.filter(m => m.role === "user").length === 1) {
+        const newTitle = summariseTitle(text);
+        typeChatTitle(newTitle, async () => { chat.title = newTitle; await saveChats(); renderChatList(); await updateURL(newTitle); });
+      }
 
       const loadingDiv = document.createElement("div");
       loadingDiv.className = "message ai wiki-loading";
@@ -2871,16 +2882,17 @@ async function sendMessage() {
               loadingDiv.remove();
               aiState.loadingDiv = null;
               const botMsg = { role: "ai", text: result };
-              chat.messages.push(botMsg);
-              await saveChats();
-              updatePlaceholder();
-              appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);              
-              userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
-              aiState.isResponding = false;
-              sendBtn.innerHTML = aiState.originalSendIcon;
-              updateSendButton();
-          });
-      };
+               chat.lastActive = Date.now();
+               chat.messages.push(botMsg);
+               await saveChats();
+               updatePlaceholder();
+               appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);              
+               userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; userInput.focus();
+               aiState.isResponding = false;
+               sendBtn.innerHTML = aiState.originalSendIcon;
+               updateSendButton();
+           });
+       };
 
       if (window.authenticateText) { runTxtAuth(); } 
       else { appendMessage("Text Auth module not loaded.", "error"); loadingDiv.remove(); userInput.disabled = false; sendBtn.disabled = false; sendBtn.style.opacity = "1"; aiState.isResponding = false; sendBtn.innerHTML = aiState.originalSendIcon; updateSendButton(); }
@@ -2918,7 +2930,7 @@ async function sendMessage() {
   userInput.disabled = true; sendBtn.disabled = false; sendBtn.style.opacity = "1";
 
   if (!activeChatId) {
-    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+    const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
     chats.unshift(newChat); activeChatId = newChat.id; await DB.set("activeChatId", activeChatId);
     await saveChats(); renderChatList();
   }
@@ -2927,6 +2939,7 @@ async function sendMessage() {
   const userMsg = { role: "user", text: text };
   if (imgSrc) userMsg.imageUrl = imgSrc;
   
+  chat.lastActive = Date.now();
   chat.messages.push(userMsg);
   await renderMessages(); await saveChats();
 
@@ -3005,6 +3018,7 @@ async function sendMessage() {
         }
 
         // Add to history and then append to UI
+        chat.lastActive = Date.now();
         chat.messages.push(botMsg);
         await saveChats();
         updatePlaceholder();
@@ -3150,7 +3164,7 @@ if (deleteConfirm) deleteConfirm.onclick = async () => {
         // After deleting, go to a new chat screen
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
-            newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
             chats.unshift(newChat);
         }
         activeChatId = newChat.id;
@@ -3165,7 +3179,7 @@ newChatBtn.onclick = async () => {
   if (existingNewChat) {
       activeChatId = existingNewChat.id;
   } else {
-      const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+      const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
       chats.unshift(newChat);
       activeChatId = newChat.id;
   }
@@ -3923,7 +3937,7 @@ async function startApp() {
         // Desktop: Always start with a New Chat
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
-            newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
             chats.unshift(newChat);
             await saveChats();
         }
@@ -3938,7 +3952,7 @@ async function startApp() {
             await DB.set("activeChatId", activeChatId);
         }
         if (!activeChatId && chats.length === 0) {
-            const newChat = { id: Date.now().toString(), title: "New Chat", messages: [] };
+            const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
             chats.unshift(newChat);
             activeChatId = newChat.id;
             await saveChats();
