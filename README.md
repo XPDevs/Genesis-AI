@@ -70,7 +70,6 @@ Genesis-AI includes a comprehensive set of features for chatting, productivity, 
 ### Input & Output
 - **Text Input** — Send messages via the chat box
 - **Image Uploads** — Upload images directly into the chat for analysis
-- **Voice Input** — Use speech recognition to dictate your messages
 - **Text-to-Speech** — Listen to the AI's responses with a single click
 - **Stop Generation** — Instantly interrupt the AI's response generation
 
