@@ -911,7 +911,7 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
+const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json";
 let jsonURL = defaultModel;
 
 let modelLoadingEl = null;
@@ -3057,7 +3057,7 @@ userInput.addEventListener("keypress", e => {
 });
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-5.5";
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
     document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
     const statusEl = document.getElementById("customModelStatus");
     if (statusEl) statusEl.innerHTML = "";
@@ -3117,14 +3117,9 @@ if (userIcon) {
 
 const MODELS = [
   {
-    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
-    name: "Genesis 5.5",
-    desc: "Smarter and more advanced model (525.8K params)"
-  },
-  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
     name: "Genesis SPT 5.0",
-    desc: "Previous generation model"
+    desc: "Latest model with improved response quality"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
@@ -3828,7 +3823,7 @@ async function startApp() {
         },
         'ai-modal': {
             title: 'AI Modal',
-            text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. Genesis 5.5 is the latest default model with 525,800 parameters. Genesis 4.6 remains available as a secondary option.'
+            text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. SPT 5.0 is the latest default model with 45,000 parameters. SPT 4.6 (5,000 parameters) remains available as a secondary option.'
         },
         'shortened-answers': {
             title: 'Shortened Answers',
