@@ -2517,14 +2517,14 @@ async function findResponses(input, history) {
     const context = getChatContext(history);
     const ctxMatch = findContextualMatch(decodedInput, context, Object.keys(responses).filter(k => !k.startsWith('ver')));
     if (ctxMatch) {
-      return { role: "ai", text: formatListResponse(ctxMatch.text), contextUsed: ctxMatch.contextUsed };
+      return { role: "ai", text: removeRepetitions(formatListResponse(ctxMatch.text)), contextUsed: ctxMatch.contextUsed };
     }
 
     // Fuzzy matching fallback - find similar keys using Levenshtein distance
     const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
     const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
-      return { role: "ai", text: formatListResponse(fuzzyMatch.text) };
+      return { role: "ai", text: removeRepetitions(formatListResponse(fuzzyMatch.text)) };
     }
     if (webSearchOff) {
         return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know.\n\nI'm not quite sure I follow. Could you give me a bit more detail?" };

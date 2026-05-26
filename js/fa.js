@@ -204,10 +204,57 @@ function formatListResponse(text) {
   return text;
 }
 
+// --- REPETITION REMOVAL ---
+function removeRepetitions(text) {
+  if (!text || text.length < 20) return text;
+
+  let result = text;
+
+  // 1. Deduplicate AI name mentions (keep first mention only)
+  const namePattern = /\bgenesis[-\s]?ai\b/gi;
+  let nameCount = 0;
+  result = result.replace(namePattern, (m) => nameCount++ === 0 ? m : '');
+
+  // 2. Deduplicate exact/near-duplicate sentences
+  const parts = result.match(/[^.!?\n]+[.!?]*/g) || [result];
+  if (parts.length > 1) {
+    const seen = new Set();
+    const deduped = [];
+    for (const part of parts) {
+      const t = part.trim();
+      const key = t.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      if (key.length >= 4) {
+        let dup = false;
+        for (const existing of seen) {
+          if (key === existing ||
+              (key.length > 6 && existing.length > 6 &&
+               (key.includes(existing) || existing.includes(key)))) {
+            dup = true;
+            break;
+          }
+        }
+        if (!dup) { seen.add(key); deduped.push(t); }
+      } else {
+        deduped.push(t);
+      }
+    }
+    if (deduped.length < parts.length) {
+      result = deduped.join(' ');
+    }
+  }
+
+  // 3. Clean up whitespace artifacts from removals
+  result = result.replace(/\s{2,}/g, ' ')
+                 .replace(/\s+([.,!?;:])/g, '$1')
+                 .trim();
+
+  return result || text;
+}
+
 // --- RESPONSE MERGING ---
 function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
-  if (texts.length === 1) return formatListResponse(texts[0]);
+  if (texts.length === 1) return removeRepetitions(formatListResponse(texts[0]));
 
   const allSentences = [];
   for (const text of texts) {
@@ -227,7 +274,7 @@ function mergeMatches(texts) {
     }
   }
 
-  if (allSentences.length <= 1) return formatListResponse(allSentences[0] || texts[0]);
+  if (allSentences.length <= 1) return removeRepetitions(formatListResponse(allSentences[0] || texts[0]));
 
   const unique = [];
   for (const sentence of allSentences) {
@@ -243,7 +290,7 @@ function mergeMatches(texts) {
     if (!dup) unique.push(sentence);
   }
 
-  if (unique.length <= 1) return formatListResponse(unique[0] || texts[0]);
+  if (unique.length <= 1) return removeRepetitions(formatListResponse(unique[0] || texts[0]));
 
   const helpOffers = unique.filter(s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s));
   const hasCapabilities = unique.some(s => /\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(s) && s.length > 15);
@@ -270,5 +317,5 @@ function mergeMatches(texts) {
     result.push(formatListResponse(sentence));
   }
 
-  return result.join(' ');
+  return removeRepetitions(result.join(' '));
 }
