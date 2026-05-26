@@ -197,7 +197,7 @@ function formatListResponse(text) {
     const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
     if (rawItems.length >= 3) {
       const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
-      return listMatch[1] + ':\n' + items.map(item => '- ' + item).join('\n');
+      return listMatch[1] + ':\n' + items.map(item => '- ' + item.charAt(0).toUpperCase() + item.slice(1)).join('\n');
     }
   }
 
