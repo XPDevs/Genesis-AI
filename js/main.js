@@ -2532,9 +2532,7 @@ async function findResponses(input, history) {
     return { role: "ai", text: "I'm not quite sure I follow. Could you give me a bit more detail?" };
   }
   const orderedMessages = foundMatches.sort((a, b) => a.index - b.index).map(m => m.text);
-  if (orderedMessages.length === 1) return { role: "ai", text: orderedMessages[0] };
-  const last = orderedMessages.pop();
-  return { role: "ai", text: orderedMessages.join(", ") + " and " + last };
+  return { role: "ai", text: mergeMatches(orderedMessages) };
 }
 
 async function sendMessage() {

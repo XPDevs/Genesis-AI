@@ -186,3 +186,63 @@ function findFuzzyMatch(input, keys, maxDistance = 3) {
   
   return bestMatch;
 }
+
+// --- RESPONSE MERGING ---
+function mergeMatches(texts) {
+  if (!texts || texts.length === 0) return '';
+  if (texts.length === 1) return texts[0];
+
+  const allSentences = [];
+  for (const text of texts) {
+    const parts = text.match(/[^.!?\n]+[.!?]*/g) || [text];
+    for (const p of parts) {
+      const trimmed = p.trim();
+      if (trimmed) allSentences.push(trimmed);
+    }
+  }
+
+  const unique = [];
+  for (const sentence of allSentences) {
+    let dup = false;
+    for (const existing of unique) {
+      const a = sentence.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      const b = existing.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      if (a.length < 3 || b.length < 3) continue;
+      if (a === b || a.includes(b) || b.includes(a)) { dup = true; break; }
+      if (levenshteinDistance(a, b) <= 2) { dup = true; break; }
+    }
+    if (!dup) unique.push(sentence);
+  }
+
+  const isHelpOffer = s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s);
+
+  const hasCapabilities = unique.some(s => /\b(I can|I'll|capabilities|I offer|I help)\b/i.test(s) && s.length > 15);
+  let filtered;
+  if (hasCapabilities) {
+    const isGreeting = s => /\b(hello|hi there|hey there|greetings)\b/i.test(s) && s.length < 40;
+    filtered = unique.filter(s => !isHelpOffer(s) || isGreeting(s));
+  } else {
+    filtered = unique;
+  }
+
+  const result = [];
+  for (const sentence of filtered) {
+    const listPrefix = sentence.match(/^(I can|I'll|I will|I offer|you can|features include|capabilities?)[:\s]+(.+)/i);
+    if (listPrefix) {
+      const prefix = listPrefix[1];
+      let listContent = listPrefix[2];
+      listContent = listContent.replace(/^[,.\s]+|[,.\s]+$/g, '');
+      const items = listContent.split(/\s*,\s*|\s+and\s+/).map(s => s.replace(/^\./, '').trim()).filter(Boolean);
+      if (items.length >= 2) {
+        result.push(prefix + ':');
+        for (const item of items) {
+          result.push('- ' + item);
+        }
+        continue;
+      }
+    }
+    result.push(sentence);
+  }
+
+  return result.join(' ');
+}
