@@ -1,7 +1,7 @@
 // --- DATABASE UTILITY (IndexedDB) ---
 const DB = {
     dbName: "GenesisAI",
-    dbVersion: 3,
+    dbVersion: 2,
     storeName: "settings",
     modelStore: "models",
     responsesStore: "responses",
@@ -103,26 +103,6 @@ const DB = {
             const store = transaction.objectStore(this.responsesStore);
             const request = store.clear();
             request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    },
-
-    async getAllResponses() {
-        if (!this.db) await this.init();
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.responsesStore], "readonly");
-            const store = transaction.objectStore(this.responsesStore);
-            const request = store.openCursor();
-            const result = {};
-            request.onsuccess = () => {
-                const cursor = request.result;
-                if (cursor) {
-                    result[cursor.key] = cursor.value;
-                    cursor.continue();
-                } else {
-                    resolve(result);
-                }
-            };
             request.onerror = () => reject(request.error);
         });
     },
@@ -1141,8 +1121,8 @@ async function loadModel(force = false) {
       buffer = buffer.substring(i);
     }
     
-    responses = await DB.getAllResponses();
-    await DB.setModel(jsonURL, responses);
+    await DB.setModel(jsonURL, { cached: true });
+    responses = null;
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
@@ -3075,17 +3055,10 @@ userInput.addEventListener("keypress", e => {
         }
     }
 });
-settingsBtn.onclick = async () => {
+settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    if (responses) {
-      document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
-      document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
-    } else {
-      const currentUrl = await DB.get("selectedModel", defaultModel);
-      const info = getModelInfo(currentUrl);
-      document.getElementById("modelNameDisplay").textContent = info.name + " (cached)";
-      document.getElementById("modelParamsDisplay").textContent = "streaming";
-    }
+    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
+    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
     const statusEl = document.getElementById("customModelStatus");
     if (statusEl) statusEl.innerHTML = "";
 };
@@ -3149,11 +3122,6 @@ const MODELS = [
     desc: "Latest model with improved response quality"
   },
   {
-    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
-    name: "Genesis 5.5",
-    desc: "Beta model - experimental features"
-  },
-  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
     name: "Genesis SPT 4.6",
     desc: "Balanced model for general conversations"
@@ -3172,25 +3140,15 @@ function getModelInfo(value) {
 function updateModelInfoDisplay() {
   const modelNameDisplay = document.getElementById("modelNameDisplay");
   const modelParamsDisplay = document.getElementById("modelParamsDisplay");
-  if (modelNameDisplay) {
-    modelNameDisplay.textContent = (responses && responses.ver) || "Cached model";
-  }
-  if (modelParamsDisplay) {
-    modelParamsDisplay.textContent = responses ? Object.keys(responses).length : "streaming";
-  }
+  if (modelNameDisplay) modelNameDisplay.textContent = (responses && responses.ver) || "Unknown";
+  if (modelParamsDisplay) modelParamsDisplay.textContent = responses ? Object.keys(responses).length : 0;
 }
-
-const BETA_MODEL_URL = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
 
 async function switchModel(value) {
   if (aiState.isResponding) stopGeneration();
   await DB.set("selectedModel", value);
   await loadModel(true);
   updateModelInfoDisplay();
-  if (value === BETA_MODEL_URL) {
-    const betaModal = document.getElementById("betaModal");
-    if (betaModal) betaModal.style.display = "flex";
-  }
 }
 
 // Settings modal model select
@@ -3313,14 +3271,6 @@ document.getElementById("refreshConfirm").onclick = async () => {
 document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
 };
-
-const betaModalOk = document.getElementById("betaModalOk");
-if (betaModalOk) {
-  betaModalOk.onclick = () => {
-    document.getElementById("betaModal").style.display = "none";
-  };
-}
-
 const redownloadModelBtn = document.getElementById("redownloadModelBtn");
 if (redownloadModelBtn) {
     redownloadModelBtn.onclick = async () => {
