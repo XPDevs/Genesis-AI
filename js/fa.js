@@ -194,12 +194,23 @@ function mergeMatches(texts) {
 
   const allSentences = [];
   for (const text of texts) {
-    const parts = text.match(/[^.!?\n]+[.!?]*/g) || [text];
-    for (const p of parts) {
-      const trimmed = p.trim();
-      if (trimmed) allSentences.push(trimmed);
+    if (!text || text.length < 2) continue;
+    if (text.length < 30) {
+      allSentences.push(text.trim());
+      continue;
+    }
+    const parts = text.match(/[^.!?\n]+[.!?]*/g);
+    if (parts) {
+      for (const p of parts) {
+        const t = p.trim();
+        if (t && t.length > 1) allSentences.push(t);
+      }
+    } else {
+      allSentences.push(text.trim());
     }
   }
+
+  if (allSentences.length <= 1) return allSentences[0] || texts[0];
 
   const unique = [];
   for (const sentence of allSentences) {
@@ -207,37 +218,45 @@ function mergeMatches(texts) {
     for (const existing of unique) {
       const a = sentence.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
       const b = existing.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-      if (a.length < 3 || b.length < 3) continue;
-      if (a === b || a.includes(b) || b.includes(a)) { dup = true; break; }
-      if (levenshteinDistance(a, b) <= 2) { dup = true; break; }
+      if (a.length < 4 || b.length < 4) continue;
+      if (a === b) { dup = true; break; }
+      if (a.length > 6 && b.length > 6 && (a.includes(b) || b.includes(a))) { dup = true; break; }
+      if (a.length > 8 && b.length > 8 && levenshteinDistance(a, b) <= 2) { dup = true; break; }
     }
     if (!dup) unique.push(sentence);
   }
 
-  const isHelpOffer = s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s);
+  if (unique.length <= 1) return unique[0] || texts[0];
 
-  const hasCapabilities = unique.some(s => /\b(I can|I'll|capabilities|I offer|I help)\b/i.test(s) && s.length > 15);
-  let filtered;
-  if (hasCapabilities) {
-    const isGreeting = s => /\b(hello|hi there|hey there|greetings)\b/i.test(s) && s.length < 40;
-    filtered = unique.filter(s => !isHelpOffer(s) || isGreeting(s));
-  } else {
-    filtered = unique;
+  const helpOffers = unique.filter(s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s));
+  const hasCapabilities = unique.some(s => /\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(s) && s.length > 15);
+
+  let filtered = unique;
+  if (helpOffers.length > 1) {
+    const kept = new Set();
+    let seen = false;
+    for (const s of unique) {
+      if (helpOffers.includes(s)) {
+        if (!seen) { kept.add(s); seen = true; }
+      } else {
+        kept.add(s);
+      }
+    }
+    filtered = Array.from(kept);
+  } else if (helpOffers.length === 1 && hasCapabilities) {
+    const offer = helpOffers[0];
+    filtered = unique.filter(s => s !== offer);
   }
 
   const result = [];
   for (const sentence of filtered) {
-    const listPrefix = sentence.match(/^(I can|I'll|I will|I offer|you can|features include|capabilities?)[:\s]+(.+)/i);
-    if (listPrefix) {
-      const prefix = listPrefix[1];
-      let listContent = listPrefix[2];
-      listContent = listContent.replace(/^[,.\s]+|[,.\s]+$/g, '');
-      const items = listContent.split(/\s*,\s*|\s+and\s+/).map(s => s.replace(/^\./, '').trim()).filter(Boolean);
-      if (items.length >= 2) {
-        result.push(prefix + ':');
-        for (const item of items) {
-          result.push('- ' + item);
-        }
+    const listMatch = sentence.match(/^(I can|I'll|I will|I offer|you can)[:\s]+(.+)/i);
+    if (listMatch) {
+      const content = listMatch[2].replace(/^[,.\s]+|[,.\s]+$/g, '');
+      const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
+      if (rawItems.length >= 3) {
+        const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
+        result.push(listMatch[1] + ':\n' + items.map(item => '- ' + item).join('\n'));
         continue;
       }
     }

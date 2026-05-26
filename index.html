@@ -148,6 +148,11 @@
     transform: translateY(-1px);
   }
 
+  /* Bullet list handling - respect newlines from merged responses */
+  .message span {
+    white-space: pre-line;
+  }
+
   /* Wiki spinner animation */
   @keyframes wikiSpin {
     0% { transform: rotate(0deg); }
