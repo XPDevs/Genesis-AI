@@ -1,7 +1,7 @@
 // --- DATABASE UTILITY (IndexedDB) ---
 const DB = {
     dbName: "GenesisAI",
-    dbVersion: 3,
+    dbVersion: 2,
     storeName: "settings",
     modelStore: "models",
     responsesStore: "responses",
@@ -2216,7 +2216,7 @@ function typeChatTitle(newTitle, callback) {
 async function findResponses(input, history) {
   // Decode any hex escape sequences in the input
   const decodedInput = window.tokenizer.decode(input);
-  const cleanInput = typeof normalizeInput === 'function' ? normalizeInput(decodedInput) : decodedInput.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+  const lowerInput = decodedInput.toLowerCase();
 
   // Calculator Integration
   if (typeof window.calc === 'function') {
@@ -2337,7 +2337,7 @@ async function findResponses(input, history) {
 
   // "Who am I" - Get user's name from userInfo
   const whoAmIPatterns = ["who am i", "who am i?", "who am i?", "what is my name", "do you know me", "what's my name", "whats my name"];
-  if (whoAmIPatterns.some(p => cleanInput.includes(p))) {
+  if (whoAmIPatterns.some(p => lowerInput.includes(p))) {
       const userInfo = await DB.get("userInfo", {});
       const fullName = userInfo.name || "User";
       return { role: "ai", text: `You are ${fullName}.` };
@@ -2345,8 +2345,8 @@ async function findResponses(input, history) {
 
   // "@export" - Export chat as PDF or Markdown
   if (decodedInput.includes("@export")) {
-      const isPDF = cleanInput.includes("pdf");
-      const isMarkdown = cleanInput.includes("markdown") || cleanInput.includes("md");
+      const isPDF = lowerInput.includes("pdf");
+      const isMarkdown = lowerInput.includes("markdown") || lowerInput.includes("md");
       
       const activeChat = chats.find(c => c.id === activeChatId);
       if (!activeChat || activeChat.messages.length === 0) {
@@ -2387,7 +2387,7 @@ async function findResponses(input, history) {
   if (responses) {
     // Small model: direct in-memory object access
     const sortedKeys = Object.keys(responses).sort((a, b) => b.length - a.length);
-    let tempInput = cleanInput;
+    let tempInput = lowerInput;
     sortedKeys.forEach(key => {
       const lowerKey = key.toLowerCase();
       let index = tempInput.indexOf(lowerKey);
@@ -2399,14 +2399,14 @@ async function findResponses(input, history) {
     });
   } else {
     // Large model: query IndexedDB for each phrase
-    const words = cleanInput.split(/\s+/);
+    const words = lowerInput.split(/\s+/);
     for (let n = 5; n >= 1; n--) {
       for (let i = 0; i <= words.length - n; i++) {
         const phrase = words.slice(i, i + n).join(' ');
         if (phrase.length < 2) continue;
         const val = await DB.getResponse(phrase);
         if (val) {
-          foundMatches.push({ text: val, index: cleanInput.indexOf(phrase) });
+          foundMatches.push({ text: val, index: lowerInput.indexOf(phrase) });
         }
       }
     }
@@ -2423,7 +2423,7 @@ async function findResponses(input, history) {
             "difference between", "compare", "list of", "examples of", "pros and cons of",
             "who was", "where are", "origin of", "source of", "background on", "is there a"
           ];
-          const isQuestion = prefixes.some(prefix => cleanInput.startsWith(prefix));
+          const isQuestion = prefixes.some(prefix => lowerInput.startsWith(prefix));
 
           const modelVer = (responses.ver || "").toLowerCase();
           let allowWiki = true;
@@ -2432,7 +2432,7 @@ async function findResponses(input, history) {
               allowWiki = false;
           } else if (modelVer.includes("coder")) {
               const codingTerms = ["code", "coding", "program", "programming", "dev", "developer", "software", "script", "function", "variable", "class", "object", "api", "database", "sql", "html", "css", "javascript", "python", "java", "c++", "c#", "linux", "terminal", "git", "github", "error", "bug", "debug", "compile", "runtime", "framework", "library", "react", "node", "npm", "pip", "docker", "aws", "cloud", "http", "rest", "json", "xml"];
-              allowWiki = codingTerms.some(t => cleanInput.includes(t));
+              allowWiki = codingTerms.some(t => lowerInput.includes(t));
           }
 
           if (isQuestion && allowWiki) {
@@ -2469,7 +2469,7 @@ async function findResponses(input, history) {
                     wikiImageDataUrls = (await Promise.all(imageUrls.map(u => fetchImageAsDataUrl(u)))).filter(Boolean);
                 }
                 const wikiImageDataUrl = await fetchImageAsDataUrl(imageUrl);
-                const isUserSummary = cleanInput.includes('summarize') || cleanInput.includes('summary') || cleanInput.includes('summarise');
+                const isUserSummary = lowerInput.includes('summarize') || lowerInput.includes('summary') || lowerInput.includes('summarise');
                 
                 let summaryText;
                 if (!shortened) {
@@ -2522,7 +2522,7 @@ async function findResponses(input, history) {
 
     // Fuzzy matching fallback - find similar keys using Levenshtein distance
     const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
-    const fuzzyMatch = findFuzzyMatch(decodedInput, fuzzyKeys);
+    const fuzzyMatch = findFuzzyMatch(lowerInput, fuzzyKeys);
     if (fuzzyMatch) {
       return { role: "ai", text: removeRepetitions(formatListResponse(fuzzyMatch.text)) };
     }
@@ -3271,6 +3271,7 @@ document.getElementById("refreshConfirm").onclick = async () => {
 document.getElementById("refreshCancel").onclick = async () => {
     document.getElementById("refreshWarningModal").style.display = "none";
 };
+
 const redownloadModelBtn = document.getElementById("redownloadModelBtn");
 if (redownloadModelBtn) {
     redownloadModelBtn.onclick = async () => {
