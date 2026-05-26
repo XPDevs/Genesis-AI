@@ -271,6 +271,13 @@ function removeRepetitions(text) {
 }
 
 // --- FOLLOW-UP QUESTION ---
+function hasEmojiAfterQuestion(text) {
+  const questionIndex = text.lastIndexOf('?');
+  if (questionIndex === -1) return false;
+  const after = text.slice(questionIndex + 1).trim();
+  return after.length > 0 && /^\p{Emoji}/u.test(after);
+}
+
 function maybeAddFollowUp(text) {
   if (!text || text.length < 20) return text;
 
@@ -278,6 +285,9 @@ function maybeAddFollowUp(text) {
 
   // Don't add if already ends with a question
   if (trimmed.endsWith('?')) return trimmed;
+
+  // If the text has a ? followed by an emoji, it's already engaging — skip
+  if (hasEmojiAfterQuestion(trimmed)) return trimmed;
 
   // Don't add if already contains a help offer
   if (/\b(how can I help|what can I do for|can I help you|let me know if|anything else|is there anything)\b/i.test(trimmed)) {

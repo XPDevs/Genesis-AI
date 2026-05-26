@@ -3153,8 +3153,11 @@ async function switchModel(value) {
 
 // Secret function: wipes all cached models, then downloads and caches the latest model only
 window.Full = window.Full || {};
+const LEGACY_MODEL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
 window.Full.FormatRemoveModels = async function() {
   if (aiState.isResponding) stopGeneration();
+
+  // Step 1: Clear all cached models and responses
   const db = await new Promise((resolve, reject) => {
     const req = indexedDB.open(DB.dbName, DB.dbVersion);
     req.onsuccess = () => resolve(req.result);
@@ -3165,22 +3168,16 @@ window.Full.FormatRemoveModels = async function() {
   tx.objectStore(DB.responsesStore).clear();
   await new Promise(r => tx.oncomplete = r);
   db.close();
+
+  // Step 2: Download and cache the legacy model (1.0)
+  await DB.set("selectedModel", LEGACY_MODEL);
+  await loadModel(true);
+
+  // Step 3: Download and cache the latest model
   await DB.set("selectedModel", defaultModel);
   await loadModel(true);
+
   updateModelInfoDisplay();
-  const chat = chats.find(c => c.id === activeChatId);
-  if (chat) {
-    const msg = { role: "ai", text: "All cached models have been removed and the latest model has been installed." };
-    chat.messages.push(msg);
-    appendMessage(msg.text, msg.role, true, null, null, msg);
-    await saveChats();
-  } else {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = "message ai";
-    msgDiv.innerHTML = '<span>All cached models have been removed and the latest model has been installed.</span>';
-    chatBox.appendChild(msgDiv);
-  }
-  chatBox.scrollTop = chatBox.scrollHeight;
 };
 
 // Settings modal model select
