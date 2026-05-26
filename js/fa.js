@@ -1355,7 +1355,7 @@ function formatByFlags(text, flags) {
 function normalizeInput(input) {
   if (!input) return '';
   let normalized = input.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
-  normalized = expandTextSpeak(normalized);
+  normalized = expandTextSpeak(normalized).replace(/\s+/g, ' ').trim();
   if (typeof TYPE_MAP === 'undefined') return normalized;
   const words = normalized.split(/\s+/);
   const corrected = words.map(word => {

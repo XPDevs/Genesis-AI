@@ -2668,6 +2668,14 @@ async function sendMessage() {
         // Decode the AI's response before displaying
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
+            // Apply flag-based response formatting (detects user intent, reshapes output)
+            if (typeof detectFlags === 'function' && typeof formatByFlags === 'function') {
+                const userInput = typeof normalizeInput === 'function' ? normalizeInput(text) : text;
+                const flags = detectFlags(userInput);
+                if (flags.length > 0) {
+                    botMsg.text = formatByFlags(botMsg.text, flags);
+                }
+            }
             if (botMsg.isWikipedia && window.summariseConversation) {
                 const shortened = (await DB.get("shortenedAnswers")) === "true";
                 if (shortened) {
