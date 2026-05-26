@@ -3055,10 +3055,17 @@ userInput.addEventListener("keypress", e => {
         }
     }
 });
-settingsBtn.onclick = () => {
+settingsBtn.onclick = async () => {
     settingsModal.style.display = "flex";
-    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
-    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    if (responses) {
+      document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
+      document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    } else {
+      const currentUrl = await DB.get("selectedModel", defaultModel);
+      const info = getModelInfo(currentUrl);
+      document.getElementById("modelNameDisplay").textContent = info.name + " (cached)";
+      document.getElementById("modelParamsDisplay").textContent = "streaming";
+    }
     const statusEl = document.getElementById("customModelStatus");
     if (statusEl) statusEl.innerHTML = "";
 };
@@ -3145,8 +3152,12 @@ function getModelInfo(value) {
 function updateModelInfoDisplay() {
   const modelNameDisplay = document.getElementById("modelNameDisplay");
   const modelParamsDisplay = document.getElementById("modelParamsDisplay");
-  if (modelNameDisplay) modelNameDisplay.textContent = (responses && responses.ver) || "Unknown";
-  if (modelParamsDisplay) modelParamsDisplay.textContent = responses ? Object.keys(responses).length : 0;
+  if (modelNameDisplay) {
+    modelNameDisplay.textContent = (responses && responses.ver) || "Cached model";
+  }
+  if (modelParamsDisplay) {
+    modelParamsDisplay.textContent = responses ? Object.keys(responses).length : "streaming";
+  }
 }
 
 const BETA_MODEL_URL = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
