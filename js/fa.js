@@ -268,7 +268,19 @@ function maybeAddFollowUp(text) {
     return trimmed;
   }
 
-  const questions = [
+  // If text contains a bulleted capability list, use list-specific questions
+  const hasBulletList = trimmed.includes('\n- ') && /^(I can|I'll|I will|I offer|you can)/i.test(trimmed);
+
+  const questions = hasBulletList ? [
+    'Which one can I help with?',
+    'What would you like to start with?',
+    'Which of these interests you?',
+    'Anything in particular you would like to try?',
+    'What sounds good to you?',
+    'Which would you like me to help with?',
+    'Take your pick!',
+    'What are you in the mood for?',
+  ] : [
     'Is there anything else I can help you with?',
     'What else would you like to know?',
     'Can I help you with anything else?',
@@ -279,7 +291,7 @@ function maybeAddFollowUp(text) {
     'Anything else I can do for you?',
   ];
 
-  return trimmed + ' ' + questions[Math.floor(Math.random() * questions.length)];
+  return trimmed + '\n' + questions[Math.floor(Math.random() * questions.length)];
 }
 
 // --- RESPONSE MERGING ---
