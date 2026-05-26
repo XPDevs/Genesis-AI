@@ -3151,6 +3151,38 @@ async function switchModel(value) {
   updateModelInfoDisplay();
 }
 
+// Secret function: wipes all cached models, then downloads and caches the latest model only
+window.Full = window.Full || {};
+window.Full.FormatRemoveModels = async function() {
+  if (aiState.isResponding) stopGeneration();
+  const db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB.dbName, DB.dbVersion);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  const tx = db.transaction([DB.modelStore, DB.responsesStore], "readwrite");
+  tx.objectStore(DB.modelStore).clear();
+  tx.objectStore(DB.responsesStore).clear();
+  await new Promise(r => tx.oncomplete = r);
+  db.close();
+  await DB.set("selectedModel", defaultModel);
+  await loadModel(true);
+  updateModelInfoDisplay();
+  const chat = chats.find(c => c.id === activeChatId);
+  if (chat) {
+    const msg = { role: "ai", text: "All cached models have been removed and the latest model has been installed." };
+    chat.messages.push(msg);
+    appendMessage(msg.text, msg.role, true, null, null, msg);
+    await saveChats();
+  } else {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "message ai";
+    msgDiv.innerHTML = '<span>All cached models have been removed and the latest model has been installed.</span>';
+    chatBox.appendChild(msgDiv);
+  }
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
+
 // Settings modal model select
 if (modelSelect) {
     if (!modelSelect.querySelector('option[value="custom"]')) {
