@@ -50,32 +50,30 @@ function expandTextSpeak(text) {
 
 function collapseShortLines(text) {
   if (!text) return '';
-  const lines = text.split('\n').filter(l => l.trim());
-  if (lines.length < 3) return text;
-  const result = [];
+  const rawLines = text.split('\n');
+  let result = [];
   let buffer = [];
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
+  const flush = () => {
+    while (buffer.length > 0) {
+      const n = buffer.length >= 3 ? 3 : buffer.length;
+      result.push(buffer.splice(0, n).join(' '));
+    }
+  };
+  for (const line of rawLines) {
+    const trimmed = line.trim();
+    if (trimmed === '') {
+      flush();
+      result.push('');
+      continue;
+    }
     if (trimmed.length <= 60) {
-      const cleaned = trimmed.replace(/[.!?]+$/, '').trim();
-      if (cleaned) buffer.push(cleaned);
+      buffer.push(trimmed);
     } else {
-      if (buffer.length > 1) {
-        result.push(buffer.join(' ') + '.');
-      } else if (buffer.length === 1) {
-        result.push(buffer[0]);
-      }
-      buffer = [];
+      flush();
       result.push(trimmed);
     }
   }
-  if (buffer.length > 1) {
-    const last = lines[lines.length - 1].trim();
-    const ending = last.match(/[.!?]+$/);
-    result.push(buffer.join(' ') + (ending ? ending[0] : '.'));
-  } else if (buffer.length === 1) {
-    result.push(buffer[0]);
-  }
+  flush();
   return result.join('\n');
 }
 
