@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en-GB" style="background-color: #000;">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Genesis AI</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+  /* Immediate black-out and hide elements to prevent flash */
+  html, body { 
+    background-color: #000 !important; 
+    margin: 0; 
+    padding: 0; 
+    height: 100%;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+  body { visibility: hidden; }
+  .sidebar, .chat-main { display: none; }
+
+  /* Responsive Toggle visibility */
+  #sidebarToggle {
+    display: none; /* Hidden on desktop by default */
+    background: none; 
+    border: none; 
+    color: var(--text, #fff); 
+    cursor: pointer; 
+    padding: 0; 
+    margin-right: 15px; 
+    align-items: center;
+  }
+
+  /* Mobile-specific overrides using Media Queries */
+  @media (max-width: 768px) {
+    #sidebarToggle {
+      display: flex;
+    }
+  }
+
+  #suggestionBox {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: var(--input-bg, #222);
+    border: 1px solid var(--border, #444);
+    border-radius: 8px;
+    padding: 5px;
+    z-index: 1000;
+    margin-bottom: 5px;
+    min-width: 150px;
+  }
+  .suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text, #fff);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .sidebar {
+    flex-direction: column;
+    height: 100%;
+  }
+  .chat-list {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  #settingsBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  #maintenanceOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    z-index: 999999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', -apple-system, sans-serif;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #maintenanceOverlay .maint-icon-big {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 32px;
+  }
+  #maintenanceOverlay .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  #maintenanceOverlay .brand-row img {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+  }
+  #maintenanceOverlay .brand-row span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #6e6e73;
+  }
+  #maintenanceOverlay .maint-heading {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #1f1f1f;
+    margin: 0 0 8px 0;
+  }
+  #maintenanceOverlay .maint-desc {
+    color: #6e6e73;
+    font-size: 16px;
+    margin: 0 0 32px 0;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+  #maintenanceOverlay a {
+    background: #1a73e8;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+  #maintenanceOverlay a:hover {
+    filter: brightness(0.9);
+    transform: translateY(-1px);
+  }
+
+  /* Bullet list handling - respect newlines from merged responses */
+  .message span {
+    white-space: pre-line;
+  }
+
+  /* Wiki spinner animation */
+  @keyframes wikiSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .wiki-spinner {
+    animation: wikiSpin 2s linear infinite;
+  }
+</style>
+</head>
+<body>
+  <div id="maintenanceOverlay">
+    <img src="maintenance-icon.png" alt="" class="maint-icon-big">
+    <h1 class="maint-heading">Under Maintenance</h1>
+    <p class="maint-desc">Genesis-AI is currently under maintenance. We appreciate your patience and will be back soon.</p>
+    <div class="brand-row">
+      <img src="icon.png" alt="">
+      <span>Genesis-AI</span>
+    </div>
+    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">View Status &rarr;</a>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <button id="newChatBtn">+ New Chat</button>
+    </div>
+    <ul id="chatList" class="chat-list"></ul>
+    <div class="sidebar-footer" style="margin-top: auto; padding: 10px; border-top: 1px solid var(--border, #444); display: flex; align-items: center; justify-content: center;">
+      <div id="userIcon" title="Profile" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #007bff, #0056b3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; font-size: 1.1em;">U</div>
+    </div>
+  </div>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <button id="sidebarToggle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div id="headerModelSelect" class="model-select" title="AI Model">
+        <button class="model-select-trigger" id="modelSelectTrigger">
+          <span class="model-select-info">
+            <span class="model-select-name" id="modelSelectName">Genesis SPT 5.0</span>
+            <span class="model-select-desc" id="modelSelectDesc">Latest and most advanced model</span>
+          </span>
+          <svg class="model-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="model-select-dropdown" id="modelSelectDropdown"></div>
+      </div>
+      <h3 id="chatTitle">Genesis AI</h3>
+      <button id="settingsBtn" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+    
+    <div class="input-container">
+      <div id="inputArea" class="input-area" style="position: relative;">
+        <div id="suggestionBox"></div>
+        <button id="uploadBtn" style="background:none; border:none; cursor:pointer; padding: 0 12px; color: var(--text, #fff);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        </button>
+        <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
+        <button id="searchToggleBtn" class="search-toggle" title="Toggle Web Search" style="background: transparent; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </button>
+        <input type="text" id="userInput" placeholder="Ask Genesis AI" style="padding-left: 30px;">
+        <button id="sendBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="contentWarning">
+        Genesis may display inaccurate info, including about people, so double-check its responses.  
+        <br>
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a> • 
+        <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank">Status</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0 10px 0;">
+        <span>Dark Mode <span class="help-icon" data-help="dark-mode">?</span></span>
+        <label class="toggle">
+          <input type="checkbox" id="themeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 5px 0;">
+        <span>Auto Theme <span class="help-icon" data-help="auto-theme">?</span></span>
+        <label class="toggle">
+          <input type="checkbox" id="autoThemeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
+        <span>Web Search <span class="help-icon" data-help="web-search">?</span></span>
+        <label class="toggle">
+          <input type="checkbox" id="webSearchToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
+        <span>Shortened answers <span class="help-icon" data-help="shortened-answers">?</span></span>
+        <label class="toggle">
+          <input type="checkbox" id="shortenedAnswersToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
+        <span>Quick Actions <span class="help-icon" data-help="quick-actions">?</span></span>
+        <label class="toggle">
+          <input type="checkbox" id="quickActionsToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
+        <span>AI Modal <span class="help-icon" data-help="ai-modal">?</span></span>
+        <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
+          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json">Genesis SPT 5.0 (Default)</option>
+          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json">Genesis SPT 4.6</option>
+          <option value="https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json">Genesis SPT 1.0 (Legacy)</option>
+        </select>
+      </div>
+      <p id="customModelStatus" style="font-size: 0.8em; opacity: 0.7; margin: 0 0 10px 0;"></p>
+      <div style="margin: 10px 0 25px 0;">
+        <button id="redownloadModelBtn" class="confirm" style="width: 100%; padding: 12px 20px; border-radius: 20px; font-weight: 500; background: var(--primary); color: #fff; border: none; cursor: pointer; transition: filter 0.2s ease;">Redownload Model</button>
+      </div>
+      <div style="margin: 20px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">Modal Infor</div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Current Modal: <span id="modelNameDisplay">Loading</span></div>
+        <div style="font-size: 0.9em; opacity: 0.8; display: flex; align-items: center; gap: 5px;">Parameters: <span id="modelParamsDisplay">0</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="confirm" onclick="window.location.href='https://xpdevs.github.io/Genesis-AI/developers/AI-Studio#'">Genesis AI Studio</button>
+        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="help-overlay">
+    <div class="help-overlay-content">
+      <h3 id="helpTitle"></h3>
+      <p id="helpText"></p>
+      <button class="help-overlay-close" onclick="document.getElementById('helpOverlay').classList.remove('show')">Got it</button>
+    </div>
+  </div>
+
+  <div id="accountModal" class="modal">
+    <div class="modal-content">
+      <h2>Account</h2>
+      <div id="accountProfile">
+        <div id="accountAvatar" style="cursor: pointer;" title="Change profile picture">U</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <h3 id="accountName" style="margin: 0;">User</h3>
+            <button id="editNameBtn" style="background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); opacity: 0.7;" title="Edit Name">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+        </div>
+      </div>
+      <div id="googleSignInContainer" style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;"></div>
+      <div class="setting-item">
+        <button id="exportDataBtn">Export Data</button>
+      </div>
+      <div class="setting-item">
+        <button id="deleteAllChatsBtn">Delete All Chats</button>
+      </div>
+      <div class="modal-actions">
+        <button id="deleteAccountBtn" style="background:#ff4d4d;color:#fff;">Delete Account</button>
+        <button class="cancel" onclick="document.getElementById('accountModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="importExportModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2>Data Management</h2>
+      <p style="margin: 10px 0 20px; opacity: 0.8;">Export your data as a backup or import previously exported data from this or other AI platforms.</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin: 20px 0;">
+        <button id="importOptionBtn" style="background: var(--primary); color: #fff; border: none; padding: 14px 20px; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Import Data
+        </button>
+        <button id="exportOptionBtn" style="background: var(--primary); color: #fff; border: none; padding: 14px 20px; border-radius: 20px; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Export Data
+        </button>
+      </div>
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+      <div class="modal-actions">
+        <button class="cancel" onclick="document.getElementById('importExportModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pfpModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2>Change Profile Picture</h2>
+      <div id="pfpPreview" style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #007bff, #0056b3); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; margin: 15px auto;">U</div>
+      <input type="file" id="pfpUploadInput" accept="image/*" style="display: none;">
+      <div class="setting-item">
+        <button id="pfpUploadBtn">Upload Photo</button>
+      </div>
+      <div class="setting-item" id="pfpRemoveContainer" style="display: none;">
+        <button id="pfpRemoveBtn" style="background: #ff4d4d;">Remove Photo</button>
+      </div>
+      <div class="setting-item" id="pfpGoogleContainer" style="display: none;">
+        <button id="pfpGoogleBtn">Use Google Photo</button>
+      </div>
+      <div class="modal-actions" style="justify-content: center;">
+        <button class="cancel" id="pfpCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename Chat</h2>
+      <input type="text" id="renameInput" placeholder="Enter new name..." style="width: 100%; padding: 12px; margin: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+      <div class="modal-actions">
+        <button class="cancel" id="renameCancel">Cancel</button>
+        <button class="confirm" id="renameConfirm">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Chat?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteCancel">Cancel</button>
+        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete Account?</h2>
+      <p>This will permanently delete:</p>
+      <ul id="deleteAccountList" style="text-align: left; margin-bottom: 20px; padding-left: 20px;">
+        <li>All chat history</li>
+        <li>Your saved name</li>
+        <li>Agreement to Terms & Privacy Policy</li>
+      </ul>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteAccountCancel">Cancel</button>
+        <button class="confirm" id="deleteAccountConfirm" style="background:#ff4d4d;color:#fff;">Delete All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteAllModal" class="modal">
+    <div class="modal-content">
+      <h2>Delete everything?</h2>
+      <p>This will permanently remove all chat history.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="deleteAllCancel">Cancel</button>
+        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;">Yes, Delete All</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareModal" class="modal">
+    <div class="modal-content">
+      <h2>Share Chat</h2>
+      <p>Copy this link to share your conversation.</p>
+      <div style="display: flex; gap: 8px; margin: 20px 0;">
+        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
+        <button id="copyShareLinkBtn" style="background:var(--primary);color:#fff;border:none;padding:0 20px;border-radius:12px;cursor:pointer;">Copy</button>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" id="shareCancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer Modal -->
+  <div id="devModal" class="modal" style="display: none; z-index: 100000;">
+    <div class="modal-content" style="max-width: 600px; width: 100%;">
+      <div id="devModalWaiting">
+        <h2 style="margin-top: 0;">Developer Access</h2>
+        <p>Enter the access code in the browser console to proceed.</p>
+        <p>Example: <code>devAccess("xpdevs_power_user")</code></p>
+        <div class="modal-actions">
+          <button id="devModalCancel" class="cancel">Close</button>
+        </div>
+      </div>
+      <div id="devModalOptions" style="display: none;">
+        <h2 style="margin-top: 0;">Developer Options</h2>
+        <div id="devModalStatus">
+          <p><strong>Current Modal:</strong> <span id="devCurrentModalName"></span></p>
+          <p><strong>Mode:</strong> <span id="devCurrentModalMode"></span></p>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--border);">
+        <h4>Load Custom Session Modal</h4>
+        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json or .bin modal file. This will only be used for the current session and will be lost on refresh.</p>
+        <input type="file" id="customModelInput" accept=".json,.bin" style="margin-top: 10px;">
+        <p id="uploadStatus" style="font-size: 12px; margin-top: 8px; color: var(--primary);"></p>
+        <div class="modal-actions">
+          <button id="devModalClose" class="cancel">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editNameModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit Name</h2>
+      <input type="text" id="editNameInput" placeholder="Enter your name..." style="width: 100%; padding: 12px; margin: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
+      <div class="modal-actions">
+        <button class="cancel" id="editNameCancel">Cancel</button>
+        <button class="confirm" id="editNameConfirm">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="infoModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2 id="infoModalTitle">Info</h2>
+      <p id="infoModalMessage" style="margin: 15px 0;">Message</p>
+      <div class="modal-actions" style="justify-content: center;">
+        <button class="confirm" id="infoModalOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="refreshWarningModal" class="modal">
+    <div class="modal-content">
+      <h2>Switch Modal?</h2>
+      <p>Changing the AI modal requires the page to reload. Any unsaved context might be lost.</p>
+      <div class="modal-actions">
+        <button class="cancel" id="refreshCancel">Cancel</button>
+        <button class="confirm" id="refreshConfirm">Switch & Reload</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const MAINTENANCE_MODE = 0;
+
+  const loadStyle = (href) => {
+    return new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `${href}?v=${Date.now()}`;
+      link.onload = resolve;
+      link.onerror = () => { console.warn(`CSS failed: ${href}`); resolve(); };
+      document.head.appendChild(link);
+    });
+  };
+
+  const loadScript = (src, isAsync = true) => {
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = `${src}?v=${Date.now()}`;
+      s.async = isAsync;
+      s.onload = resolve;
+      s.onerror = () => { console.warn(`Script failed: ${src}`); resolve(); };
+      document.head.appendChild(s);
+    });
+  };
+
+(async () => {
+  if (MAINTENANCE_MODE === 1) {
+    const overlay = document.getElementById('maintenanceOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    document.documentElement.style.backgroundColor = '#fff';
+    document.body.style.visibility = 'visible';
+    return;
+  }
+
+  // 1. Auth check (IndexedDB with localStorage fallback)
+  const isAuthenticated = await (() => {
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open('GenesisAI', 1);
+        req.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('appState'))
+            db.createObjectStore('appState', { keyPath: 'key' });
+        };
+        req.onsuccess = (e) => {
+          try {
+            const tx = e.target.result.transaction('appState', 'readonly');
+            const store = tx.objectStore('appState');
+            const get = store.get('SETUP');
+            get.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+            get.onsuccess = () => resolve(get.result && get.result.value === 'FLAG_TRUE');
+          } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+        };
+      } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+    });
+  })();
+  if (!isAuthenticated) {
+    window.location.href = 'landing.html';
+    return;
+  }
+
+  // 2. Identify platform
+  const isMobile = window.innerWidth <= 768;
+  
+  // 2. Set handshake code to bypass mobile redirect logic in main.js
+  window.GENESIS_CODE = "9980748324";
+
+// 3. Load appropriate CSS based on device
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/sidebar.css');
+if (isMobile) {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
+} else {
+  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
+}
+
+  // 4. Load common assets
+  await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+  
+  document.body.style.visibility = 'visible';
+  const uiElements = document.querySelectorAll('.sidebar, .chat-main');
+  uiElements.forEach(el => el.style.display = 'flex');
+  
+await Promise.all([
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/type.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/greetings.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/fa.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/speech.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/TXTAuth.js'),
+
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/modal_popup_fet.js')
+]);
+
+  // 6. Universal Sidebar Toggle Logic (Works if element exists)
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const sidebar = document.querySelector('.sidebar');
+  
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    });
+  }
+  
+  // Format parameter display
+  const formatParams = (num) => {
+    const n = parseFloat(num);
+    if (isNaN(n)) return num;
+    if (n < 1000) return n.toString();
+    if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    if (n < 1000000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    return (n / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+  };
+
+  const paramsObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      const target = mutation.target.nodeType === 3 ? mutation.target.parentElement : mutation.target;
+      if (target && target.id === 'modelParamsDisplay') {
+        const val = target.textContent;
+        if (!isNaN(val) && val.trim() !== '') {
+          const formatted = formatParams(val);
+          if (val !== formatted) {
+            paramsObserver.disconnect();
+            target.textContent = formatted;
+            startParamsObserver();
+          }
+        }
+      }
+    }
+  });
+
+  const startParamsObserver = () => {
+    const el = document.getElementById('modelParamsDisplay');
+    if (el) paramsObserver.observe(el, { childList: true, characterData: true, subtree: true });
+  };
+  startParamsObserver();
+})();
+</script>
+</body>
+</html>
