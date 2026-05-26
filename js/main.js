@@ -107,6 +107,26 @@ const DB = {
         });
     },
 
+    async getAllResponses() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction([this.responsesStore], "readonly");
+            const store = transaction.objectStore(this.responsesStore);
+            const request = store.openCursor();
+            const result = {};
+            request.onsuccess = () => {
+                const cursor = request.result;
+                if (cursor) {
+                    result[cursor.key] = cursor.value;
+                    cursor.continue();
+                } else {
+                    resolve(result);
+                }
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
     async delete(key) {
         if (!this.db) await this.init();
         return new Promise((resolve, reject) => {
@@ -1121,8 +1141,8 @@ async function loadModel(force = false) {
       buffer = buffer.substring(i);
     }
     
-    await DB.setModel(jsonURL, { cached: true });
-    responses = null;
+    responses = await DB.getAllResponses();
+    await DB.setModel(jsonURL, responses);
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
