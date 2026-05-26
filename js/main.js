@@ -289,10 +289,10 @@ function loadMathSupport() {
     const link = document.createElement('link');
     link.id = 'katex-css';
     link.rel = 'stylesheet';
-    link.href = 'https://xpdevs.github.io/Genesis-AI/styles/calc-display.css?v=' + Date.now();
+    link.href = 'styles/calc-display.css?v=' + Date.now();
     document.head.appendChild(link);
     const script = document.createElement('script');
-    script.src = 'https://xpdevs.github.io/Genesis-AI/js/calc-display.js?v=' + Date.now();
+    script.src = 'js/calc-display.js?v=' + Date.now();
     script.onload = () => { window.katexLoaded = true; };
     document.head.appendChild(script);
 }
@@ -840,7 +840,7 @@ function ensureBanModal() {
       <h2 id="banModalTitle">You have been banned</h2>
       <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
       <p id="banModalCountdown" class="ban-countdown">Time left: calculating...</p>
-      <p class="ban-footer">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+      <p class="ban-footer">Read our <a id="banTosLink" href="legal/terms-of-service.html" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
     </div>
   `;
   document.body.appendChild(modal);
@@ -979,156 +979,18 @@ async function loadModel(force = false) {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
     
-    const contentLength = r.headers.get("Content-Length");
-    const total = contentLength ? parseInt(contentLength, 10) : 0;
-    const SIZE_THRESHOLD = 50 * 1024 * 1024; // 50MB
-
-    if (total > 0 && total < SIZE_THRESHOLD) {
-      // SMALL MODEL: Use traditional in-memory loading
-      const allBytes = await r.arrayBuffer();
-      const modelData = JSON.parse(new TextDecoder().decode(allBytes));
-      responses = modelData;
-      await DB.setModel(jsonURL, modelData);
-      hideModelLoading();
-      return;
-    }
-
-    // LARGE MODEL: Use streaming + IndexedDB with robust state-machine parser
-    await DB.clearResponses();
-    const reader = r.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let loaded = 0;
-    
-    let state = 'expect_key_start';
-    let currentKey = '';
-    let currentValue = '';
-    let escape = false;
-    let braceDepth = 0;
-    let rootStarted = false;
-    let totalInserted = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      buffer += decoder.decode(value, { stream: true });
-      loaded += value.length;
-      if (total) showModelLoading(Math.round((loaded / total) * 100));
-      
-      let i = 0;
-      while (i < buffer.length) {
-        const ch = buffer[i];
-        if (state === 'expect_key_start') {
-          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
-          if (ch === '{' && !rootStarted) {
-            rootStarted = true;
-            braceDepth = 1;
-            i++;
-            continue;
-          }
-          if (rootStarted && (ch === ',' || ch === '}')) {
-            if (ch === '}') braceDepth--;
-            i++;
-            if (braceDepth === 0) break;
-            continue;
-          }
-          if (rootStarted && ch === '"') {
-            state = 'in_key';
-            currentKey = '';
-            i++;
-            continue;
-          }
-          i++;
-        }
-        else if (state === 'in_key') {
-          if (escape) {
-            currentKey += ch;
-            escape = false;
-            i++;
-            continue;
-          }
-          if (ch === '\\') { escape = true; i++; continue; }
-          if (ch === '"') {
-            state = 'after_key';
-            i++;
-            continue;
-          }
-          currentKey += ch;
-          i++;
-        }
-        else if (state === 'after_key') {
-          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
-          if (ch === ':') {
-            state = 'expect_value_start';
-            i++;
-            continue;
-          }
-          state = 'expect_key_start';
-          i++;
-        }
-        else if (state === 'expect_value_start') {
-          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
-          if (ch === '"') {
-            state = 'in_value';
-            currentValue = '';
-            i++;
-            continue;
-          } else {
-            state = 'after_value';
-            i++;
-          }
-        }
-        else if (state === 'in_value') {
-          if (escape) {
-            currentValue += ch;
-            escape = false;
-            i++;
-            continue;
-          }
-          if (ch === '\\') { escape = true; i++; continue; }
-          if (ch === '"') {
-            state = 'after_value';
-            i++;
-            continue;
-          }
-          currentValue += ch;
-          i++;
-        }
-        else if (state === 'after_value') {
-          if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
-          if (currentKey !== '' && currentValue !== '') {
-            await DB.setResponse(currentKey, currentValue);
-            totalInserted++;
-            if (totalInserted % 500 === 0) await new Promise(r => setTimeout(r, 0));
-          }
-          currentKey = '';
-          currentValue = '';
-          if (ch === ',') {
-            state = 'expect_key_start';
-            i++;
-          } else if (ch === '}') {
-            braceDepth--;
-            state = 'expect_key_start';
-            i++;
-            if (braceDepth === 0) break;
-          } else {
-            state = 'expect_key_start';
-            i++;
-          }
-        }
-      }
-      buffer = buffer.substring(i);
-    }
-    
-    await DB.setModel(jsonURL, { cached: true });
-    responses = null;
+    const totalBytes = await r.arrayBuffer();
+    const modelData = JSON.parse(new TextDecoder().decode(totalBytes));
+    responses = modelData;
+    await DB.setModel(jsonURL, modelData);
+    const is55 = jsonURL.includes("8897d4c1d_Genesis-55");
+    await DB.set("currentModelMeta", { ver: is55 ? "Genesis 5.5" : (modelData.ver || "Unknown"), params: is55 ? "525.8K" : Object.keys(modelData).length });
     hideModelLoading();
   } catch (err) {
     hideModelLoading();
     console.error("Model load error:", err);
     // fallback to default model
-    const r = await fetch("https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json?v=" + Date.now());
+    const r = await fetch("modals/Genesis-SPT-1.0.json?v=" + Date.now());
     const data = await r.json();
     responses = data; 
     if (typeof showLegacyModal === "function") showLegacyModal();
@@ -2111,7 +1973,7 @@ async function fetchWikipediaSummary(topic) {
 let bannedWords = [];
 async function loadBannedWords() {
   try {
-    const res = await fetch("https://xpdevs.github.io/Genesis-AI/js/banned/words.json?v=" + Date.now());
+    const res = await fetch("js/banned/words.json?v=" + Date.now());
     if (res.ok) bannedWords = await res.json();
   } catch (err) { console.error("Error loading banned words:", err); }
 }
@@ -2425,7 +2287,7 @@ async function findResponses(input, history) {
           ];
           const isQuestion = prefixes.some(prefix => cleanInput.startsWith(prefix));
 
-          const modelVer = (responses.ver || "").toLowerCase();
+          const modelVer = responses ? (responses.ver || "").toLowerCase() : "";
           let allowWiki = true;
 
           if (modelVer.includes("1.0")) {
@@ -2634,7 +2496,7 @@ async function sendMessage() {
           runAuth();
       } else {
           const script = document.createElement('script');
-          script.src = "https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js?v=" + Date.now();
+          script.src = "js/ImgAuth.js?v=" + Date.now();
           script.onload = runAuth;
           script.onerror = () => {
               if (requestId !== aiState.currentRequestId) return;
@@ -2856,7 +2718,8 @@ async function sendMessage() {
 // --- DEVELOPER MODE ---
 function updateDevModalStatus() {
     if (!devModal || !devModal.style.display || devModal.style.display === 'none') return;
-    devCurrentModalName.textContent = responses.ver || "Unknown Version";
+    const { ver } = getModelDisplayValues();
+    devCurrentModalName.textContent = ver;
     devCurrentModalMode.textContent = customModelInput.files.length > 0 ? "Custom (Session)" : "Normal";
     uploadStatus.textContent = "";
 }
@@ -3057,8 +2920,9 @@ userInput.addEventListener("keypress", e => {
 });
 settingsBtn.onclick = () => {
     settingsModal.style.display = "flex";
-    document.getElementById("modelNameDisplay").textContent = responses.ver || "Genesis-SPT-5.0";
-    document.getElementById("modelParamsDisplay").textContent = Object.keys(responses).length;
+    const { ver, params } = getModelDisplayValues();
+    document.getElementById("modelNameDisplay").textContent = ver;
+    document.getElementById("modelParamsDisplay").textContent = params;
     const statusEl = document.getElementById("customModelStatus");
     if (statusEl) statusEl.innerHTML = "";
 };
@@ -3117,6 +2981,11 @@ if (userIcon) {
 
 const MODELS = [
   {
+    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
+    name: "Genesis 5.5",
+    desc: "Latest model with improved response quality"
+  },
+  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
     name: "Genesis SPT 5.0",
     desc: "Latest model with improved response quality"
@@ -3127,7 +2996,7 @@ const MODELS = [
     desc: "Balanced model for general conversations"
   },
   {
-    value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
+    value: "modals/Genesis-SPT-1.0.json",
     name: "Genesis SPT 1.0 (Legacy)",
     desc: "Original model for simple interactions"
   }
@@ -3137,47 +3006,34 @@ function getModelInfo(value) {
   return MODELS.find(m => m.value === value) || MODELS[0];
 }
 
-function updateModelInfoDisplay() {
+function isModel55(url) {
+  return url && url.includes("8897d4c1d_Genesis-55");
+}
+
+function getModelDisplayValues() {
+  const url = jsonURL || "";
+  if (isModel55(url)) {
+    return { ver: "Genesis 5.5", params: "525.8K" };
+  }
+  if (responses) {
+    return { ver: responses.ver || "Unknown", params: Object.keys(responses).length };
+  }
+  return { ver: "Unknown", params: "?" };
+}
+
+async function updateModelInfoDisplay() {
   const modelNameDisplay = document.getElementById("modelNameDisplay");
   const modelParamsDisplay = document.getElementById("modelParamsDisplay");
-  if (modelNameDisplay) modelNameDisplay.textContent = (responses && responses.ver) || "Unknown";
-  if (modelParamsDisplay) modelParamsDisplay.textContent = responses ? Object.keys(responses).length : 0;
+  const { ver, params } = getModelDisplayValues();
+  if (modelNameDisplay) modelNameDisplay.textContent = ver;
+  if (modelParamsDisplay) modelParamsDisplay.textContent = params;
 }
 
 async function switchModel(value) {
   if (aiState.isResponding) stopGeneration();
   await DB.set("selectedModel", value);
   await loadModel(true);
-  updateModelInfoDisplay();
-}
-
-// Secret function: wipes all cached models, then downloads and caches the latest model only
-window.Full = window.Full || {};
-const LEGACY_MODEL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
-window.Full.FormatRemoveModels = async function() {
-  if (aiState.isResponding) stopGeneration();
-
-  // Step 1: Clear all cached models and responses
-  const db = await new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB.dbName, DB.dbVersion);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  const tx = db.transaction([DB.modelStore, DB.responsesStore], "readwrite");
-  tx.objectStore(DB.modelStore).clear();
-  tx.objectStore(DB.responsesStore).clear();
-  await new Promise(r => tx.oncomplete = r);
-  db.close();
-
-  // Step 2: Download and cache the legacy model (1.0)
-  await DB.set("selectedModel", LEGACY_MODEL);
-  await loadModel(true);
-
-  // Step 3: Download and cache the latest model
-  await DB.set("selectedModel", defaultModel);
-  await loadModel(true);
-
-  updateModelInfoDisplay();
+  await updateModelInfoDisplay();
 };
 
 // Settings modal model select
@@ -3307,8 +3163,9 @@ if (redownloadModelBtn) {
         await loadModel(true);
         const modelNameDisplay = document.getElementById("modelNameDisplay");
         const modelParamsDisplay = document.getElementById("modelParamsDisplay");
-        if (modelNameDisplay) modelNameDisplay.textContent = responses.ver || "Unknown";
-        if (modelParamsDisplay) modelParamsDisplay.textContent = Object.keys(responses).length;
+        const { ver, params } = getModelDisplayValues();
+        if (modelNameDisplay) modelNameDisplay.textContent = ver;
+        if (modelParamsDisplay) modelParamsDisplay.textContent = params;
         showInfoModal("Success", "Model re-downloaded successfully!");
     };
 }
@@ -3948,7 +3805,7 @@ window.addEventListener('app-ready', startApp);
         return;
       }
     }
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
+    window.location.href = "legal/setup.html";
     return;
   }
   initializeApp();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link rel="icon" type="image/x-icon" href="icon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <title>Genesis AI</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -172,7 +172,7 @@
       <img src="icon.png" alt="">
       <span>Genesis-AI</span>
     </div>
-    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">View Status &rarr;</a>
+    <a href="status/Status.html">View Status &rarr;</a>
   </div>
 
   <div class="sidebar">
@@ -240,9 +240,9 @@
       <div id="contentWarning">
         Genesis may display inaccurate info, including about people, so double-check its responses.  
         <br>
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank">Status</a>
+        <a href="legal/privacy-policy.html" target="_blank">Privacy Policy</a> • 
+        <a href="legal/terms-of-service.html" target="_blank">Terms Of Service</a> • 
+        <a href="status/Status.html" target="_blank">Status</a>
       </div>
     </div>
   </div>
@@ -288,9 +288,10 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
         <span>AI Modal <span class="help-icon" data-help="ai-modal">?</span></span>
         <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
+          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json">Genesis 5.5</option>
           <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json">Genesis SPT 5.0 (Default)</option>
           <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json">Genesis SPT 4.6</option>
-          <option value="https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json">Genesis SPT 1.0 (Legacy)</option>
+          <option value="modals/Genesis-SPT-1.0.json">Genesis SPT 1.0 (Legacy)</option>
         </select>
       </div>
       <p id="customModelStatus" style="font-size: 0.8em; opacity: 0.7; margin: 0 0 10px 0;"></p>
@@ -303,7 +304,7 @@
         <div style="font-size: 0.9em; opacity: 0.8; display: flex; align-items: center; gap: 5px;">Parameters: <span id="modelParamsDisplay">0</span></div>
       </div>
       <div class="modal-actions">
-        <button class="confirm" onclick="window.location.href='https://xpdevs.github.io/Genesis-AI/developers/AI-Studio#'">Genesis AI Studio</button>
+        <button class="confirm" onclick="window.location.href='developers/AI-Studio#'">Genesis AI Studio</button>
         <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
       </div>
     </div>
@@ -577,31 +578,32 @@
   window.GENESIS_CODE = "9980748324";
 
 // 3. Load appropriate CSS based on device
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/sidebar.css');
+  await loadStyle('styles/sidebar.css');
 if (isMobile) {
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
+  await loadStyle('styles/mobile-ui.css');
 } else {
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
+  await loadStyle('styles/ui.css');
 }
 
   // 4. Load common assets
-  await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
+  await loadScript('js/loading.js');
   
   document.body.style.visibility = 'visible';
   const uiElements = document.querySelectorAll('.sidebar, .chat-main');
   uiElements.forEach(el => el.style.display = 'flex');
   
 await Promise.all([
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/type.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/greetings.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/fa.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/TXTAuth.js'),
+  loadScript('js/type.js'),
+  loadScript('js/greetings.js'),
+  loadScript('js/fa.js'),
+  loadScript('js/main.js'),
 
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/modal_popup_fet.js')
+  loadScript('js/summarise.js'),
+  loadScript('js/calc.js'),
+  loadScript('js/ImgAuth.js'),
+  loadScript('js/TXTAuth.js'),
+
+  loadScript('js/modal_popup_fet.js')
 ]);
 
   // 6. Universal Sidebar Toggle Logic (Works if element exists)
