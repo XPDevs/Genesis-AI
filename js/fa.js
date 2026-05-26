@@ -1,27 +1,116 @@
+const TEXT_SPEAK_MAP = {
+  "u": "you", "ur": "you are", "ya": "you", "yall": "you all",
+  "r": "are", "re": "are",
+  "2": "to", "2day": "today", "2morrow": "tomorrow", "2nite": "tonight",
+  "4": "for", "4ever": "forever",
+  "b": "be", "bc": "because", "cuz": "because", "coz": "because", "bcos": "because",
+  "pls": "please", "plz": "please",
+  "thx": "thanks", "ty": "thank you", "thnx": "thanks",
+  "dunno": "do not know", "dont": "do not", "don't": "do not",
+  "cant": "can not", "can't": "can not", "cannot": "can not",
+  "wont": "will not", "won't": "will not",
+  "didnt": "did not", "didn't": "did not",
+  "wasnt": "was not", "wasn't": "was not",
+  "wanna": "want to", "gonna": "going to", "gotta": "got to",
+  "idk": "i do not know", "idc": "i do not care",
+  "imo": "in my opinion", "imho": "in my humble opinion", "tbh": "to be honest",
+  "btw": "by the way", "fyi": "for your information", "afaik": "as far as i know",
+  "lmk": "let me know", "brb": "be right back", "bbl": "be back later",
+  "omw": "on my way", "ttyl": "talk to you later", "cya": "see you",
+  "smh": "shaking my head", "lol": "", "lmao": "", "lolz": "",
+  "rofl": "", "wtf": "what the", "wth": "what the",
+  "dm": "direct message", "pm": "private message",
+  "fav": "favorite", "fave": "favorite",
+  "tho": "though", "nvm": "never mind",
+  "ppl": "people", "pplz": "people",
+  "srsly": "seriously", "prolly": "probably", "def": "definitely",
+  "rn": "right now", "atm": "at the moment",
+  "k": "okay", "kk": "okay", "ok": "okay", "oke": "okay", "okie": "okay",
+  "np": "no problem", "yw": "you are welcome",
+  "cool": "great", "nice": "good",
+  "sup": "what is up", "wassup": "what is up",
+  "msg": "message",
+  "tia": "thanks in advance",
+  "hmu": "hit me up",
+  "ik": "i know", "ikr": "i know right"
+};
+
+function expandTextSpeak(text) {
+  if (!text) return '';
+  const words = text.split(/\s+/);
+  const expanded = words.map(word => {
+    const clean = word.replace(/[^\w]/g, '').toLowerCase();
+    if (TEXT_SPEAK_MAP[clean] !== undefined) {
+      return TEXT_SPEAK_MAP[clean];
+    }
+    return word;
+  });
+  return expanded.join(' ');
+}
+
+function collapseShortLines(text) {
+  if (!text) return '';
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 3) return text;
+  const result = [];
+  let buffer = [];
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.length <= 60) {
+      const cleaned = trimmed.replace(/[.!?]+$/, '').trim();
+      if (cleaned) buffer.push(cleaned);
+    } else {
+      if (buffer.length > 1) {
+        result.push(buffer.join(' ') + '.');
+      } else if (buffer.length === 1) {
+        result.push(buffer[0]);
+      }
+      buffer = [];
+      result.push(trimmed);
+    }
+  }
+  if (buffer.length > 1) {
+    const last = lines[lines.length - 1].trim();
+    const ending = last.match(/[.!?]+$/);
+    result.push(buffer.join(' ') + (ending ? ending[0] : '.'));
+  } else if (buffer.length === 1) {
+    result.push(buffer[0]);
+  }
+  return result.join('\n');
+}
+
 const FLAGS = {
   "greeting_standard": {
     patterns: [/\bhi\b|\bhello\b|\bhey\b|\bheyyy?\b|\bheya?\b/i, /\bhowdy\b|\bgreetings\b|\bsalutations\b/i, /\bhiya\b|\bello\b|\bhelo\b/i],
-    format: "compact"
+    format: "compact_flow"
   },
   "greeting_formal": {
     patterns: [/\bgood\s+morning\b|\bgood\s+afternoon\b|\bgood\s+evening\b/i, /\bmorning\b|\bafternoon\b|\bevening\b[!.]*$/im, /\bgm\b|\bgn\b|\bgday\b/i],
-    format: "compact"
+    format: "compact_flow"
   },
   "greeting_casual": {
     patterns: [/\bsup\b|\bwassup\b|\bwhassup\b|\bwhat's\s+up\b|\bwassup\b/i, /\byo\b|\bey\b|\bhey\s+there\b/i, /\blong\s+time\s+no\s+see\b|\bgood\s+to\s+see\b/i],
-    format: "compact"
+    format: "compact_flow"
   },
   "farewell_standard": {
     patterns: [/\bbye\b|\bgoodbye\b|\bgood\s+bye\b|\bbye-?bye\b|\bbuh\s+bye\b/i, /\bsee\s+(ya|you|you\s+later|later|you\s+soon|you\s+around)\b/i, /\btake\s+care\b|\bhave\s+a\s+good\s+(one|day|night|evening)\b|\bgotta\s+go\b/i],
-    format: "compact"
+    format: "compact_flow"
   },
   "farewell_formal": {
     patterns: [/\bfarewell\b|\badieu\b|\bso\s+long\b/i, /\buntil\s+(next\s+time|we\s+meet\s+again|then)\b|\bcheerio\b/i, /\bpeace\s+out\b|\blater\b|\blaters\b|\bcatch\s+you\s+later\b/i],
-    format: "compact"
+    format: "compact_flow"
   },
   "farewell_night": {
     patterns: [/\bgood\s+night\b|\bnighty?\s*night\b|\bsleep\s+well\b|\bsweet\s+dreams\b/i, /\bgonna\s+hit\s+the\s+sack\b|\bhitting\s+the\s+hay\b|\bgoing\s+to\s+bed\b/i],
-    format: "compact"
+    format: "compact_flow"
+  },
+  "introduction": {
+    patterns: [/\bwho\s+(are|is)\s+(you|this|the\s+ai)\b/i, /\bintroduce\s+(yourself|the\s+ai|this\s+system)\b/i, /\btell\s+me\s+about\s+(yourself|you|this\s+system)\b/i, /\bwhat\s+are\s+you\b/i],
+    format: "compact_flow"
+  },
+  "help_request": {
+    patterns: [/\bi\s+(need|want|would\s+like)\s+(some\s+|a\s+little\s+)?(help|assistance|aid)\b/i, /\bcan\s+you\s+(help|assist|aid)\s+me\b/i, /\bhelp\s+me\b/i, /\b(need|wanna)\s+(some\s+)?help\b/i],
+    format: "compact_flow"
   },
   "gratitude_thanks": {
     patterns: [/\bthanks?\b|\bthank\s+(you|u|ya|you\s+so\s+much|you\s+a\s+lot)\b/i, /\bty\b|\bthx\b|\bthnx\b|\btysm\b|\btbh\b/i],
@@ -924,6 +1013,9 @@ function formatByFlags(text, flags) {
   if (!text || !flags || flags.length === 0) return text;
   for (const flag of flags) {
     switch (flag.format) {
+      case 'compact_flow':
+        text = collapseShortLines(text);
+        break;
       case 'compact':
         text = text.length > 200 ? text.split('\n')[0] : text;
         break;
@@ -1265,6 +1357,7 @@ function formatByFlags(text, flags) {
 function normalizeInput(input) {
   if (!input) return '';
   let normalized = input.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+  normalized = expandTextSpeak(normalized);
   if (typeof TYPE_MAP === 'undefined') return normalized;
   const words = normalized.split(/\s+/);
   const corrected = words.map(word => {
