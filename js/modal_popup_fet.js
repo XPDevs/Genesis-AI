@@ -1,4 +1,4 @@
-const FEATURE_MODAL_KEY = 'genesis_5_announcement_dismissed';
+const FEATURE_MODAL_KEY = 'genesis_55_announcement_dismissed';
 
 function showFeatureModal() {
   if (localStorage.getItem(FEATURE_MODAL_KEY)) {
@@ -10,9 +10,8 @@ function showFeatureModal() {
   modal.innerHTML = `
     <div class="modal-overlay"></div>
     <div class="modal-content">
-      <h2>Genesis 5.0 Released</h2>
-      <p>Genesis 4.5 has been removed. The new model 5.0 is now available with 45,000 parameters, up from 5,000 parameters in the previous model 4.6.</p>
-      <p>Genesis 4.6 will still be available until the next major release.</p>
+      <h2>Genesis 5.5 Released</h2>
+      <p>Genesis 5.5 is now available with over 525,000 parameters, a massive upgrade from 45,000 in 5.0. This model brings significantly improved response quality and a broader knowledge base.</p>
       <div class="modal-actions">
         <button id="feature-modal-ok" class="confirm">Got it</button>
       </div>
