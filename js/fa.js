@@ -254,10 +254,38 @@ function removeRepetitions(text) {
   return result || text;
 }
 
+// --- FOLLOW-UP QUESTION ---
+function maybeAddFollowUp(text) {
+  if (!text || text.length < 20) return text;
+
+  const trimmed = text.trim();
+
+  // Don't add if already ends with a question
+  if (trimmed.endsWith('?')) return trimmed;
+
+  // Don't add if already contains a help offer
+  if (/\b(how can I help|what can I do for|can I help you|let me know if|anything else|is there anything)\b/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const questions = [
+    'Is there anything else I can help you with?',
+    'What else would you like to know?',
+    'Can I help you with anything else?',
+    'Would you like me to explain anything further?',
+    'Do you have any other questions?',
+    'Let me know if you need anything else!',
+    'Is there anything more I can assist you with?',
+    'Anything else I can do for you?',
+  ];
+
+  return trimmed + ' ' + questions[Math.floor(Math.random() * questions.length)];
+}
+
 // --- RESPONSE MERGING ---
 function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
-  if (texts.length === 1) return removeRepetitions(formatListResponse(texts[0]));
+  if (texts.length === 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(texts[0])));
 
   const allSentences = [];
   for (const text of texts) {
@@ -277,7 +305,7 @@ function mergeMatches(texts) {
     }
   }
 
-  if (allSentences.length <= 1) return removeRepetitions(formatListResponse(allSentences[0] || texts[0]));
+  if (allSentences.length <= 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(allSentences[0] || texts[0])));
 
   const unique = [];
   for (const sentence of allSentences) {
@@ -293,7 +321,7 @@ function mergeMatches(texts) {
     if (!dup) unique.push(sentence);
   }
 
-  if (unique.length <= 1) return removeRepetitions(formatListResponse(unique[0] || texts[0]));
+  if (unique.length <= 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(unique[0] || texts[0])));
 
   const helpOffers = unique.filter(s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s));
   const hasCapabilities = unique.some(s => /\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(s) && s.length > 15);
@@ -320,5 +348,5 @@ function mergeMatches(texts) {
     result.push(formatListResponse(sentence));
   }
 
-  return removeRepetitions(result.join(' '));
+  return maybeAddFollowUp(removeRepetitions(result.join(' ')));
 }
