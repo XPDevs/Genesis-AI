@@ -1,7 +1,7 @@
 // --- DATABASE UTILITY (IndexedDB) ---
 const DB = {
     dbName: "GenesisAI",
-    dbVersion: 2,
+    dbVersion: 3,
     storeName: "settings",
     modelStore: "models",
     responsesStore: "responses",

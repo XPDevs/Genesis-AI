@@ -1,3 +1,19 @@
+// --- MISSPELLING CORRECTION ---
+function normalizeInput(input) {
+  if (!input) return '';
+  let normalized = input.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (typeof TYPE_MAP === 'undefined') return normalized;
+  const words = normalized.split(/\s+/);
+  const corrected = words.map(word => {
+    if (TYPE_MAP[word]) return word;
+    for (const [correct, variants] of Object.entries(TYPE_MAP)) {
+      if (variants.includes(word)) return correct;
+    }
+    return word;
+  });
+  return corrected.join(' ');
+}
+
 // --- CONTEXT UNDERSTANDING ---
 function getChatContext(history) {
     const context = {
@@ -46,7 +62,7 @@ function getChatContext(history) {
 }
 
 function findContextualMatch(input, context, keys) {
-    const lowerInput = input.toLowerCase();
+    const lowerInput = normalizeInput(input);
 
     const followUpPatterns = [
         /tell me more/i, /explain further/i, /go on/i, /continue/i,
@@ -161,7 +177,7 @@ function levenshteinDistance(a, b) {
 }
 
 function findFuzzyMatch(input, keys, maxDistance = 3) {
-  const lowerInput = input.toLowerCase();
+  const lowerInput = normalizeInput(input);
   let bestMatch = null;
   let bestDistance = Infinity;
   
@@ -197,7 +213,7 @@ function formatListResponse(text) {
     const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
     if (rawItems.length >= 3) {
       const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
-      return listMatch[1] + ':\n' + items.map(item => '- ' + item.charAt(0).toUpperCase() + item.slice(1)).join('\n');
+      return listMatch[1] + ':\n' + items.map(item => '- ' + item.charAt(0).toUpperCase() + item.slice(1)).join('\n') + '\n';
     }
   }
 
@@ -360,5 +376,5 @@ function mergeMatches(texts) {
     result.push(formatListResponse(sentence));
   }
 
-  return maybeAddFollowUp(removeRepetitions(result.join(' ')));
+  return maybeAddFollowUp(removeRepetitions(result.join('\n')));
 }
