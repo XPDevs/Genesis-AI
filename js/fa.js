@@ -211,7 +211,7 @@ function removeRepetitions(text) {
   let result = text;
 
   // 1. Deduplicate AI name mentions (keep first mention only)
-  const namePattern = /\bgenesis[-\s]?ai\b/gi;
+  const namePattern = /\bgenesis(?:[-\s]?ai)?\b/gi;
   let nameCount = 0;
   result = result.replace(namePattern, (m) => nameCount++ === 0 ? m : '');
 
@@ -243,7 +243,10 @@ function removeRepetitions(text) {
     }
   }
 
-  // 3. Clean up whitespace artifacts from removals
+  // 3. Clean up orphaned "I'm" / "I am" artifacts from name removal
+  result = result.replace(/\b(I'm|I am)\s*[.!?]+\s*/gi, '');
+
+  // 4. Clean up whitespace artifacts from removals
   result = result.replace(/\s{2,}/g, ' ')
                  .replace(/\s+([.,!?;:])/g, '$1')
                  .trim();
