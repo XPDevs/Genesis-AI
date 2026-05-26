@@ -48,6 +48,21 @@ function expandTextSpeak(text) {
   return expanded.join(' ');
 }
 
+const UNWANTED_LINES = [
+  /^Nice to meet you! You are worthy, capable, and strong\.?$/i,
+];
+
+function removeUnwantedLines(text) {
+  if (!text) return '';
+  const lines = text.split('\n');
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim();
+    if (UNWANTED_LINES.some(pattern => pattern.test(trimmed))) return false;
+    return true;
+  });
+  return filtered.join('\n');
+}
+
 function collapseShortLines(text) {
   if (!text) return '';
   const rawLines = text.split('\n');
@@ -1097,19 +1112,10 @@ function formatByFlags(text, flags) {
         text += '\n\n*Disclaimer: This is for informational purposes only and is not financial advice. Consult a qualified financial advisor before making investment decisions.*';
         break;
       case 'warm_grateful':
-        text = "That means a lot, thank you! \ud83d\ude0a";
-        break;
       case 'empathetic_comforting':
-        text = "I hear you, and I'm here for you. \ud83e\udd17 " + text;
-        break;
       case 'energetic_cheerful':
-        text = "That's amazing! \ud83c\udf89 " + text;
-        break;
       case 'gracious_response':
-        text = "That's very kind of you to say! \ud83d\ude0a";
-        break;
       case 'fun_suggestions':
-        text = "Let's do something fun! \ud83c\udfae " + text;
         break;
       case 'joke_response':
         if (!text.startsWith('Why') && !text.startsWith('What')) {
@@ -1123,16 +1129,9 @@ function formatByFlags(text, flags) {
         text = "Did you know?\n\n" + text;
         break;
       case 'motivational_speech':
-        text = "You've got this! \ud83d\udcaa\n\n" + text;
-        break;
       case 'affirmation_response':
-        text = "You are worthy, capable, and strong.\n\n" + text;
-        break;
       case 'celebratory':
-        text = "\ud83c\udf89 Congratulations! " + text;
-        break;
       case 'congratulatory':
-        text = "Amazing work! \ud83c\udf89 " + text;
         break;
       case 'patient_explainer':
         text = "Let me explain that more clearly:\n\n" + text;
@@ -1148,7 +1147,6 @@ function formatByFlags(text, flags) {
         text = text.length > 50 ? text.split(/[.!?]/)[0] + '.' : text;
         break;
       case 'friendly_intro':
-        text = "I'm Genesis AI, your helpful assistant! " + text.replace(/^(i am|i'm)\s+.{0,20}/i, '').trim();
         break;
       case 'advice_balanced':
         text = "Here's my advice on that:\n\n" + text;
@@ -1181,10 +1179,7 @@ function formatByFlags(text, flags) {
         text = "Let's begin. Find a comfortable position...\n\n" + text;
         break;
       case 'listening_ear':
-        text = "I'm here to listen. Take your time. \ud83e\udd17";
-        break;
       case 'nostalgic_engaging':
-        text = "Those were the days! \ud83d\ude0a " + text;
         break;
       case 'decision_helper':
         text = "Let me help you work through this:\n\n" + text;
@@ -1196,13 +1191,11 @@ function formatByFlags(text, flags) {
         text = "Let me help you with that!\n\n" + text;
         break;
       case 'personal_greeting':
-        text = "Nice to meet you! " + text;
         break;
       case 'playful_roast':
         text = "Alright, you asked for it! \ud83d\ude0f\n\n" + text;
         break;
       case 'humble_compact':
-        text = "Thank you! \ud83d\ude0a " + text;
         break;
       case 'poetry_compose':
         text = "Here's a poem for you:\n\n" + text;
@@ -1340,7 +1333,6 @@ function formatByFlags(text, flags) {
         text = "That's an interesting question about your future!\n\n" + text;
         break;
       case 'emotional_check_in':
-        text = "I'm doing well, thank you for asking! \ud83d\ude0a";
         break;
       case 'opinion_poll':
         break;
@@ -1349,6 +1341,24 @@ function formatByFlags(text, flags) {
     }
   }
   return text;
+}
+
+// --- WORD CONFIDENCE CHECK ---
+function countWordMatches(input) {
+  if (!input || typeof responses === 'undefined') return 0;
+  const words = input.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+  const keys = Object.keys(responses).filter(k => !k.startsWith('ver'));
+  let matched = 0;
+  for (const word of words) {
+    for (const key of keys) {
+      const lowerKey = key.toLowerCase();
+      if (lowerKey.includes(word) || word.includes(lowerKey) || levenshteinDistance(word, lowerKey) <= 2) {
+        matched++;
+        break;
+      }
+    }
+  }
+  return matched;
 }
 
 // --- MISSPELLING CORRECTION ---

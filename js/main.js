@@ -2269,16 +2269,17 @@ async function findResponses(input, history) {
   }
 
   if (foundMatches.length === 0) {
+    // Fuzzy matching with word-level confidence check (at least 3 words must match)
+    const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
+    const fuzzyMatch = findFuzzyMatch(decodedInput, fuzzyKeys);
+    const wordConfidence = typeof countWordMatches === 'function' ? countWordMatches(cleanInput) : 0;
+    if (fuzzyMatch && wordConfidence >= 3) {
+      return { role: "ai", text: removeRepetitions(formatListResponse(fuzzyMatch.text)) };
+    }
     // Only attempt Wikipedia if the flag is enabled
     if (useWikipedia) {
         try {
-          const prefixes = [
-            "how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are",
-            "how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for",
-            "meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of",
-            "difference between", "compare", "list of", "examples of", "pros and cons of",
-            "who was", "where are", "origin of", "source of", "background on", "is there a"
-          ];
+          const prefixes = ["how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are","how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for","meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of","difference between", "compare", "list of", "examples of", "pros and cons of","who was", "where are", "origin of", "source of", "background on", "is there a"];
           const isQuestion = prefixes.some(prefix => cleanInput.startsWith(prefix));
 
           const modelVer = (responses.ver || "").toLowerCase();
@@ -2368,19 +2369,6 @@ async function findResponses(input, history) {
         }
     } else {
         var webSearchOff = true;
-    }
-    // Contextual matching - use conversation history to understand context
-    const context = getChatContext(history);
-    const ctxMatch = findContextualMatch(decodedInput, context, Object.keys(responses).filter(k => !k.startsWith('ver')));
-    if (ctxMatch) {
-      return { role: "ai", text: removeRepetitions(formatListResponse(ctxMatch.text)), contextUsed: ctxMatch.contextUsed };
-    }
-
-    // Fuzzy matching fallback - find similar keys using Levenshtein distance
-    const fuzzyKeys = Object.keys(responses).filter(k => !k.startsWith('ver'));
-    const fuzzyMatch = findFuzzyMatch(decodedInput, fuzzyKeys);
-    if (fuzzyMatch) {
-      return { role: "ai", text: removeRepetitions(formatListResponse(fuzzyMatch.text)) };
     }
     if (webSearchOff) {
         return { role: "ai", text: "Web search is currently disabled. Please enable it in Settings to let me search the internet for answers. I'll try my best with what I know.\n\nI'm not quite sure I follow. Could you give me a bit more detail?" };
@@ -2668,6 +2656,10 @@ async function sendMessage() {
         // Decode the AI's response before displaying
         if (botMsg && botMsg.text) {
             botMsg.text = window.tokenizer.decode(botMsg.text);
+            // Strip unwanted lines (e.g. generic motivational phrases)
+            if (typeof removeUnwantedLines === 'function') {
+                botMsg.text = removeUnwantedLines(botMsg.text);
+            }
             // Apply flag-based response formatting (detects user intent, reshapes output)
             if (typeof detectFlags === 'function' && typeof formatByFlags === 'function') {
                 const userInput = typeof normalizeInput === 'function' ? normalizeInput(text) : text;
