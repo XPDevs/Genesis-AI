@@ -187,10 +187,27 @@ function findFuzzyMatch(input, keys, maxDistance = 3) {
   return bestMatch;
 }
 
+// --- LIST FORMATTING ---
+function formatListResponse(text) {
+  if (!text || text.length < 20) return text;
+
+  const listMatch = text.match(/^(I can|I'll|I will|I offer|you can)[:\s]+(.+)/i);
+  if (listMatch) {
+    const content = listMatch[2].replace(/^[,.\s]+|[,.\s]+$/g, '');
+    const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
+    if (rawItems.length >= 3) {
+      const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
+      return listMatch[1] + ':\n' + items.map(item => '- ' + item).join('\n');
+    }
+  }
+
+  return text;
+}
+
 // --- RESPONSE MERGING ---
 function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
-  if (texts.length === 1) return texts[0];
+  if (texts.length === 1) return formatListResponse(texts[0]);
 
   const allSentences = [];
   for (const text of texts) {
@@ -210,7 +227,7 @@ function mergeMatches(texts) {
     }
   }
 
-  if (allSentences.length <= 1) return allSentences[0] || texts[0];
+  if (allSentences.length <= 1) return formatListResponse(allSentences[0] || texts[0]);
 
   const unique = [];
   for (const sentence of allSentences) {
@@ -226,7 +243,7 @@ function mergeMatches(texts) {
     if (!dup) unique.push(sentence);
   }
 
-  if (unique.length <= 1) return unique[0] || texts[0];
+  if (unique.length <= 1) return formatListResponse(unique[0] || texts[0]);
 
   const helpOffers = unique.filter(s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s));
   const hasCapabilities = unique.some(s => /\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(s) && s.length > 15);
@@ -250,17 +267,7 @@ function mergeMatches(texts) {
 
   const result = [];
   for (const sentence of filtered) {
-    const listMatch = sentence.match(/^(I can|I'll|I will|I offer|you can)[:\s]+(.+)/i);
-    if (listMatch) {
-      const content = listMatch[2].replace(/^[,.\s]+|[,.\s]+$/g, '');
-      const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
-      if (rawItems.length >= 3) {
-        const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
-        result.push(listMatch[1] + ':\n' + items.map(item => '- ' + item).join('\n'));
-        continue;
-      }
-    }
-    result.push(sentence);
+    result.push(formatListResponse(sentence));
   }
 
   return result.join(' ');
