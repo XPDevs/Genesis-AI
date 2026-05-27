@@ -1769,23 +1769,19 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       }, 1000);
     };
 
-    // For Markdown or HTML or math: render directly (no typewriter)
-    if (hasMarkdown || hasHTML || (hasMath && !processedText.includes('\n'))) {
-        if (hasMarkdown) {
-            textSpan.innerHTML = displayText;
-        } else if (hasMath && window.katex) {
-            renderTextWithMath(textSpan, processedText);
-        } else {
-            textSpan.innerHTML = processedText;
-        }
-        const elapsed = Date.now() - (hasMarkdown ? aiState.firstTokenTime || Date.now() : aiState.responseStartTime);
+    // Errors/warnings render directly; all AI messages use typewriter
+    if (role === "error") {
+        textSpan.textContent = processedText;
+        const elapsed = Date.now() - (aiState.responseStartTime || Date.now());
         showMsgStats(div, processedText, elapsed);
         aiState.currentAiMessage = null;
         scheduleReset();
     } else {
         aiState.firstTokenTime = Date.now();
         const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
-            if (hasMath && window.katex) {
+            if (hasMarkdown) {
+                textSpan.innerHTML = displayText;
+            } else if (hasMath && window.katex) {
                 textSpan.textContent = "";
                 renderTextWithMath(textSpan, processedText);
             }
