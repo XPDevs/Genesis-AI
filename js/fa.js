@@ -293,9 +293,15 @@ function formatListResponse(text) {
 
   const listMatch = text.match(/^(I can|I'll|I will|I offer|you can)[:\s]+(.+)/i);
   if (listMatch) {
-    const content = listMatch[2].replace(/^[,.\s]+|[,.\s]+$/g, '');
-    const rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
-    if (rawItems.length >= 3) {
+    const content = listMatch[2].replace(/^[,.\s-]+|[,.\s-]+$/g, '');
+
+    // Split by dash or comma
+    let rawItems = content.split(/\s+-\s+/).map(s => s.trim().replace(/^-\s*/, '')).filter(Boolean);
+    if (rawItems.length < 2) {
+      rawItems = content.split(/\s*,\s*/).map(s => s.trim()).filter(Boolean);
+    }
+
+    if (rawItems.length >= 1) {
       const items = rawItems.map(s => s.replace(/^and\s+/i, '').trim()).filter(Boolean);
       return listMatch[1] + ':\n' + items.map(item => '- ' + item.charAt(0).toUpperCase() + item.slice(1)).join('\n') + '\n';
     }
@@ -409,66 +415,58 @@ function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
   if (texts.length === 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(texts[0])));
 
-  const allSentences = [];
-  for (const text of texts) {
-    if (!text || text.length < 2) continue;
-    if (text.length < 30) {
-      allSentences.push(text.trim());
-      continue;
-    }
-    const parts = text.match(/[^.!?\n]+[.!?]*/g);
-    if (parts) {
-      for (const p of parts) {
-        const t = p.trim();
-        if (t && t.length > 1) allSentences.push(t);
-      }
-    } else {
-      allSentences.push(text.trim());
-    }
+  // Process each text and track which are formatted lists
+  const entries = texts.map(t => {
+    const formatted = formatListResponse(t).trim();
+    return { text: formatted, isList: formatted.includes('\n- ') };
+  }).filter(e => e.text.length > 1);
+
+  if (entries.length <= 1) {
+    const t = entries[0] ? entries[0].text : texts[0];
+    return maybeAddFollowUp(removeRepetitions(t));
   }
 
-  if (allSentences.length <= 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(allSentences[0] || texts[0])));
-
+  // Deduplicate
   const unique = [];
-  for (const sentence of allSentences) {
+  for (const entry of entries) {
     let dup = false;
     for (const existing of unique) {
-      const a = sentence.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-      const b = existing.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      const a = entry.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+      const b = existing.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
       if (a.length < 4 || b.length < 4) continue;
-      if (a === b) { dup = true; break; }
-      if (a.length > 6 && b.length > 6 && (a.includes(b) || b.includes(a))) { dup = true; break; }
-      if (a.length > 8 && b.length > 8 && levenshteinDistance(a, b) <= 2) { dup = true; break; }
+      if (a === b || (a.length > 6 && b.length > 6 && (a.includes(b) || b.includes(a))) ||
+          (a.length > 8 && b.length > 8 && levenshteinDistance(a, b) <= 2)) {
+        dup = true; break;
+      }
     }
-    if (!dup) unique.push(sentence);
+    if (!dup) unique.push(entry);
   }
 
-  if (unique.length <= 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(unique[0] || texts[0])));
+  if (unique.length <= 1) {
+    return maybeAddFollowUp(removeRepetitions(unique[0] ? unique[0].text : texts[0]));
+  }
 
-  const helpOffers = unique.filter(s => /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(s));
-  const hasCapabilities = unique.some(s => /\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(s) && s.length > 15);
+  const helpOffers = unique.filter(e => !e.isList && /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(e.text));
+  const hasCapabilities = unique.some(e => e.isList || (/\b(I can|I'll|I will|capabilities|I offer|I help you)\b/i.test(e.text) && e.text.length > 15));
 
   let filtered = unique;
   if (helpOffers.length > 1) {
-    const kept = new Set();
-    let seen = false;
-    for (const s of unique) {
-      if (helpOffers.includes(s)) {
-        if (!seen) { kept.add(s); seen = true; }
+    const kept = [];
+    let seenOffer = false;
+    for (const e of unique) {
+      if (helpOffers.includes(e)) {
+        if (!seenOffer) { kept.push(e); seenOffer = true; }
       } else {
-        kept.add(s);
+        kept.push(e);
       }
     }
-    filtered = Array.from(kept);
+    filtered = kept;
   } else if (helpOffers.length === 1 && hasCapabilities) {
-    const offer = helpOffers[0];
-    filtered = unique.filter(s => s !== offer);
+    filtered = unique.filter(e => e !== helpOffers[0]);
   }
 
-  const result = [];
-  for (const sentence of filtered) {
-    result.push(formatListResponse(sentence));
-  }
-
-  return maybeAddFollowUp(removeRepetitions(result.join('\n')));
+  // Join: lists keep their newlines, separate texts get '\n', but run-on
+  // sentences from non-list texts flow naturally
+  const result = filtered.map(e => e.text).join('\n');
+  return maybeAddFollowUp(removeRepetitions(result));
 }
