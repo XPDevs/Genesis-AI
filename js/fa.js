@@ -589,10 +589,9 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Empty line = paragraph break
+    // Empty line = skip (no extra spacing)
     if (!trimmed) {
       closeList();
-      out.push('');
       continue;
     }
 
@@ -602,11 +601,11 @@ function renderMarkdown(text) {
   }
   closeList();
 
-  // Join with proper line breaks (avoid <br> inside HTML tags)
+  // Join: text lines separated by <br>, block HTML directly adjacent (no whitespace)
   let html = out.map((line, i) => {
-    const isBlock = /^</.test(line) || /^$/.test(line);
     if (i === out.length - 1) return line;
-    return line + (isBlock ? '\n' : '<br>');
+    const isBlock = /^</.test(line) || /^$/.test(line);
+    return line + (isBlock ? '' : '<br>');
   }).join('');
 
   return html;

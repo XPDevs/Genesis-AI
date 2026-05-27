@@ -568,10 +568,11 @@ function injectCSS() {
         }
         .message span pre {
             background: rgba(128,128,128,0.1);
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 8px;
             overflow-x: auto;
-            margin: 8px 0;
+            margin: 4px 0;
+            line-height: 1.4;
         }
         .message span pre code {
             background: none;
@@ -582,15 +583,15 @@ function injectCSS() {
         }
         .message span blockquote {
             border-left: 3px solid var(--primary, #007bff);
-            margin: 8px 0;
-            padding: 4px 12px;
+            margin: 4px 0;
+            padding: 2px 12px;
             opacity: 0.85;
         }
         .message span h1,
         .message span h2,
         .message span h3,
         .message span h4 {
-            margin: 12px 0 6px;
+            margin: 8px 0 4px;
             line-height: 1.3;
         }
         .message span h1 { font-size: 1.3em; }
@@ -599,16 +600,17 @@ function injectCSS() {
         .message span h4 { font-size: 1.05em; }
         .message span ul,
         .message span ol {
-            margin: 4px 0;
-            padding-left: 24px;
+            margin: 2px 0;
+            padding-left: 22px;
         }
         .message span li {
-            margin: 2px 0;
+            margin: 0;
+            line-height: 1.5;
         }
         .message span hr {
             border: none;
             border-top: 1px solid rgba(128,128,128,0.3);
-            margin: 12px 0;
+            margin: 6px 0;
         }
         .message span a {
             color: var(--primary, #007bff);
