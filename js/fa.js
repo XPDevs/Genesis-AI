@@ -470,3 +470,158 @@ function mergeMatches(texts) {
   const result = filtered.map(e => e.text).join('\n');
   return maybeAddFollowUp(removeRepetitions(result));
 }
+
+// --- MARKDOWN RENDERER ---
+function hasMarkdownSyntax(text) {
+  if (!text) return false;
+  return /(\*\*|__|`|^#{1,4}\s|^-\s|^\d+\.\s|^>\s|\[.+\]\(|!\[|~~)/m.test(text);
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  const hasMd = hasMarkdownSyntax(text);
+  if (!hasMd) return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // Preserve code blocks (must be first)
+  const codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const i = codeBlocks.push({ lang, code }) - 1;
+    return `\x00CB${i}\x00`;
+  });
+
+  // Escape HTML
+  text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // Inline code (before other formatting)
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold & italic (strong first to avoid overlap)
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>');
+  text = text.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  text = text.replace(/\*(.+?)\*/g, '<i>$1</i>');
+  text = text.replace(/___(.+?)___/g, '<b><i>$1</i></b>');
+  text = text.replace(/__(.+?)__/g, '<b>$1</b>');
+  text = text.replace(/_(.+?)_/g, '<i>$1</i>');
+
+  // Strikethrough
+  text = text.replace(/~~(.+?)~~/g, '<s>$1</s>');
+
+  // Images (before links, same syntax structure)
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">');
+
+  // Links
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Block-level: process line by line
+  const lines = text.split('\n');
+  const out = [];
+  let inList = false;
+  let listType = null;
+
+  function closeList() {
+    if (inList) {
+      out.push(listType === 'ul' ? '</ul>' : '</ol>');
+      inList = false;
+      listType = null;
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Code block placeholder
+    const cbMatch = trimmed.match(/^\x00CB(\d+)\x00$/);
+    if (cbMatch) {
+      closeList();
+      const block = codeBlocks[parseInt(cbMatch[1])];
+      const langClass = block.lang ? ` class="language-${block.lang}"` : '';
+      out.push(`<pre><code${langClass}>${block.code}</code></pre>`);
+      continue;
+    }
+
+    // Headers
+    const hMatch = trimmed.match(/^(#{1,4})\s+(.+)/);
+    if (hMatch) {
+      closeList();
+      out.push(`<h${hMatch[1].length}>${hMatch[2]}</h${hMatch[1].length}>`);
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^---+$/.test(trimmed)) {
+      closeList();
+      out.push('<hr>');
+      continue;
+    }
+
+    // Blockquote
+    if (/^&gt;\s/.test(trimmed)) {
+      closeList();
+      out.push(`<blockquote>${trimmed.replace(/^&gt;\s*/, '')}</blockquote>`);
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*]\s/.test(trimmed)) {
+      const content = trimmed.replace(/^[-*]\s*/, '');
+      if (!inList || listType !== 'ul') {
+        closeList();
+        inList = true;
+        listType = 'ul';
+        out.push('<ul>');
+      }
+      out.push(`<li>${content}</li>`);
+      continue;
+    }
+
+    // Ordered list
+    if (/^\d+\.\s/.test(trimmed)) {
+      const content = trimmed.replace(/^\d+\.\s*/, '');
+      if (!inList || listType !== 'ol') {
+        closeList();
+        inList = true;
+        listType = 'ol';
+        out.push('<ol>');
+      }
+      out.push(`<li>${content}</li>`);
+      continue;
+    }
+
+    // Empty line = paragraph break
+    if (!trimmed) {
+      closeList();
+      out.push('');
+      continue;
+    }
+
+    // Regular text
+    closeList();
+    out.push(trimmed);
+  }
+  closeList();
+
+  // Join with proper line breaks (avoid <br> inside HTML tags)
+  let html = out.map((line, i) => {
+    const isBlock = /^</.test(line) || /^$/.test(line);
+    if (i === out.length - 1) return line;
+    return line + (isBlock ? '\n' : '<br>');
+  }).join('');
+
+  return html;
+}
+
+function stripMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#{1,4}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/^>\s+/gm, '')
+    .trim();
+}

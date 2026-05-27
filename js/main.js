@@ -557,6 +557,75 @@ function injectCSS() {
         .message.ai.latest .msg-actions {
             opacity: 1 !important;
         }
+
+        /* Markdown rendered styles */
+        .message span code {
+            background: rgba(128,128,128,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .message span pre {
+            background: rgba(128,128,128,0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .message span pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+        .message span blockquote {
+            border-left: 3px solid var(--primary, #007bff);
+            margin: 8px 0;
+            padding: 4px 12px;
+            opacity: 0.85;
+        }
+        .message span h1,
+        .message span h2,
+        .message span h3,
+        .message span h4 {
+            margin: 12px 0 6px;
+            line-height: 1.3;
+        }
+        .message span h1 { font-size: 1.3em; }
+        .message span h2 { font-size: 1.2em; }
+        .message span h3 { font-size: 1.1em; }
+        .message span h4 { font-size: 1.05em; }
+        .message span ul,
+        .message span ol {
+            margin: 4px 0;
+            padding-left: 24px;
+        }
+        .message span li {
+            margin: 2px 0;
+        }
+        .message span hr {
+            border: none;
+            border-top: 1px solid rgba(128,128,128,0.3);
+            margin: 12px 0;
+        }
+        .message span a {
+            color: var(--primary, #007bff);
+            text-decoration: underline;
+        }
+        .message span a:hover {
+            opacity: 0.8;
+        }
+        .message span img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+        .message span s {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -1570,6 +1639,18 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
   const hasMath = /\{\\displaystyle|\$\$/.test(processedText);
   const hasHTML = /<[a-z][\s\S]*>/i.test(processedText);
+  const hasMarkdown = !hasHTML && typeof hasMarkdownSyntax === 'function' && hasMarkdownSyntax(processedText);
+
+  // Render Markdown to HTML for display, keep raw for copy
+  let displayText = processedText;
+  if (hasMarkdown) {
+    displayText = renderMarkdown(processedText);
+  }
+
+  let speechText = processedText;
+  if (hasMarkdown && typeof stripMarkdown === 'function') {
+    speechText = stripMarkdown(processedText);
+  }
 
   const div = document.createElement("div");
   div.className = "message " + role;
@@ -1633,12 +1714,12 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     const speakBtn = document.createElement("button");
     speakBtn.className = "action-btn speak-btn";
     speakBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
-    speakBtn.onclick = () => { if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); else window.speechSynthesis.speak(new SpeechSynthesisUtterance(processedText)); };
+    speakBtn.onclick = () => { if (window.speechSynthesis.speaking) window.speechSynthesis.cancel(); else window.speechSynthesis.speak(new SpeechSynthesisUtterance(speechText)); };
     actionsDiv.appendChild(speakBtn);
  
     if (isNew && window.shouldSpeakResponse) {
         if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(processedText);
+        const utterance = new SpeechSynthesisUtterance(speechText);
         window.speechSynthesis.speak(utterance);
         window.shouldSpeakResponse = false;
     }
@@ -1686,13 +1767,16 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       }, 1000);
     };
 
-    if (hasHTML || (hasMath && !processedText.includes('\n'))) {
-        if (hasMath && window.katex) {
+    // For Markdown or HTML or math: render directly (no typewriter)
+    if (hasMarkdown || hasHTML || (hasMath && !processedText.includes('\n'))) {
+        if (hasMarkdown) {
+            textSpan.innerHTML = displayText;
+        } else if (hasMath && window.katex) {
             renderTextWithMath(textSpan, processedText);
         } else {
             textSpan.innerHTML = processedText;
         }
-        const elapsed = Date.now() - aiState.responseStartTime;
+        const elapsed = Date.now() - (hasMarkdown ? aiState.firstTokenTime || Date.now() : aiState.responseStartTime);
         showMsgStats(div, processedText, elapsed);
         aiState.currentAiMessage = null;
         scheduleReset();
@@ -1714,7 +1798,9 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         aiState.cancelTyping = cancel;
     }
   } else { 
-      if (hasMath && window.katex) {
+      if (hasMarkdown) {
+          textSpan.innerHTML = displayText;
+      } else if (hasMath && window.katex) {
           renderTextWithMath(textSpan, processedText);
       } else {
           textSpan[hasHTML ? 'innerHTML' : 'textContent'] = processedText; 
