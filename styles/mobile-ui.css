@@ -280,12 +280,9 @@ body.dark .action-btn:hover {
   fill: white;
 }
 
+/* Footer warning hidden on mobile — replaced by in-chat injection */
 #contentWarning {
-  font-size: 12px;
-  text-align: center;
-  padding: 14px 20px;
-  color: #70757a;
-  border-top: 1px solid var(--border, #444746);
+  display: none;
 }
 
 /* --- Modals & Popups --- */

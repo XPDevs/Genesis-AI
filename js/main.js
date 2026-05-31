@@ -700,7 +700,7 @@ let useWikipedia = false;
 let warningInjected = false;
 
 const warningHtml = `
-  <div id="contentWarning">
+  <div id="contentWarning" style="display:block;font-size:12px;text-align:center;padding:14px 20px;color:#70757a;border-top:1px solid var(--border,#444746);">
     Genesis may display inaccurate info, including about people, so double-check its responses.  
     <br>
     <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Privacy Policy</a> • 
@@ -2867,7 +2867,7 @@ async function sendMessage() {
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
-        if (!warningInjected && chatBox) {
+        if (!warningInjected && chatBox && window.innerWidth <= 768) {
             chatBox.insertAdjacentHTML('beforeend', warningHtml);
             warningInjected = true;
         }
