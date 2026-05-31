@@ -3141,32 +3141,33 @@ const MODELS = [
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
     name: "Genesis 5.5",
-    desc: "Latest model with improved response quality",
-    supportsThinking: true
+    desc: "Latest model with improved response quality"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
     name: "Genesis SPT 5.0",
-    desc: "Previous generation model",
-    supportsThinking: false
+    desc: "Previous generation model"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
     name: "Genesis SPT 4.6",
-    desc: "Balanced model for general conversations",
-    supportsThinking: false
+    desc: "Balanced model for general conversations"
   },
   {
     value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
     name: "Genesis SPT 1.0 (Legacy)",
-    desc: "Original model for simple interactions",
-    supportsThinking: false
+    desc: "Original model for simple interactions"
   }
 ];
 
 function currentModelSupportsThinking() {
-  const info = getModelInfo(jsonURL || defaultModel);
-  return info && info.supportsThinking;
+  if (!responses) return false;
+  for (const key in responses) {
+    if (typeof responses[key] === 'string' && /<\|think\|>/.test(responses[key])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isModel55(url) {
