@@ -410,20 +410,43 @@ function maybeAddFollowUp(text) {
   return trimmed + '\n' + questions[Math.floor(Math.random() * questions.length)];
 }
 
+// --- THINK BLOCK HANDLING ---
+function stripThinkBlocks(text) {
+  if (!text) return text;
+  return text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>/g, '');
+}
+
+function getPrimaryThinkBlock(text) {
+  if (!text) return '';
+  const match = text.match(/<\|think\|>[\s\S]*?<\/\|think\|>/);
+  return match ? match[0] : '';
+}
+
 // --- RESPONSE MERGING ---
 function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
-  if (texts.length === 1) return maybeAddFollowUp(removeRepetitions(formatListResponse(texts[0])));
+
+  // Preserve the primary think block from the first matched response
+  const primaryThink = getPrimaryThinkBlock(texts[0]);
+
+  // Strip think blocks before merge processing, then re-attach at the end
+  const strippedTexts = texts.map(t => stripThinkBlocks(t).trim()).filter(Boolean);
+  if (strippedTexts.length === 0) return primaryThink;
+  if (strippedTexts.length === 1) {
+    const result = maybeAddFollowUp(removeRepetitions(formatListResponse(strippedTexts[0])));
+    return primaryThink ? primaryThink + result : result;
+  }
 
   // Process each text and track which are formatted lists
-  const entries = texts.map(t => {
+  const entries = strippedTexts.map(t => {
     const formatted = formatListResponse(t).trim();
     return { text: formatted, isList: formatted.includes('\n- ') };
   }).filter(e => e.text.length > 1);
 
   if (entries.length <= 1) {
-    const t = entries[0] ? entries[0].text : texts[0];
-    return maybeAddFollowUp(removeRepetitions(t));
+    const t = entries[0] ? entries[0].text : strippedTexts[0];
+    const result = maybeAddFollowUp(removeRepetitions(t));
+    return primaryThink ? primaryThink + result : result;
   }
 
   // Deduplicate
@@ -443,7 +466,8 @@ function mergeMatches(texts) {
   }
 
   if (unique.length <= 1) {
-    return maybeAddFollowUp(removeRepetitions(unique[0] ? unique[0].text : texts[0]));
+    const result = maybeAddFollowUp(removeRepetitions(unique[0] ? unique[0].text : strippedTexts[0]));
+    return primaryThink ? primaryThink + result : result;
   }
 
   const helpOffers = unique.filter(e => !e.isList && /\b(how can I help|what can I do for|is there anything|can I help you|let me know if)\b/i.test(e.text));
@@ -468,7 +492,8 @@ function mergeMatches(texts) {
   // Join: lists keep their newlines, separate texts get '\n', but run-on
   // sentences from non-list texts flow naturally
   const result = filtered.map(e => e.text).join('\n');
-  return maybeAddFollowUp(removeRepetitions(result));
+  const merged = maybeAddFollowUp(removeRepetitions(result));
+  return primaryThink ? primaryThink + merged : merged;
 }
 
 // --- MARKDOWN RENDERER ---

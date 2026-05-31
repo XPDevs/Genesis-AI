@@ -696,3 +696,70 @@ body.is-new-chat .input-container {
   box-shadow: none !important;
   padding: 10px 0 !important;
 }
+
+/* --- Model Thinking / Reasoning Block --- */
+.think-block {
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #444746);
+  background: var(--input-bg, #1e1f20);
+  overflow: hidden;
+}
+
+.think-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text, #e3e3e3);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  transition: background 0.15s;
+  border-radius: 0;
+}
+
+.think-toggle:hover {
+  background: var(--active-chat, #333537);
+}
+
+.think-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.think-label {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.think-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.think-open .think-chevron {
+  transform: rotate(180deg);
+}
+
+.think-content {
+  padding: 0 12px 10px 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.75;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--border, #444746);
+  margin-top: 0;
+  padding-top: 10px;
+  display: none;
+}
+
+.think-open .think-content {
+  display: block;
+}

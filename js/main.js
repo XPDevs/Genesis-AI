@@ -702,6 +702,32 @@ let aiState = {
     currentAiMessage: null
 };
 
+// Show internal reasoning from <|think|> blocks
+let showReasoning = false;
+
+function parseThinkBlocks(text) {
+  const parts = [];
+  let lastIdx = 0;
+  const regex = /<\|think\|>([\s\S]*?)<\/\|think\|>/g;
+  let match;
+  let hasThinking = false;
+  while ((match = regex.exec(text)) !== null) {
+    hasThinking = true;
+    if (match.index > lastIdx) {
+      parts.push({ type: 'text', content: text.slice(lastIdx, match.index) });
+    }
+    parts.push({ type: 'think', content: match[1].trim() });
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) {
+    parts.push({ type: 'text', content: text.slice(lastIdx) });
+  }
+  if (!hasThinking) {
+    return { parts: [{ type: 'text', content: text }], hasThinking: false };
+  }
+  return { parts, hasThinking };
+}
+
 // Wikipedia Search flag (default false)
 let useWikipedia = false;
 
@@ -1644,19 +1670,51 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   const hasMarkdown = !hasHTML && typeof hasMarkdownSyntax === 'function' && hasMarkdownSyntax(processedText);
 
   // Render Markdown to HTML for display, keep raw for copy
-  let displayText = processedText;
+  let displayText = visibleText;
   if (hasMarkdown) {
-    displayText = renderMarkdown(processedText);
+    displayText = renderMarkdown(visibleText);
   }
 
-  let speechText = processedText;
+  let speechText = visibleText;
   if (hasMarkdown && typeof stripMarkdown === 'function') {
-    speechText = stripMarkdown(processedText);
+    speechText = stripMarkdown(visibleText);
   }
 
   const div = document.createElement("div");
   div.className = "message " + role;
   const textSpan = document.createElement("span");
+
+  // Parse <|think|> blocks for AI messages
+  const { parts: thinkParts, hasThinking } = role === "ai" ? parseThinkBlocks(processedText) : { parts: [], hasThinking: false };
+  let visibleText = processedText;
+  let thinkBlocksHtml = '';
+
+  if (hasThinking) {
+    const thinkTexts = [];
+    const visibleParts = [];
+    for (const p of thinkParts) {
+      if (p.type === 'think') {
+        thinkTexts.push(p.content);
+      } else {
+        visibleParts.push(p.content);
+      }
+    }
+    visibleText = visibleParts.join('');
+
+    if (thinkTexts.length > 0) {
+      const combinedThink = thinkTexts.join('\n');
+      const displayThink = showReasoning ? 'block' : 'none';
+      thinkBlocksHtml = `
+        <div class="think-block">
+          <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
+            <span class="think-icon">💭</span>
+            <span class="think-label">Model thinking</span>
+            <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="think-content" style="display: ${displayThink};">${combinedThink}</div>
+        </div>`;
+    }
+  }
   
   div.appendChild(textSpan);
 
@@ -1771,22 +1829,26 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
     // Errors/warnings render directly; all AI messages use typewriter
     if (role === "error") {
-        textSpan.textContent = processedText;
+        textSpan.textContent = visibleText;
         const elapsed = Date.now() - (aiState.responseStartTime || Date.now());
-        showMsgStats(div, processedText, elapsed);
+        showMsgStats(div, visibleText, elapsed);
         aiState.currentAiMessage = null;
         scheduleReset();
     } else {
         aiState.firstTokenTime = Date.now();
-        const cancel = window.tokenizer.typewriter(textSpan, processedText, 30, () => {
+        const cancel = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
             if (hasMarkdown) {
                 textSpan.innerHTML = displayText;
             } else if (hasMath && window.katex) {
                 textSpan.textContent = "";
-                renderTextWithMath(textSpan, processedText);
+                renderTextWithMath(textSpan, visibleText);
+            }
+            // Insert think block after typewriter completes
+            if (thinkBlocksHtml && textSpan.parentNode) {
+                textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
             }
             const elapsed = Date.now() - aiState.firstTokenTime;
-            showMsgStats(div, processedText, elapsed);
+            showMsgStats(div, visibleText, elapsed);
             aiState.currentAiMessage = null;
             aiState.cancelTyping = null;
             scheduleReset();
@@ -1799,9 +1861,13 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       if (hasMarkdown) {
           textSpan.innerHTML = displayText;
       } else if (hasMath && window.katex) {
-          renderTextWithMath(textSpan, processedText);
+          renderTextWithMath(textSpan, visibleText);
       } else {
-          textSpan[hasHTML ? 'innerHTML' : 'textContent'] = processedText; 
+          textSpan[hasHTML ? 'innerHTML' : 'textContent'] = visibleText; 
+      }
+      // Insert think block for existing messages
+      if (thinkBlocksHtml) {
+          textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
       }
   }
 }
@@ -3818,6 +3884,10 @@ async function startApp() {
         'quick-actions': {
             title: 'Quick Actions',
             text: 'Suggested prompts shown on empty chats to help you get started. New users see these on their first chat only. Enable this setting to always show quick actions.'
+        },
+        'model-thinking': {
+            title: 'Show Model Thinking',
+            text: 'When enabled, displays the AI\'s internal reasoning steps from <|think|> blocks in responses. This reveals how the model processes your input before generating a reply.'
         }
     };
 
@@ -3881,6 +3951,18 @@ async function startApp() {
 
     if (qaSetting === "new") {
       setTimeout(showQuickActionsGuide, 600);
+    }
+
+    // Initialize show reasoning toggle
+    const reasoningToggle = document.getElementById("reasoningToggle");
+    if (reasoningToggle) {
+      const savedReasoning = await DB.get("showReasoning", false);
+      showReasoning = savedReasoning;
+      reasoningToggle.checked = savedReasoning;
+      reasoningToggle.onchange = async () => {
+        showReasoning = reasoningToggle.checked;
+        await DB.set("showReasoning", showReasoning);
+      };
     }
 
     // Set initial send button state
