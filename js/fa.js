@@ -412,29 +412,21 @@ function maybeAddFollowUp(text) {
 
 // --- THINK BLOCK HANDLING ---
 function stripThinkBlocks(text) {
-  if (!text) return text;
-  return text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>/g, '');
+  return text;
 }
 
 function getPrimaryThinkBlock(text) {
-  if (!text) return '';
-  const match = text.match(/<\|think\|>[\s\S]*?<\/\|think\|>/);
-  return match ? match[0] : '';
+  return '';
 }
 
 // --- RESPONSE MERGING ---
 function mergeMatches(texts) {
   if (!texts || texts.length === 0) return '';
 
-  // Preserve the primary think block from the first matched response
-  const primaryThink = getPrimaryThinkBlock(texts[0]);
-
-  // Strip think blocks before merge processing, then re-attach at the end
-  const strippedTexts = texts.map(t => stripThinkBlocks(t).trim()).filter(Boolean);
-  if (strippedTexts.length === 0) return primaryThink;
+  const strippedTexts = texts.map(t => t.trim()).filter(Boolean);
+  if (strippedTexts.length === 0) return '';
   if (strippedTexts.length === 1) {
-    const result = maybeAddFollowUp(removeRepetitions(formatListResponse(strippedTexts[0])));
-    return primaryThink ? primaryThink + result : result;
+    return maybeAddFollowUp(removeRepetitions(formatListResponse(strippedTexts[0])));
   }
 
   // Process each text and track which are formatted lists

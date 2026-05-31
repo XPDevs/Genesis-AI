@@ -1851,13 +1851,24 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
                 const elapsed = ((Date.now() - thinkStartTime) / 1000).toFixed(1);
                 if (thinkLabelEl) thinkLabelEl.textContent = 'Model thought';
                 if (thinkTimerEl) thinkTimerEl.textContent = elapsed + 's';
-                // Small pause between reasoning and output
-                setTimeout(() => {
-                    const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
-                        onTextComplete(visibleText);
-                    }, onScroll);
-                    aiState.cancelTyping = cancelText;
-                }, 400);
+                // If messageObj has _onThinkDone, call it before typing visible text
+                if (messageObj && typeof messageObj._onThinkDone === 'function') {
+                    messageObj._onThinkDone((outputText) => {
+                        const textToType = outputText || visibleText;
+                        const cancelText = window.tokenizer.typewriter(textSpan, textToType, 30, () => {
+                            onTextComplete(textToType);
+                        }, onScroll);
+                        aiState.cancelTyping = cancelText;
+                    }, { div, textSpan, thinkContentEl, thinkLabelEl, thinkTimerEl });
+                } else {
+                    // Small pause between reasoning and output
+                    setTimeout(() => {
+                        const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+                            onTextComplete(visibleText);
+                        }, onScroll);
+                        aiState.cancelTyping = cancelText;
+                    }, 400);
+                }
             }, onScroll);
             aiState.cancelTyping = cancelThink;
         } else {
@@ -2823,8 +2834,10 @@ async function sendMessage() {
         // Auto-detect search intent
         const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|find\s+(information|details|data|out)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+about|do\s+a\s+search\s+for|(?=.*\bsearch\b)(?=.*\bweb\b)/i;
         const originalSearchPref = useWikipedia;
+        let isSearchQuery = false;
         if (searchPatterns.test(text) && !useWikipedia) {
             useWikipedia = true;
+            isSearchQuery = true;
         }
         const botMsg = await findResponses(text, chat.messages);
         useWikipedia = originalSearchPref;
@@ -2845,6 +2858,39 @@ async function sendMessage() {
                     const sentences = botMsg.text.match(/[^.!?]+[.!?]+/g) || [botMsg.text];
                     const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.4));
                     botMsg.text = window.summariseConversation(botMsg.text, targetSentences);
+                }
+            }
+
+            // When reasoning is ON and this is a search result, use custom interleaved flow
+            if (showReasoning && botMsg.isWikipedia && isSearchQuery) {
+                const thinkMatch = botMsg.text.match(/^<\|think\|>([\s\S]*?)<\/\|think\|>/);
+                if (thinkMatch) {
+                    const firstThinkContent = thinkMatch[1];
+                    const topic = firstThinkContent.replace(/^The user wants to know about /, '').replace(/\. Let me search.*$/, '').trim() || 'this topic';
+                    botMsg._onThinkDone = async (next, els) => {
+                        const { div, textSpan } = els;
+                        const spinner = document.createElement('div');
+                        spinner.className = 'message ai wiki-loading';
+                        spinner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0"><svg viewBox="0 0 24 24" width="24" height="24" style="animation:wikiSpin 1.5s linear infinite;transform-origin:center;flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/></circle></svg><img src="icon.png" alt="AI" style="width:24px;height:24px;border-radius:4px"><span style="opacity:0.7;font-size:0.9em">Searching the web</span></div>';
+                        textSpan.parentNode.insertBefore(spinner, textSpan);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                        await new Promise(r => setTimeout(r, 700));
+                        spinner.remove();
+                        const secondThinkHtml = '<div class="think-block think-open"><button class="think-toggle" onclick="this.parentElement.classList.toggle(\'think-open\'); event.stopPropagation();"><span class="think-icon">💭</span><span class="think-label">Analyzing results</span><span class="think-timer"></span><svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="think-content">Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.</div></div>';
+                        textSpan.insertAdjacentHTML('beforebegin', secondThinkHtml);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                        const allThinkContents = div.querySelectorAll('.think-content');
+                        const secondThinkEl = allThinkContents[1];
+                        if (secondThinkEl) {
+                            const secondText = 'Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.';
+                            await new Promise(resolve => {
+                                window.tokenizer.typewriter(secondThinkEl, secondText, 30, resolve, () => {
+                                    chatBox.scrollTop = chatBox.scrollHeight;
+                                });
+                            });
+                        }
+                        next();
+                    };
                 }
             }
         }
