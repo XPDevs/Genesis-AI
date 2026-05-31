@@ -2880,30 +2880,6 @@ async function sendMessage() {
                 }
             }
 
-            // When reasoning is ON and this is a search result, use interleaved think→search→think→output
-            if (showReasoning && botMsg.isWikipedia && isSearchQuery) {
-                const thinkMatch = botMsg.text.match(/^<\|think\|>([\s\S]*?)<\/\|think\|>/);
-                if (thinkMatch) {
-                    const firstThink = thinkMatch[1];
-                    const wikiOutput = botMsg.text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>\s*/, '');
-                    const topic = firstThink.replace(/^The user wants to know about /, '').replace(/\. Let me search.*$/, '').trim() || 'this topic';
-                    const secondThink = 'Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.';
-                    botMsg.text = '<|think|>' + firstThink + '</|think|>\n\n<|think|>' + secondThink + '</|think|>\n\n' + wikiOutput;
-                    botMsg._onThinkDone = async (next, els) => {
-                        if (els.phase === 'between') {
-                            const { div, textSpan } = els;
-                            const spinner = document.createElement('div');
-                            spinner.className = 'message ai wiki-loading';
-                            spinner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0"><svg viewBox="0 0 24 24" width="24" height="24" style="animation:wikiSpin 1.5s linear infinite;transform-origin:center;flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/></circle></svg><img src="icon.png" alt="AI" style="width:24px;height:24px;border-radius:4px"><span style="opacity:0.7;font-size:0.9em">Searching the web</span></div>';
-                            textSpan.parentNode.insertBefore(spinner, textSpan);
-                            chatBox.scrollTop = chatBox.scrollHeight;
-                            await new Promise(r => setTimeout(r, 700));
-                            spinner.remove();
-                        }
-                        next();
-                    };
-                }
-            }
         }
 
         // Calculate response stats
