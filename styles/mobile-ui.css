@@ -283,8 +283,9 @@ body.dark .action-btn:hover {
 #contentWarning {
   font-size: 12px;
   text-align: center;
-  margin-top: 12px;
+  padding: 14px 20px;
   color: #70757a;
+  border-top: 1px solid var(--border, #444746);
 }
 
 /* --- Modals & Popups --- */

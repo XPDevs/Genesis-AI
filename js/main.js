@@ -697,6 +697,16 @@ function parseThinkBlocks(text) {
 
 // Wikipedia Search flag (default false)
 let useWikipedia = false;
+let warningInjected = false;
+
+const warningHtml = `
+  <div id="contentWarning">
+    Genesis may display inaccurate info, including about people, so double-check its responses.  
+    <br>
+    <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Privacy Policy</a> • 
+    <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Terms Of Service</a> • 
+    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Status</a>
+  </div>`;
 
 // Function to update send button based on input content
 function updateSendButton() {
@@ -1459,6 +1469,7 @@ async function renderMessages() {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
+  warningInjected = false;
   chatBox.innerHTML = "";
   if (!chat) { await updateChatView(); return; }
   chat.messages.forEach(msg => appendMessage(msg.text, msg.role, false, msg.imageUrl, msg.footer, msg));
@@ -1656,6 +1667,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
             <span class="think-icon">💭</span>
             <span class="think-label">Model thinking</span>
+            <span class="think-timer"></span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
           <div class="think-content">${combinedThink}</div>
@@ -1823,8 +1835,22 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
             // Insert think block BEFORE textSpan
             textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
             const thinkContentEl = div.querySelector('.think-content');
+            const thinkLabelEl = div.querySelector('.think-label');
+            const thinkTimerEl = div.querySelector('.think-timer');
+            const thinkStartTime = Date.now();
+            if (thinkLabelEl) thinkLabelEl.textContent = 'Model is thinking';
+            let timerInterval = setInterval(() => {
+                if (thinkTimerEl) {
+                    const elapsed = ((Date.now() - thinkStartTime) / 1000).toFixed(1);
+                    thinkTimerEl.textContent = elapsed + 's';
+                }
+            }, 100);
             // Type thinking content first, then normal text with a small delay
             const cancelThink = window.tokenizer.typewriter(thinkContentEl, thinkTexts.join('\n'), 30, () => {
+                clearInterval(timerInterval);
+                const elapsed = ((Date.now() - thinkStartTime) / 1000).toFixed(1);
+                if (thinkLabelEl) thinkLabelEl.textContent = 'Model thought';
+                if (thinkTimerEl) thinkTimerEl.textContent = elapsed + 's';
                 // Small pause between reasoning and output
                 setTimeout(() => {
                     const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
@@ -2328,7 +2354,7 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `<|think|>Searching Wikipedia for "${query}"...</|think|>\n\n${summaryText}\n\n<|think|>Based on the Wikipedia search results, here's what I found about ${query}.</|think|>`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+              return { role: "ai", text: `<|think|>I'll search the web for information about ${query}...</|think|>\n\n${summaryText}\n\n<|think|>After reviewing the Wikipedia results for ${query}, here's a comprehensive answer based on the information found.</|think|>\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
           return { role: "ai", text: `<|think|>I tried to find information about "${query}" on Wikipedia but couldn't find relevant results.</|think|>\n\nI couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -2506,7 +2532,7 @@ async function findResponses(input, history) {
                 }
                 
                 const searchTopic = decodedInput.replace(/^(?:what|who|where|when|why|how|tell me|define|explain|describe|search|find|look up)\s+/i, '').trim().replace(/[?.,!;:]+$/, '').trim();
-                return { role: "ai", text: `<|think|>Searching Wikipedia for "${searchTopic || decodedInput}"...</|think|>\n\n${summaryText}\n\n<|think|>Based on the Wikipedia results, here's the relevant information about ${searchTopic || decodedInput}.</|think|>`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+                return { role: "ai", text: `<|think|>I'll search the web for information about ${searchTopic || decodedInput}...</|think|>\n\n${summaryText}\n\n<|think|>After reviewing the Wikipedia results for ${searchTopic || decodedInput}, here's a comprehensive answer based on the information found.</|think|>\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
@@ -2841,6 +2867,10 @@ async function sendMessage() {
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
         appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
+        if (!warningInjected && chatBox) {
+            chatBox.insertAdjacentHTML('beforeend', warningHtml);
+            warningInjected = true;
+        }
 
     }, 1500);
     
@@ -2922,7 +2952,7 @@ if (deleteConfirm) deleteConfirm.onclick = async () => {
         activeChatId = null;
         await DB.delete("activeChatId");
         chatBox.innerHTML = "";
-        // After deleting, go to a new chat screen
+        warningInjected = false;
         let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
         if (!newChat) {
             newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
@@ -3369,6 +3399,7 @@ document.getElementById("deleteAllConfirm").onclick = async () => {
     activeChatId = null; 
     renderChatList(); 
     chatBox.innerHTML = ""; 
+    warningInjected = false;
     document.getElementById("deleteAllModal").style.display = "none"; 
 };
 
