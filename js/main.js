@@ -3218,6 +3218,21 @@ function updateReasoningToggleIcon() {
   }
 }
 
+function updateSearchToggleIcon() {
+  if (!searchToggleBtn) return;
+  const svg = searchToggleBtn.querySelector('svg');
+  if (!svg) return;
+  if (useWikipedia) {
+    svg.setAttribute('fill', '#3b82f6');
+    svg.style.stroke = '#3b82f6';
+    searchToggleBtn.classList.add('active');
+  } else {
+    svg.setAttribute('fill', 'none');
+    svg.style.stroke = '';
+    searchToggleBtn.classList.remove('active');
+  }
+}
+
 async function switchModel(value) {
   if (aiState.isResponding) stopGeneration();
   await DB.set("selectedModel", value);
@@ -3881,34 +3896,30 @@ async function startApp() {
     renderChatList();
     await renderMessages();
 
-    // Initialize search toggle - show globe icon in input area next to upload button
-    // Globe is grey when off, blue when on
+    // Initialize search toggle
     if (searchToggleBtn) {
-        // Ensure globe is positioned inside input area (next to upload button)
-        const inputArea = document.getElementById('inputArea');
-        if (inputArea && !inputArea.contains(searchToggleBtn)) {
-            const uploadBtn = document.getElementById('uploadBtn');
-            if (uploadBtn) {
-                inputArea.insertBefore(searchToggleBtn, uploadBtn.nextSibling);
-            }
-        }
-        
         const savedSearchPref = await DB.get("useWikipedia", false);
         useWikipedia = savedSearchPref;
-        if (useWikipedia) {
-            searchToggleBtn.classList.add('active');
-            searchToggleBtn.style.display = 'flex';
-        } else {
-            searchToggleBtn.classList.remove('active');
-            searchToggleBtn.style.display = 'flex'; // Always show, just grey
-        }
-        // Click handler opens settings modal
+        updateSearchToggleIcon();
+        // Click handler toggles search directly
         searchToggleBtn.onclick = () => {
-            const settingsModal = document.getElementById("settingsModal");
-            if (settingsModal) {
-                settingsModal.style.display = "flex";
-            }
+            useWikipedia = !useWikipedia;
+            DB.set("useWikipedia", useWikipedia);
+            updateSearchToggleIcon();
+            // Sync the settings toggle if it exists
+            const webSearchToggle = document.getElementById("webSearchToggle");
+            if (webSearchToggle) webSearchToggle.checked = useWikipedia;
         };
+        // Sync from settings toggle changes
+        const webSearchToggle = document.getElementById("webSearchToggle");
+        if (webSearchToggle) {
+            webSearchToggle.checked = useWikipedia;
+            webSearchToggle.onchange = async () => {
+                useWikipedia = webSearchToggle.checked;
+                await DB.set("useWikipedia", useWikipedia);
+                updateSearchToggleIcon();
+            };
+        }
     }
 
     // Reasoning (lightbulb) toggle
@@ -3971,23 +3982,6 @@ async function startApp() {
             document.getElementById('helpOverlay').classList.remove('show');
         }
     });
-
-    // Initialize web search toggle in settings modal
-    const webSearchToggle = document.getElementById("webSearchToggle");
-    if (webSearchToggle) {
-        webSearchToggle.checked = await DB.get("useWikipedia", false);
-        webSearchToggle.onchange = async () => {
-            useWikipedia = webSearchToggle.checked;
-            await DB.set("useWikipedia", useWikipedia);
-            if (searchToggleBtn) {
-                if (useWikipedia) {
-                    searchToggleBtn.classList.add('active');
-                } else {
-                    searchToggleBtn.classList.remove('active');
-                }
-            }
-        };
-    }
 
     const shortenedAnswersToggle = document.getElementById("shortenedAnswersToggle");
     if (shortenedAnswersToggle) {
