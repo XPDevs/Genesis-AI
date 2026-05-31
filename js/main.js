@@ -369,7 +369,49 @@ function injectCSS() {
             transition: all 0.2s;
         }
         .input-area {
-            padding: 14px 12px 14px 22px;
+            padding: 8px 12px;
+        }
+        .input-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #userInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+            padding: 8px 4px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+        .input-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: var(--active-chat);
+            border-radius: 10px;
+            padding: 2px;
+            flex-shrink: 0;
+        }
+        #sendBtn {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        #sendBtn:hover {
+            filter: brightness(1.1);
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
@@ -1669,7 +1711,6 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       thinkBlocksHtml = thinkTexts.map((t, i) => `
         <div class="think-block${showReasoning ? ' think-open' : ''}" data-think-index="${i}">
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
-            <span class="think-icon">💭</span>
             <span class="think-label">${i === 0 ? 'Model thinking' : 'Analyzing results'}</span>
             <span class="think-timer"></span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -1877,7 +1918,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
                 const cancelThink = window.tokenizer.typewriter(contentEl, thinkTexts[currentThinkIndex], 30, () => {
                     clearInterval(timerInterval);
                     const elapsed = ((Date.now() - thinkBlockStart) / 1000).toFixed(1);
-                    if (labelEl) labelEl.textContent = currentThinkIndex === 0 ? 'Model thought' : 'Analysis done';
+                    if (labelEl) labelEl.textContent = currentThinkIndex === 0 ? 'Model thought for' : 'Analysis done';
                     if (timerEl) timerEl.textContent = elapsed + 's';
                     currentThinkIndex++;
                     // If there's a _onThinkDone callback and this is between blocks, call it
@@ -3250,6 +3291,12 @@ if (modelSelect) {
         customOption.textContent = "Load from file...";
         modelSelect.appendChild(customOption);
     }
+    if (!modelSelect.querySelector('option[value="upload-custom"]')) {
+        const uploadCustomOption = document.createElement('option');
+        uploadCustomOption.value = "upload-custom";
+        uploadCustomOption.textContent = "Upload Custom...";
+        modelSelect.appendChild(uploadCustomOption);
+    }
 
     (async () => {
         modelSelect.value = await DB.get("selectedModel", defaultModel);
@@ -3260,6 +3307,11 @@ if (modelSelect) {
         const currentModel = await DB.get("selectedModel", defaultModel);
         if (selectedValue === "custom") {
             if (customModelInput) customModelInput.click();
+            setTimeout(() => { modelSelect.value = currentModel; }, 100);
+        } else if (selectedValue === "upload-custom") {
+            if (customModelConfirmModal) {
+                customModelConfirmModal.style.display = 'flex';
+            }
             setTimeout(() => { modelSelect.value = currentModel; }, 100);
         } else if (selectedValue !== currentModel) {
             // Sync desktop dropdown if visible
@@ -3301,6 +3353,10 @@ if (headerModelSelect) {
     <button class="model-dropdown-option" data-value="custom">
       <span class="model-option-name">Load from file...</span>
       <span class="model-option-desc">Upload a custom .json model file</span>
+    </button>
+    <button class="model-dropdown-option" data-value="upload-custom">
+      <span class="model-option-name">Upload Custom</span>
+      <span class="model-option-desc">Upload file or paste URL to preview model info</span>
     </button>`;
 
   (async () => {
@@ -3333,6 +3389,14 @@ if (headerModelSelect) {
     if (value === "custom") {
       headerModelSelect.classList.remove("open");
       if (customModelInput) customModelInput.click();
+      return;
+    }
+
+    if (value === "upload-custom") {
+      headerModelSelect.classList.remove("open");
+      if (customModelConfirmModal) {
+        customModelConfirmModal.style.display = 'flex';
+      }
       return;
     }
 
