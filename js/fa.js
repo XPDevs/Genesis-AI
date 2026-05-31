@@ -1,3 +1,5 @@
+const primaryThink = '';
+
 const TEXT_SPEAK_MAP = {
   "u": "you", "ur": "you are", "ya": "you", "yall": "you all",
   "r": "are", "re": "are",
@@ -68,6 +70,7 @@ function countWordMatches(input) {
   if (!input || typeof responses === 'undefined') return 0;
   const words = input.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
   const keys = Object.keys(responses).filter(k => !k.startsWith('ver'));
+  const totalKeys = keys.length;
   let matched = 0;
   for (const word of words) {
     for (const key of keys) {
@@ -77,6 +80,13 @@ function countWordMatches(input) {
         break;
       }
     }
+  }
+  // Normalize based on model size so wordConfidence >= 3 threshold works for any model
+  // Tiny models (36 keys): scale ~3.0, 1 match → score 3
+  // Large models (525K+ keys): scale ~1.0, raw matched stays as-is
+  if (totalKeys > 0) {
+    const scale = Math.max(1, 5 / Math.log10(totalKeys + 10));
+    return Math.round(matched * scale);
   }
   return matched;
 }
@@ -260,8 +270,12 @@ function levenshteinDistance(a, b) {
   return matrix[b.length][a.length];
 }
 
-function findFuzzyMatch(input, keys, maxDistance = 3) {
+function findFuzzyMatch(input, keys, maxDistance) {
   const lowerInput = normalizeInput(input);
+  // Adaptive distance: purely based on key count, no hardcoded model references
+  if (maxDistance === undefined) {
+    maxDistance = Math.max(3, Math.min(6, Math.ceil(6 - Math.log10(keys.length))));
+  }
   let bestMatch = null;
   let bestDistance = Infinity;
   
