@@ -1670,9 +1670,9 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   const { parts: thinkParts, hasThinking } = role === "ai" ? parseThinkBlocks(processedText) : { parts: [], hasThinking: false };
   let visibleText = processedText;
   let thinkBlocksHtml = '';
+  let thinkTexts = [];
 
   if (hasThinking) {
-    const thinkTexts = [];
     const visibleParts = [];
     for (const p of thinkParts) {
       if (p.type === 'think') {
@@ -1837,26 +1837,46 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         scheduleReset();
     } else {
         aiState.firstTokenTime = Date.now();
-        const cancel = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+        const onTextComplete = (fullText) => {
             if (hasMarkdown) {
                 textSpan.innerHTML = displayText;
             } else if (hasMath && window.katex) {
                 textSpan.textContent = "";
-                renderTextWithMath(textSpan, visibleText);
-            }
-            // Insert think block after typewriter completes
-            if (thinkBlocksHtml && textSpan.parentNode) {
-                textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
+                renderTextWithMath(textSpan, fullText || visibleText);
             }
             const elapsed = Date.now() - aiState.firstTokenTime;
-            showMsgStats(div, visibleText, elapsed);
+            showMsgStats(div, fullText || visibleText, elapsed);
             aiState.currentAiMessage = null;
             aiState.cancelTyping = null;
             scheduleReset();
-        }, () => {
+        };
+        const onScroll = () => {
             chatBox.scrollTop = chatBox.scrollHeight;
-        });
-        aiState.cancelTyping = cancel;
+        };
+
+        if (hasThinking && thinkBlocksHtml && thinkTexts.length > 0) {
+            // Insert think block BEFORE textSpan
+            textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
+            const thinkContentEl = div.querySelector('.think-content');
+            // Ensure think block is open during typewriter
+            if (thinkContentEl) thinkContentEl.style.display = 'block';
+            // Type thinking content first, then normal text
+            const cancelThink = window.tokenizer.typewriter(thinkContentEl, thinkTexts.join('\n'), 30, () => {
+                const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+                    onTextComplete(visibleText);
+                }, onScroll);
+                aiState.cancelTyping = cancelText;
+            }, onScroll);
+            aiState.cancelTyping = cancelThink;
+        } else {
+            const cancel = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+                if (thinkBlocksHtml && textSpan.parentNode) {
+                    textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
+                }
+                onTextComplete(visibleText);
+            }, onScroll);
+            aiState.cancelTyping = cancel;
+        }
     }
   } else { 
       if (hasMarkdown) {
