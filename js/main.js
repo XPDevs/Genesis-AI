@@ -1663,19 +1663,19 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       }
     }
     visibleText = visibleParts.join('');
+    visibleText = visibleText.replace(/<\|think\|>[\s\S]*?<\/\|think\|>/g, '').trim();
 
     if (thinkTexts.length > 0) {
-      const combinedThink = thinkTexts.join('\n');
-      thinkBlocksHtml = `
-        <div class="think-block${showReasoning ? ' think-open' : ''}">
+      thinkBlocksHtml = thinkTexts.map((t, i) => `
+        <div class="think-block${showReasoning ? ' think-open' : ''}" data-think-index="${i}">
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
             <span class="think-icon">💭</span>
-            <span class="think-label">Model thinking</span>
+            <span class="think-label">${i === 0 ? 'Model thinking' : 'Analyzing results'}</span>
             <span class="think-timer"></span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
-          <div class="think-content">${combinedThink}</div>
-        </div>`;
+          <div class="think-content">${t}</div>
+        </div>`).join('\n');
     }
   }
 
@@ -1836,45 +1836,60 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         };
 
         if (hasThinking && thinkBlocksHtml && thinkTexts.length > 0 && showReasoning) {
-            // Insert think block BEFORE textSpan
+            // Insert think blocks BEFORE textSpan
             textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
-            const thinkContentEl = div.querySelector('.think-content');
-            const thinkLabelEl = div.querySelector('.think-label');
-            const thinkTimerEl = div.querySelector('.think-timer');
+            const thinkEls = div.querySelectorAll('.think-block');
             const thinkStartTime = Date.now();
-            if (thinkLabelEl) thinkLabelEl.textContent = 'Model is thinking';
-            let timerInterval = setInterval(() => {
-                if (thinkTimerEl) {
-                    const elapsed = ((Date.now() - thinkStartTime) / 1000).toFixed(1);
-                    thinkTimerEl.textContent = elapsed + 's';
+            let currentThinkIndex = 0;
+            const typeNextThink = () => {
+                if (currentThinkIndex >= thinkTexts.length) {
+                    // All think blocks typed — show visible text
+                    if (messageObj && typeof messageObj._onThinkDone === 'function') {
+                        messageObj._onThinkDone((outputText) => {
+                            const textToType = outputText || visibleText;
+                            const cancelText = window.tokenizer.typewriter(textSpan, textToType, 30, () => {
+                                onTextComplete(textToType);
+                            }, onScroll);
+                            aiState.cancelTyping = cancelText;
+                        }, { div, textSpan, thinkEls, thinkStartTime });
+                    } else {
+                        setTimeout(() => {
+                            const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+                                onTextComplete(visibleText);
+                            }, onScroll);
+                            aiState.cancelTyping = cancelText;
+                        }, 400);
+                    }
+                    return;
                 }
-            }, 100);
-            // Type thinking content first, then normal text with a small delay
-            const cancelThink = window.tokenizer.typewriter(thinkContentEl, thinkTexts.join('\n'), 30, () => {
-                clearInterval(timerInterval);
-                const elapsed = ((Date.now() - thinkStartTime) / 1000).toFixed(1);
-                if (thinkLabelEl) thinkLabelEl.textContent = 'Model thought';
-                if (thinkTimerEl) thinkTimerEl.textContent = elapsed + 's';
-                // If messageObj has _onThinkDone, call it before typing visible text
-                if (messageObj && typeof messageObj._onThinkDone === 'function') {
-                    messageObj._onThinkDone((outputText) => {
-                        const textToType = outputText || visibleText;
-                        const cancelText = window.tokenizer.typewriter(textSpan, textToType, 30, () => {
-                            onTextComplete(textToType);
-                        }, onScroll);
-                        aiState.cancelTyping = cancelText;
-                    }, { div, textSpan, thinkContentEl, thinkLabelEl, thinkTimerEl });
-                } else {
-                    // Small pause between reasoning and output
-                    setTimeout(() => {
-                        const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
-                            onTextComplete(visibleText);
-                        }, onScroll);
-                        aiState.cancelTyping = cancelText;
-                    }, 400);
-                }
-            }, onScroll);
-            aiState.cancelTyping = cancelThink;
+                const block = thinkEls[currentThinkIndex];
+                const contentEl = block.querySelector('.think-content');
+                const labelEl = block.querySelector('.think-label');
+                const timerEl = block.querySelector('.think-timer');
+                if (labelEl) labelEl.textContent = 'Model is thinking';
+                const thinkBlockStart = Date.now();
+                const timerInterval = setInterval(() => {
+                    if (timerEl) {
+                        const elapsed = ((Date.now() - thinkBlockStart) / 1000).toFixed(1);
+                        timerEl.textContent = elapsed + 's';
+                    }
+                }, 100);
+                const cancelThink = window.tokenizer.typewriter(contentEl, thinkTexts[currentThinkIndex], 30, () => {
+                    clearInterval(timerInterval);
+                    const elapsed = ((Date.now() - thinkBlockStart) / 1000).toFixed(1);
+                    if (labelEl) labelEl.textContent = currentThinkIndex === 0 ? 'Model thought' : 'Analysis done';
+                    if (timerEl) timerEl.textContent = elapsed + 's';
+                    currentThinkIndex++;
+                    // If there's a _onThinkDone callback and this is between blocks, call it
+                    if (currentThinkIndex < thinkTexts.length && messageObj && typeof messageObj._onThinkDone === 'function') {
+                        messageObj._onThinkDone(typeNextThink, { div, textSpan, thinkEls, thinkStartTime, phase: 'between' });
+                    } else {
+                        typeNextThink();
+                    }
+                }, onScroll);
+                aiState.cancelTyping = cancelThink;
+            };
+            typeNextThink();
         } else {
             const cancel = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
                 if (thinkBlocksHtml && textSpan.parentNode) {
@@ -2865,33 +2880,25 @@ async function sendMessage() {
                 }
             }
 
-            // When reasoning is ON and this is a search result, use custom interleaved flow
+            // When reasoning is ON and this is a search result, use interleaved think→search→think→output
             if (showReasoning && botMsg.isWikipedia && isSearchQuery) {
                 const thinkMatch = botMsg.text.match(/^<\|think\|>([\s\S]*?)<\/\|think\|>/);
                 if (thinkMatch) {
-                    const firstThinkContent = thinkMatch[1];
-                    const topic = firstThinkContent.replace(/^The user wants to know about /, '').replace(/\. Let me search.*$/, '').trim() || 'this topic';
+                    const firstThink = thinkMatch[1];
+                    const wikiOutput = botMsg.text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>\s*/, '');
+                    const topic = firstThink.replace(/^The user wants to know about /, '').replace(/\. Let me search.*$/, '').trim() || 'this topic';
+                    const secondThink = 'Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.';
+                    botMsg.text = '<|think|>' + firstThink + '</|think|>\n\n<|think|>' + secondThink + '</|think|>\n\n' + wikiOutput;
                     botMsg._onThinkDone = async (next, els) => {
-                        const { div, textSpan } = els;
-                        const spinner = document.createElement('div');
-                        spinner.className = 'message ai wiki-loading';
-                        spinner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0"><svg viewBox="0 0 24 24" width="24" height="24" style="animation:wikiSpin 1.5s linear infinite;transform-origin:center;flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/></circle></svg><img src="icon.png" alt="AI" style="width:24px;height:24px;border-radius:4px"><span style="opacity:0.7;font-size:0.9em">Searching the web</span></div>';
-                        textSpan.parentNode.insertBefore(spinner, textSpan);
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                        await new Promise(r => setTimeout(r, 700));
-                        spinner.remove();
-                        const secondThinkHtml = '<div class="think-block think-open"><button class="think-toggle" onclick="this.parentElement.classList.toggle(\'think-open\'); event.stopPropagation();"><span class="think-icon">💭</span><span class="think-label">Analyzing results</span><span class="think-timer"></span><svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="think-content">Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.</div></div>';
-                        textSpan.insertAdjacentHTML('beforebegin', secondThinkHtml);
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                        const allThinkContents = div.querySelectorAll('.think-content');
-                        const secondThinkEl = allThinkContents[1];
-                        if (secondThinkEl) {
-                            const secondText = 'Based on the web search results, I found relevant information about "' + topic + '". Let me share what I discovered.';
-                            await new Promise(resolve => {
-                                window.tokenizer.typewriter(secondThinkEl, secondText, 30, resolve, () => {
-                                    chatBox.scrollTop = chatBox.scrollHeight;
-                                });
-                            });
+                        if (els.phase === 'between') {
+                            const { div, textSpan } = els;
+                            const spinner = document.createElement('div');
+                            spinner.className = 'message ai wiki-loading';
+                            spinner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0"><svg viewBox="0 0 24 24" width="24" height="24" style="animation:wikiSpin 1.5s linear infinite;transform-origin:center;flex-shrink:0"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/></circle></svg><img src="icon.png" alt="AI" style="width:24px;height:24px;border-radius:4px"><span style="opacity:0.7;font-size:0.9em">Searching the web</span></div>';
+                            textSpan.parentNode.insertBefore(spinner, textSpan);
+                            chatBox.scrollTop = chatBox.scrollHeight;
+                            await new Promise(r => setTimeout(r, 700));
+                            spinner.remove();
                         }
                         next();
                     };
