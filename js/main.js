@@ -191,15 +191,6 @@ async function initializeApp() {
         if (icon) {
             settingsBtn.innerHTML = icon.outerHTML;
         }
-        // Add globe icon to search button (blue when active)
-        if (searchToggleBtn && !searchToggleBtn.querySelector('svg')) {
-            searchToggleBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
-            searchToggleBtn.title = "Web Search (Click for Settings)";
-        }
-        // Hide search button by default (will show when search is enabled)
-        if (searchToggleBtn) {
-            searchToggleBtn.style.display = 'none';
-        }
     }
 
     // Initialize speech recognition after other scripts are loaded
@@ -363,7 +354,7 @@ function injectCSS() {
             display: flex;
             gap: 8px;
         }
-        #settingsBtn, #searchToggleBtn {
+        #settingsBtn {
             width: 40px;
             height: 40px;
             padding: 0;
@@ -371,37 +362,14 @@ function injectCSS() {
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            flex-shrink: 0; /* Prevent shrinking in flex container */
+            flex-shrink: 0;
             border: none;
             background: rgba(128, 128, 128, 0.1);
             cursor: pointer;
             transition: all 0.2s;
         }
         .input-area {
-            padding: 14px 12px 14px 22px; /* Thicker input area for desktop */
-        }
-        #searchToggleBtn {
-            position: absolute;
-            left: 48px;
-            top: 50%;
-            transform: translateY(-50%);
-            margin: 0;
-            background: transparent;
-            padding: 4px 6px;
-        }
-        #searchToggleBtn svg {
-            width: 22px;
-            height: 22px;
-            stroke: #666;
-        }
-        #searchToggleBtn.active svg {
-            stroke: #3b82f6;
-        }
-#searchToggleBtn:hover {
-            background: transparent;
-        }
-        #searchToggleBtn.active:hover {
-            background: transparent;
+            padding: 14px 12px 14px 22px;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
@@ -675,8 +643,6 @@ const devCurrentModalName = document.getElementById("devCurrentModalName");
 const devCurrentModalMode = document.getElementById("devCurrentModalMode");
 const uploadStatus = document.getElementById("uploadStatus");
 
-// NEW: Search toggle button
-const searchToggleBtn = document.getElementById("searchToggleBtn");
 const reasoningToggleBtn = document.getElementById("reasoningToggleBtn");
 
 // State
@@ -1854,18 +1820,21 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
             chatBox.scrollTop = chatBox.scrollHeight;
         };
 
-        if (hasThinking && thinkBlocksHtml && thinkTexts.length > 0) {
+        if (hasThinking && thinkBlocksHtml && thinkTexts.length > 0 && showReasoning) {
             // Insert think block BEFORE textSpan
             textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
             const thinkContentEl = div.querySelector('.think-content');
             // Ensure think block is open during typewriter
             if (thinkContentEl) thinkContentEl.style.display = 'block';
-            // Type thinking content first, then normal text
+            // Type thinking content first, then normal text with a small delay
             const cancelThink = window.tokenizer.typewriter(thinkContentEl, thinkTexts.join('\n'), 30, () => {
-                const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
-                    onTextComplete(visibleText);
-                }, onScroll);
-                aiState.cancelTyping = cancelText;
+                // Small pause between reasoning and output
+                setTimeout(() => {
+                    const cancelText = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
+                        onTextComplete(visibleText);
+                    }, onScroll);
+                    aiState.cancelTyping = cancelText;
+                }, 400);
             }, onScroll);
             aiState.cancelTyping = cancelThink;
         } else {
@@ -2820,7 +2789,14 @@ async function sendMessage() {
         loadingDiv.remove();
         aiState.loadingDiv = null;
 
+        // Auto-detect search intent
+        const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|find\s+(information|details|data|out)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+about|do\s+a\s+search\s+for/i;
+        const originalSearchPref = useWikipedia;
+        if (searchPatterns.test(text) && !useWikipedia) {
+            useWikipedia = true;
+        }
         const botMsg = await findResponses(text, chat.messages);
+        useWikipedia = originalSearchPref;
 
         if (requestId !== aiState.currentRequestId) return;
 
@@ -3215,21 +3191,6 @@ function updateReasoningToggleIcon() {
     svg.setAttribute('fill', 'none');
     svg.style.stroke = '';
     reasoningToggleBtn.classList.remove('active');
-  }
-}
-
-function updateSearchToggleIcon() {
-  if (!searchToggleBtn) return;
-  const svg = searchToggleBtn.querySelector('svg');
-  if (!svg) return;
-  if (useWikipedia) {
-    svg.setAttribute('fill', '#3b82f6');
-    svg.style.stroke = '#3b82f6';
-    searchToggleBtn.classList.add('active');
-  } else {
-    svg.setAttribute('fill', 'none');
-    svg.style.stroke = '';
-    searchToggleBtn.classList.remove('active');
   }
 }
 
@@ -3896,41 +3857,44 @@ async function startApp() {
     renderChatList();
     await renderMessages();
 
-    // Initialize search toggle
-    if (searchToggleBtn) {
-        const savedSearchPref = await DB.get("useWikipedia", false);
-        useWikipedia = savedSearchPref;
-        updateSearchToggleIcon();
-        // Click handler toggles search directly
-        searchToggleBtn.onclick = () => {
-            useWikipedia = !useWikipedia;
-            DB.set("useWikipedia", useWikipedia);
-            updateSearchToggleIcon();
-            // Sync the settings toggle if it exists
-            const webSearchToggle = document.getElementById("webSearchToggle");
-            if (webSearchToggle) webSearchToggle.checked = useWikipedia;
+    // Load web search preference from settings
+    useWikipedia = await DB.get("useWikipedia", false);
+    const webSearchToggle = document.getElementById("webSearchToggle");
+    if (webSearchToggle) {
+        webSearchToggle.checked = useWikipedia;
+        webSearchToggle.onchange = async () => {
+            useWikipedia = webSearchToggle.checked;
+            await DB.set("useWikipedia", useWikipedia);
         };
-        // Sync from settings toggle changes
-        const webSearchToggle = document.getElementById("webSearchToggle");
-        if (webSearchToggle) {
-            webSearchToggle.checked = useWikipedia;
-            webSearchToggle.onchange = async () => {
-                useWikipedia = webSearchToggle.checked;
-                await DB.set("useWikipedia", useWikipedia);
-                updateSearchToggleIcon();
-            };
-        }
     }
 
-    // Reasoning (lightbulb) toggle
+    // Reasoning (lightbulb) toggle and settings sync
+    const reasoningToggle = document.getElementById("reasoningToggle");
+    const savedReasoning = await DB.get("showReasoning", false);
+    showReasoning = savedReasoning;
+    if (reasoningToggle) reasoningToggle.checked = savedReasoning;
+    updateReasoningToggleIcon();
+
+    const syncReasoning = (val) => {
+      showReasoning = val;
+      if (reasoningToggle) reasoningToggle.checked = val;
+      if (reasoningToggleBtn) {
+        if (val) reasoningToggleBtn.classList.add('active');
+        else reasoningToggleBtn.classList.remove('active');
+      }
+      updateReasoningToggleIcon();
+      DB.set("showReasoning", val);
+    };
+
     if (reasoningToggleBtn) {
       reasoningToggleBtn.onclick = () => {
-        showReasoning = !showReasoning;
-        DB.set("showReasoning", showReasoning);
-        updateReasoningToggleIcon();
+        syncReasoning(!showReasoning);
       };
-      // Init icon state
-      updateReasoningToggleIcon();
+    }
+    if (reasoningToggle) {
+      reasoningToggle.onchange = () => {
+        syncReasoning(reasoningToggle.checked);
+      };
     }
 
     // Initialize help icons
@@ -4008,18 +3972,6 @@ async function startApp() {
 
     if (qaSetting === "new") {
       setTimeout(showQuickActionsGuide, 600);
-    }
-
-    // Initialize show reasoning toggle
-    const reasoningToggle = document.getElementById("reasoningToggle");
-    if (reasoningToggle) {
-      const savedReasoning = await DB.get("showReasoning", false);
-      showReasoning = savedReasoning;
-      reasoningToggle.checked = savedReasoning;
-      reasoningToggle.onchange = async () => {
-        showReasoning = reasoningToggle.checked;
-        await DB.set("showReasoning", showReasoning);
-      };
     }
 
     // Sync thinking UI for current model
