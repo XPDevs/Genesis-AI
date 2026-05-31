@@ -2235,8 +2235,15 @@ function showWarningModal(message, onDismiss) {
 
 function violatesRules(text) {
   if (!bannedWords.length) return false;
+  if (!window.ContextEngine) {
+    const lowerText = text.toLowerCase();
+    return bannedWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerText));
+  }
   const lowerText = text.toLowerCase();
-  return bannedWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerText));
+  const hasBanned = bannedWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(lowerText));
+  if (!hasBanned) return false;
+  const verdict = window.ContextEngine.judgeContext(text);
+  return verdict.flag;
 }
 
 function summariseTitle(text) {
@@ -2323,7 +2330,21 @@ async function findResponses(input, history) {
       /^(?:wikipedia|wiki|wkpedia)\s+(?:search\s+)?(?:for\s+)?(.+)/i,
       /^look\s+up\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
       /^find\s+(.+)\s+(?:on|in)\s+(?:wikipedia|wiki)/i,
-      /^(?:image|picture|photo|img)\s+(?:of\s+)?(.+)/i
+      /^(?:image|picture|photo|img)\s+(?:of\s+)?(.+)/i,
+      /^search\s+(?:the\s+)?(?:web|internet|online)\s+(?:for\s+)?(.+)/i,
+      /^search\s+(?:for\s+)?(.+)/i,
+      /^google\s+(.+)/i,
+      /^look\s+(?:for\s+)?(.+)/i,
+      /^find\s+(?:me\s+)?(?:information|details|data|out|results?)\s+(?:about|on|for|regarding)\s+(.+)/i,
+      /^find\s+(?:me\s+)?(.+)/i,
+      /^do\s+(?:a\s+)?(?:search|lookup|look-up)\s+(?:for\s+)?(?:me\s+)?(.+)/i,
+      /^(?:can\s+you\s+)?(?:search|find|look\s+up|fetch|get)\s+(?:for\s+)?(?:me\s+)?(.+)/i,
+      /^tell\s+me\s+(?:about|regarding)\s+(.+)/i,
+      /^define\s+(.+)/i,
+      /^explain\s+(.+)/i,
+      /^describe\s+(.+)/i,
+      /^summarize\s+(.+)/i,
+      /(.+?)\s+search\s+(?:the\s+)?(?:web|internet|online)\s*$/i
   ];
   for (const pattern of wikiCmdPatterns) {
       const match = decodedInput.match(pattern);
@@ -2392,9 +2413,9 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `<|think|>The user wants to know about ${query}. Let me search the web to find accurate and current information.</|think|>\n\nHere's what I found on Wikipedia about ${query}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+              return { role: "ai", text: `Here's what I found on Wikipedia about ${query}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
-          return { role: "ai", text: `<|think|>I tried to find information about "${query}" on Wikipedia but couldn't find relevant results.</|think|>\n\nI couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
+          return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
   }
   }
@@ -2570,7 +2591,7 @@ async function findResponses(input, history) {
                 }
                 
                 const searchTopic = decodedInput.replace(/^(?:what|who|where|when|why|how|tell me|define|explain|describe|search|find|look up)\s+/i, '').trim().replace(/[?.,!;:]+$/, '').trim();
-                return { role: "ai", text: `<|think|>The user wants to know about ${searchTopic || decodedInput}. Let me search the web to find accurate and current information.</|think|>\n\nHere's what I found on Wikipedia about ${searchTopic || decodedInput}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+                return { role: "ai", text: `Here's what I found on Wikipedia about ${searchTopic || decodedInput}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
@@ -2859,7 +2880,7 @@ async function sendMessage() {
         aiState.loadingDiv = null;
 
         // Auto-detect search intent
-        const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|find\s+(information|details|data|out)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+about|do\s+a\s+search\s+for|(?=.*\bsearch\b)(?=.*\bweb\b)/i;
+        const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|look\s+for|find\s+(information|details|data|out|me)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+(about|regarding)|do\s+a\s+search\s+for|google\s|(?=.*\bsearch\b)(?=.*\b(?:web|internet|online)\b)/i;
         const originalSearchPref = useWikipedia;
         let isSearchQuery = false;
         if (searchPatterns.test(text) && !useWikipedia) {

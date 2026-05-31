@@ -221,6 +221,11 @@
         <div class="input-main">
           <div class="input-row-top">
             <input type="text" id="userInput" placeholder="Ask Genesis AI">
+            <button id="sendBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+              </svg>
+            </button>
           </div>
           <div class="input-row-bottom">
             <div class="input-actions-left">
@@ -234,11 +239,6 @@
                 </svg>
               </button>
             </div>
-            <button id="sendBtn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
-              </svg>
-            </button>
           </div>
         </div>
         <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
@@ -638,6 +638,7 @@ await Promise.all([
   loadScript('https://xpdevs.github.io/Genesis-AI/js/type.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/greetings.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/fa.js'),
+  loadScript('https://xpdevs.github.io/Genesis-AI/js/context.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
