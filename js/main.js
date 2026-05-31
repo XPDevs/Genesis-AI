@@ -369,49 +369,16 @@ function injectCSS() {
             transition: all 0.2s;
         }
         .input-area {
-            padding: 8px 12px;
+            padding: 14px 12px 14px 22px;
         }
-        .input-main {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .input-row-top input {
+            padding-top: 18px;
         }
-        #userInput {
-            flex: 1;
-            border: none;
-            background: transparent;
-            color: var(--text);
-            font-size: 16px;
-            outline: none;
-            padding: 8px 4px;
-            box-sizing: border-box;
-            min-width: 0;
+        .input-row-top input:placeholder-shown {
+            text-align: center;
         }
-        .input-actions-left {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            background: var(--active-chat);
-            border-radius: 10px;
-            padding: 2px;
-            flex-shrink: 0;
-        }
-        #sendBtn {
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-            border-radius: 50%;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        #sendBtn:hover {
-            filter: brightness(1.1);
+        .input-row-top input:not(:placeholder-shown) {
+            text-align: left;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
