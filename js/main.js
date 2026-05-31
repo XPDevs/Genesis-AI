@@ -371,14 +371,14 @@ function injectCSS() {
         .input-area {
             padding: 14px 12px 14px 22px;
         }
+        .input-row-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .input-row-top input {
-            padding-top: 18px;
-        }
-        .input-row-top input:placeholder-shown {
-            text-align: center;
-        }
-        .input-row-top input:not(:placeholder-shown) {
-            text-align: left;
+            flex: 1;
+            min-width: 0;
         }
         /* Ensure chat container takes full height for proper scrollbar placement */
         body {
