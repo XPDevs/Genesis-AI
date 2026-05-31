@@ -1665,26 +1665,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   let processedText = finalString.replace(/%DATE%/g, dateStr).replace(/%TIME%/g, timeStr)
     .replace(/%DAY%/g, dayStr).replace(/%YEAR%/g, yearStr).replace(/%TOMORROW%/g, tomorrowStr);
 
-  const hasMath = /\{\\displaystyle|\$\$/.test(processedText);
-  const hasHTML = /<[a-z][\s\S]*>/i.test(processedText);
-  const hasMarkdown = !hasHTML && typeof hasMarkdownSyntax === 'function' && hasMarkdownSyntax(processedText);
-
-  // Render Markdown to HTML for display, keep raw for copy
-  let displayText = visibleText;
-  if (hasMarkdown) {
-    displayText = renderMarkdown(visibleText);
-  }
-
-  let speechText = visibleText;
-  if (hasMarkdown && typeof stripMarkdown === 'function') {
-    speechText = stripMarkdown(visibleText);
-  }
-
-  const div = document.createElement("div");
-  div.className = "message " + role;
-  const textSpan = document.createElement("span");
-
-  // Parse <|think|> blocks for AI messages
+  // Parse <|think|> blocks for AI messages to get visibleText (stripped of reasoning)
   const { parts: thinkParts, hasThinking } = role === "ai" ? parseThinkBlocks(processedText) : { parts: [], hasThinking: false };
   let visibleText = processedText;
   let thinkBlocksHtml = '';
@@ -1715,6 +1696,25 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         </div>`;
     }
   }
+
+  const hasMath = /\{\\displaystyle|\$\$/.test(visibleText);
+  const hasHTML = /<[a-z][\s\S]*>/i.test(visibleText);
+  const hasMarkdown = !hasHTML && typeof hasMarkdownSyntax === 'function' && hasMarkdownSyntax(visibleText);
+
+  // Render Markdown to HTML for display, keep raw for copy
+  let displayText = visibleText;
+  if (hasMarkdown) {
+    displayText = renderMarkdown(visibleText);
+  }
+
+  let speechText = visibleText;
+  if (hasMarkdown && typeof stripMarkdown === 'function') {
+    speechText = stripMarkdown(visibleText);
+  }
+
+  const div = document.createElement("div");
+  div.className = "message " + role;
+  const textSpan = document.createElement("span");
   
   div.appendChild(textSpan);
 
