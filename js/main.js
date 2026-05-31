@@ -2354,7 +2354,7 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `<|think|>I'll search the web for information about ${query}...</|think|>\n\n${summaryText}\n\n<|think|>After reviewing the Wikipedia results for ${query}, here's a comprehensive answer based on the information found.</|think|>\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+              return { role: "ai", text: `<|think|>The user wants to know about ${query}. Let me search the web to find accurate and current information.</|think|>\n\nHere's what I found on Wikipedia about ${query}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
           return { role: "ai", text: `<|think|>I tried to find information about "${query}" on Wikipedia but couldn't find relevant results.</|think|>\n\nI couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -2532,7 +2532,7 @@ async function findResponses(input, history) {
                 }
                 
                 const searchTopic = decodedInput.replace(/^(?:what|who|where|when|why|how|tell me|define|explain|describe|search|find|look up)\s+/i, '').trim().replace(/[?.,!;:]+$/, '').trim();
-                return { role: "ai", text: `<|think|>I'll search the web for information about ${searchTopic || decodedInput}...</|think|>\n\n${summaryText}\n\n<|think|>After reviewing the Wikipedia results for ${searchTopic || decodedInput}, here's a comprehensive answer based on the information found.</|think|>\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+                return { role: "ai", text: `<|think|>The user wants to know about ${searchTopic || decodedInput}. Let me search the web to find accurate and current information.</|think|>\n\nHere's what I found on Wikipedia about ${searchTopic || decodedInput}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
@@ -2821,7 +2821,7 @@ async function sendMessage() {
         aiState.loadingDiv = null;
 
         // Auto-detect search intent
-        const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|find\s+(information|details|data|out)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+about|do\s+a\s+search\s+for/i;
+        const searchPatterns = /search\s+(the\s+)?(web|internet|online|for|up|about)|look\s+up|find\s+(information|details|data|out)\s+(about|on|for|regarding)|what\s+(is|are|was|were|can you tell)\s+.*(about|regarding)|who\s+is|where\s+is|define\s+|tell\s+me\s+about|do\s+a\s+search\s+for|(?=.*\bsearch\b)(?=.*\bweb\b)/i;
         const originalSearchPref = useWikipedia;
         if (searchPatterns.test(text) && !useWikipedia) {
             useWikipedia = true;
