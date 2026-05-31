@@ -387,6 +387,9 @@
       <div class="setting-item">
         <button id="pfpUploadBtn">Upload Photo</button>
       </div>
+      <div class="setting-item">
+        <input type="text" id="pfpUrlInput" placeholder="Or paste an image URL..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; margin-top: 6px;">
+      </div>
       <div class="setting-item" id="pfpRemoveContainer" style="display: none;">
         <button id="pfpRemoveBtn" style="background: #ff4d4d;">Remove Photo</button>
       </div>
@@ -395,6 +398,31 @@
       </div>
       <div class="modal-actions" style="justify-content: center;">
         <button class="cancel" id="pfpCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="customModelConfirmModal" class="modal" style="z-index: 100001;">
+    <div class="modal-content" style="max-width: 520px; width: 100%;">
+      <h2 style="margin-top: 0;">Confirm Custom Model</h2>
+      <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
+        <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="customModelConfirmParams">0</span></div>
+        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 6px;" id="customModelConfirmReasoning">Reasoning: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
+        <div style="font-size: 0.9em; opacity: 0.8;" id="customModelConfirmWebSearch">Web Search: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
+      </div>
+      <div style="margin: 15px 0;">
+        <label style="font-size: 0.9em; opacity: 0.8; display: block; margin-bottom: 6px;">Or load from URL:</label>
+        <input type="text" id="customModelUrlInput" placeholder="https://example.com/model.json..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
+      </div>
+      <div style="margin: 15px 0;">
+        <input type="file" id="customModelConfirmInput" accept=".json,.bin" style="margin-top: 6px;">
+        <p style="font-size: 0.8em; opacity: 0.6; margin: 6px 0 0 0;">Upload a .json file, or paste a URL above.</p>
+      </div>
+      <p id="customModelConfirmStatus" style="font-size: 0.85em; margin: 8px 0; color: var(--primary);"></p>
+      <div class="modal-actions">
+        <button class="cancel" id="customModelConfirmCancel">Cancel</button>
+        <button class="confirm" id="customModelConfirmOk">Load Model</button>
       </div>
     </div>
   </div>

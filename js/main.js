@@ -1651,7 +1651,6 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
 
     if (thinkTexts.length > 0) {
       const combinedThink = thinkTexts.join('\n');
-      const displayThink = showReasoning ? 'block' : 'none';
       thinkBlocksHtml = `
         <div class="think-block${showReasoning ? ' think-open' : ''}">
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
@@ -1659,7 +1658,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
             <span class="think-label">Model thinking</span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
-          <div class="think-content" style="display: ${displayThink};">${combinedThink}</div>
+          <div class="think-content">${combinedThink}</div>
         </div>`;
     }
   }
@@ -1824,8 +1823,6 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
             // Insert think block BEFORE textSpan
             textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
             const thinkContentEl = div.querySelector('.think-content');
-            // Ensure think block is open during typewriter
-            if (thinkContentEl) thinkContentEl.style.display = 'block';
             // Type thinking content first, then normal text with a small delay
             const cancelThink = window.tokenizer.typewriter(thinkContentEl, thinkTexts.join('\n'), 30, () => {
                 // Small pause between reasoning and output
@@ -1840,7 +1837,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
         } else {
             const cancel = window.tokenizer.typewriter(textSpan, visibleText, 30, () => {
                 if (thinkBlocksHtml && textSpan.parentNode) {
-                    textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
+                    textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
                 }
                 onTextComplete(visibleText);
             }, onScroll);
@@ -1857,7 +1854,7 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
       }
       // Insert think block for existing messages
       if (thinkBlocksHtml) {
-          textSpan.insertAdjacentHTML('afterend', thinkBlocksHtml);
+          textSpan.insertAdjacentHTML('beforebegin', thinkBlocksHtml);
       }
   }
 }
@@ -2214,8 +2211,13 @@ async function findResponses(input, history) {
   const decodedInput = window.tokenizer.decode(input);
   const cleanInput = typeof normalizeInput === 'function' ? normalizeInput(decodedInput) : decodedInput.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // Calculator Integration
-  if (typeof window.calc === 'function') {
+  // Require model to be loaded for calculator and wiki features
+  if (!responses || Object.keys(responses).length === 0) {
+    // Still allow basic text matching but return early for features that need a model
+  }
+
+  // Calculator Integration — requires a loaded model
+  if (responses && Object.keys(responses).length > 0 && typeof window.calc === 'function') {
       // Check for $$...$$ LaTeX math first
       const latexMatch = decodedInput.match(/\$\$([\s\S]*?)\$\$/);
       if (latexMatch && typeof window.solveLatex === 'function') {
@@ -2250,7 +2252,8 @@ async function findResponses(input, history) {
       }
   }
 
-  // Explicit Wikipedia search commands
+  // Explicit Wikipedia search commands — requires a loaded model
+  if (responses && Object.keys(responses).length > 0) {
   const wikiCmdPatterns = [
       /^(?:search|find|look up)\s+(?:wikipedia|wiki|wkpedia|wp)\s+(?:for\s+)?(.+)/i,
       /^(?:wikipedia|wiki|wkpedia)\s+(?:search\s+)?(?:for\s+)?(.+)/i,
@@ -2325,10 +2328,11 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+              return { role: "ai", text: `<|think|>Searching Wikipedia for "${query}"...</|think|>\n\n${summaryText}\n\n<|think|>Based on the Wikipedia search results, here's what I found about ${query}.</|think|>`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
-          return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
+          return { role: "ai", text: `<|think|>I tried to find information about "${query}" on Wikipedia but couldn't find relevant results.</|think|>\n\nI couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
+  }
   }
 
   // "Who am I" - Get user's name from userInfo
@@ -2416,8 +2420,8 @@ async function findResponses(input, history) {
     if (fuzzyMatch && wordConfidence >= 3) {
       return { role: "ai", text: removeRepetitions(formatListResponse(fuzzyMatch.text)) };
     }
-    // Only attempt Wikipedia if the flag is enabled
-    if (useWikipedia) {
+    // Only attempt Wikipedia if the flag is enabled and a model is loaded
+    if (useWikipedia && responses && Object.keys(responses).length > 0) {
         try {
           const prefixes = ["how to", "what is", "who is", "where is", "when is", "why is", "tell me about", "define", "explain", "what are", "who are","how do i", "how can i", "steps to", "guide for", "tutorial on", "method to", "process for","meaning of", "describe", "summarize", "overview of", "details on", "concept of", "basics of","difference between", "compare", "list of", "examples of", "pros and cons of","who was", "where are", "origin of", "source of", "background on", "is there a"];
           const isQuestion = prefixes.some(prefix => cleanInput.startsWith(prefix));
@@ -2501,7 +2505,8 @@ async function findResponses(input, history) {
                     }
                 }
                 
-                return { role: "ai", text: `\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+                const searchTopic = decodedInput.replace(/^(?:what|who|where|when|why|how|tell me|define|explain|describe|search|find|look up)\s+/i, '').trim().replace(/[?.,!;:]+$/, '').trim();
+                return { role: "ai", text: `<|think|>Searching Wikipedia for "${searchTopic || decodedInput}"...</|think|>\n\n${summaryText}\n\n<|think|>Based on the Wikipedia results, here's the relevant information about ${searchTopic || decodedInput}.</|think|>`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
@@ -2752,7 +2757,7 @@ async function sendMessage() {
   }
 
   const decodedInput = window.tokenizer.decode(text);
-  const isCalcQuery = typeof window.calc === 'function' && (() => {
+  const isCalcQuery = responses && Object.keys(responses).length > 0 && typeof window.calc === 'function' && (() => {
       const isMathLike = (s) => /\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|cbrt|log|ln|log2|log10|abs|floor|ceil|round|exp|factorial|fact|nCr|nPr)\s*\(/i.test(s)
           || (/^[\d\s().+\-*/^x,!%]+$/.test(s) && /[\d]/.test(s) && /[-+*/^!]/.test(s))
           || (/\b(pi|e)\b/i.test(s) && s.length < 30);
@@ -2850,11 +2855,13 @@ async function sendMessage() {
 }
 
 // --- DEVELOPER MODE ---
+let isCustomModelLoaded = false;
+
 function updateDevModalStatus() {
     if (!devModal || !devModal.style.display || devModal.style.display === 'none') return;
     const vals = getModelDisplayValues();
     devCurrentModalName.textContent = vals.ver;
-    devCurrentModalMode.textContent = customModelInput.files.length > 0 ? "Custom (Session)" : "Normal";
+    devCurrentModalMode.textContent = isCustomModelLoaded ? "Custom (Session)" : "Normal";
     uploadStatus.textContent = "";
 }
 
@@ -2866,65 +2873,6 @@ window.devAccess = function(password) {
     if (devModalOptions) devModalOptions.style.display = 'block';
     updateDevModalStatus();
 };
-
-function handleCustomModelUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
-    if (statusEl) statusEl.innerHTML = `Reading ${file.name}...<br>`;
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const buffer = e.target.result;
-        try {
-            let newResponses;
-            if (file.name.endsWith('.json')) {
-                const rawText = new TextDecoder().decode(buffer).trim();
-                newResponses = JSON.parse(rawText);
-                console.log("Genesis-AI: Custom JSON modal loaded for session.");
-            } else {
-                throw new Error("Unsupported file type. Please use .json");
-            }
-
-            if (typeof newResponses !== 'object' || newResponses === null) {
-                throw new Error("Parsed modal is not a valid object.");
-            }
-
-            responses = newResponses; // Override for session
-            if (statusEl) statusEl.innerHTML += `Success! Loaded "${newResponses.ver || file.name}". Keys: ${Object.keys(newResponses).length}.`;
-            
-            // Update settings modal display
-            const vals = getModelDisplayValues();
-            if (document.getElementById("modelNameDisplay")) {
-                document.getElementById("modelNameDisplay").textContent = vals.ver;
-            }
-            if (document.getElementById("modelParamsDisplay")) {
-                document.getElementById("modelParamsDisplay").textContent = vals.params;
-            }
-            
-            // Also update dev modal if it's open
-            if (isDevMode) updateDevModalStatus();
-
-            // Update desktop dropdown trigger if visible
-            const nameEl = document.getElementById("modelSelectName");
-            const descEl = document.getElementById("modelSelectDesc");
-            if (nameEl) nameEl.textContent = newResponses.ver || file.name;
-            if (descEl) descEl.textContent = "Custom session model";
-            const dd = document.getElementById("modelSelectDropdown");
-            if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
-
-        } catch (err) {
-            console.error("Custom modal load failed:", err);
-            if (statusEl) statusEl.innerHTML += `Error: ${err.message}`;
-        }
-    };
-
-    reader.onerror = function() {
-        if (statusEl) statusEl.innerHTML += "Error reading file.";
-    };
-
-    reader.readAsArrayBuffer(file);
-}
 
 window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 's') {
@@ -2959,7 +2907,7 @@ if (copyShareLinkBtn) copyShareLinkBtn.onclick = () => {
     copyShareLinkBtn.textContent = "Copied!"; setTimeout(() => { copyShareLinkBtn.textContent = "Copy"; shareModal.style.display = "none"; }, 1500);
 };
 
-if (devModal) { devModalCancel.onclick = () => devModal.style.display = 'none'; devModalClose.onclick = () => devModal.style.display = 'none'; customModelInput.addEventListener('change', handleCustomModelUpload); }
+if (devModal) { devModalCancel.onclick = () => devModal.style.display = 'none'; devModalClose.onclick = () => devModal.style.display = 'none'; }
 if (renameConfirm) renameConfirm.onclick = async () => {
   const chat = chats.find(c => c.id === currentRenameId);
   if (chat && renameInput.value.trim()) { 
@@ -3764,6 +3712,177 @@ if (pfpGoogleBtn) {
             if (pfpModal) pfpModal.style.display = 'none';
         }
     };
+}
+
+// PFP URL input
+const pfpUrlInput = document.getElementById('pfpUrlInput');
+if (pfpUrlInput) {
+    pfpUrlInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const url = pfpUrlInput.value.trim();
+            if (!url) return;
+            await updateUserProfile((await DB.get("userInfo", {})).name || "User", url);
+            updatePfpPreview();
+            if (pfpModal) pfpModal.style.display = 'none';
+            pfpUrlInput.value = '';
+        }
+    });
+}
+
+// --- Custom Model Confirmation Modal ---
+const customModelConfirmModal = document.getElementById('customModelConfirmModal');
+const customModelConfirmInput = document.getElementById('customModelConfirmInput');
+const customModelUrlInput = document.getElementById('customModelUrlInput');
+const customModelConfirmOk = document.getElementById('customModelConfirmOk');
+const customModelConfirmCancel = document.getElementById('customModelConfirmCancel');
+const customModelConfirmStatus = document.getElementById('customModelConfirmStatus');
+const customModelConfirmName = document.getElementById('customModelConfirmName');
+const customModelConfirmParams = document.getElementById('customModelConfirmParams');
+const customModelConfirmReasoning = document.getElementById('customModelConfirmReasoning');
+const customModelConfirmWebSearch = document.getElementById('customModelConfirmWebSearch');
+
+let pendingModelData = null;
+
+function showModelConfirmModal(modelData, source) {
+    const ver = modelData.ver || "Unknown Model";
+    const params = Object.keys(modelData).length;
+
+    customModelConfirmName.textContent = ver;
+    customModelConfirmParams.textContent = params;
+
+    const hasReasoning = Object.values(modelData).some(v =>
+        typeof v === 'string' && (v.includes('<|think|>') || v.includes('</|think|>'))
+    );
+    customModelConfirmReasoning.innerHTML = hasReasoning
+        ? 'Reasoning: <span style="color: var(--green, #22c55e);">&#10003; Supported</span>'
+        : 'Reasoning: <span style="opacity: 0.5;">Not detected</span>';
+
+    customModelConfirmWebSearch.innerHTML = 'Web Search: <span style="color: var(--green, #22c55e);">&#10003; Available</span>';
+
+    customModelConfirmStatus.textContent = '';
+    pendingModelData = modelData;
+    customModelConfirmModal.style.display = 'flex';
+}
+
+function applyPendingModel() {
+    if (!pendingModelData) return;
+    responses = pendingModelData;
+    isCustomModelLoaded = true;
+    const vals = getModelDisplayValues();
+    if (document.getElementById("modelNameDisplay")) {
+        document.getElementById("modelNameDisplay").textContent = vals.ver;
+    }
+    if (document.getElementById("modelParamsDisplay")) {
+        document.getElementById("modelParamsDisplay").textContent = vals.params;
+    }
+    if (isDevMode) updateDevModalStatus();
+    const nameEl = document.getElementById("modelSelectName");
+    const descEl = document.getElementById("modelSelectDesc");
+    const fileName = pendingModelData.ver || "Custom Model";
+    if (nameEl) nameEl.textContent = fileName;
+    if (descEl) descEl.textContent = "Custom session model";
+    const dd = document.getElementById("modelSelectDropdown");
+    if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
+    customModelConfirmModal.style.display = 'none';
+    customModelConfirmStatus.textContent = `Loaded "${fileName}" successfully.`;
+    pendingModelData = null;
+    if (customModelUrlInput) customModelUrlInput.value = '';
+}
+
+if (customModelConfirmCancel) {
+    customModelConfirmCancel.onclick = () => {
+        customModelConfirmModal.style.display = 'none';
+        pendingModelData = null;
+    };
+}
+
+if (customModelConfirmModal) {
+    customModelConfirmModal.onclick = (e) => {
+        if (e.target === customModelConfirmModal) {
+            customModelConfirmModal.style.display = 'none';
+            pendingModelData = null;
+        }
+    };
+}
+
+if (customModelConfirmOk) {
+    customModelConfirmOk.onclick = applyPendingModel;
+}
+
+// File upload in confirmation modal
+if (customModelConfirmInput) {
+    customModelConfirmInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const statusEl = customModelConfirmStatus;
+        statusEl.textContent = `Reading ${file.name}...`;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const rawText = new TextDecoder().decode(ev.target.result).trim();
+                const modelData = JSON.parse(rawText);
+                if (typeof modelData !== 'object' || modelData === null) {
+                    throw new Error("Invalid model file.");
+                }
+                showModelConfirmModal(modelData, 'file');
+                statusEl.textContent = '';
+            } catch (err) {
+                statusEl.textContent = `Error: ${err.message}`;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
+}
+
+// URL input in confirmation modal
+if (customModelUrlInput) {
+    let urlTimeout = null;
+    customModelUrlInput.addEventListener('input', () => {
+        clearTimeout(urlTimeout);
+        urlTimeout = setTimeout(async () => {
+            const url = customModelUrlInput.value.trim();
+            if (!url || !url.startsWith('http')) return;
+            customModelConfirmStatus.textContent = 'Fetching model...';
+            try {
+                const r = await fetch(url);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const rawText = await r.text();
+                const modelData = JSON.parse(rawText);
+                if (typeof modelData !== 'object' || modelData === null) {
+                    throw new Error("Invalid model format.");
+                }
+                showModelConfirmModal(modelData, 'url');
+                customModelConfirmStatus.textContent = '';
+            } catch (err) {
+                customModelConfirmStatus.textContent = `Error: ${err.message}`;
+            }
+        }, 600);
+    });
+}
+
+// Also hook into the original customModelInput file picker (for settings modal "Load from file...")
+if (customModelInput) {
+    customModelInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const rawText = new TextDecoder().decode(ev.target.result).trim();
+                const modelData = JSON.parse(rawText);
+                if (typeof modelData !== 'object' || modelData === null) {
+                    throw new Error("Invalid model file.");
+                }
+                showModelConfirmModal(modelData, 'file');
+            } catch (err) {
+                const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
+                if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = '';
+    });
 }
 
 window.handleGoogleCredentialResponse = async function(response) {

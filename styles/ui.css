@@ -831,3 +831,13 @@ body.is-new-chat .input-container {
   font-size: 0.8em;
   margin-left: 4px;
 }
+
+#customModelConfirmModal .modal-content input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+}
+
+#customModelConfirmModal .modal-content input[type="file"] {
+  font-size: 0.85em;
+  color: var(--text, #e3e3e3);
+}
