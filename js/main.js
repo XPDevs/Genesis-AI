@@ -2797,7 +2797,6 @@ async function sendMessage() {
     aiState.responseStartTime = Date.now();
     aiState.thinkingTimeout = setTimeout(async () => {
         if (requestId !== aiState.currentRequestId) return;
-        clearInterval(thinkTimerInterval);
         loadingDiv.remove();
         aiState.loadingDiv = null;
 
@@ -3143,13 +3142,7 @@ const MODELS = [
 ];
 
 function currentModelSupportsThinking() {
-  if (!responses) return false;
-  for (const key in responses) {
-    if (typeof responses[key] === 'string' && /<\|think\|>.*?<\/\|think\|>/.test(responses[key])) {
-      return true;
-    }
-  }
-  return false;
+  return true;
 }
 
 function isModel55(url) {
@@ -3180,17 +3173,13 @@ function updateModelInfoDisplay() {
 }
 
 function updateThinkingUI() {
-  const supports = currentModelSupportsThinking();
-  // Show/hide the reasoning toggle button in the input area
   if (reasoningToggleBtn) {
-    reasoningToggleBtn.style.display = supports ? '' : 'none';
+    reasoningToggleBtn.style.display = '';
   }
-  // Show/hide the reasoning toggle row in settings
   const reasoningRow = document.getElementById("reasoningToggle")?.closest('div');
   if (reasoningRow) {
-    reasoningRow.style.display = supports ? '' : 'none';
+    reasoningRow.style.display = '';
   }
-  // Update lightbulb icon state
   updateReasoningToggleIcon();
 }
 
