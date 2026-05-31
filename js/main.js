@@ -677,6 +677,7 @@ const uploadStatus = document.getElementById("uploadStatus");
 
 // NEW: Search toggle button
 const searchToggleBtn = document.getElementById("searchToggleBtn");
+const reasoningToggleBtn = document.getElementById("reasoningToggleBtn");
 
 // State
 let chats = [];
@@ -1685,11 +1686,23 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     if (thinkTexts.length > 0) {
       const combinedThink = thinkTexts.join('\n');
       const displayThink = showReasoning ? 'block' : 'none';
+      // Show elapsed time in label when available
+      let thinkLabel = 'Model thinking';
+      if (messageObj && messageObj.elapsedTime != null) {
+        const sec = Math.floor(messageObj.elapsedTime / 1000);
+        if (sec >= 60) {
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          thinkLabel = `Thought for ${m}m ${s}s`;
+        } else {
+          thinkLabel = `Thought for ${sec}s`;
+        }
+      }
       thinkBlocksHtml = `
-        <div class="think-block">
+        <div class="think-block${showReasoning ? ' think-open' : ''}">
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
             <span class="think-icon">💭</span>
-            <span class="think-label">Model thinking</span>
+            <span class="think-label">${thinkLabel}</span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
           <div class="think-content" style="display: ${displayThink};">${combinedThink}</div>
@@ -2778,24 +2791,31 @@ async function sendMessage() {
   const loadingLabel = isCalcQuery ? "Calculating" : "Thinking";
 
   const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message ai wiki-loading";
+  loadingDiv.className = "message ai";
+  const thinkLabel = isCalcQuery ? "Calculating..." : "Thinking...";
   loadingDiv.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
-        <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
-          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
-        </circle>
-      </svg>
-      <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
-      <span style="opacity: 0.7; font-size: 0.9em;">${loadingLabel}</span>
+    <div class="think-block think-open">
+      <div class="think-toggle" style="display:flex;align-items:center;gap:6px;padding:10px 12px;cursor:default;">
+        <span class="think-icon">💭</span>
+        <span class="think-label">${thinkLabel} <span class="think-timer">0s</span></span>
+      </div>
     </div>
   `;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
   aiState.loadingDiv = loadingDiv;
 
+  // Live timer update
+  const thinkTimerEl = loadingDiv.querySelector('.think-timer');
+  const thinkTimerInterval = setInterval(() => {
+    if (!thinkTimerEl) return;
+    const elapsed = Math.floor((Date.now() - aiState.responseStartTime) / 1000);
+    thinkTimerEl.textContent = elapsed + 's';
+  }, 1000);
+
     aiState.responseStartTime = Date.now();
     aiState.thinkingTimeout = setTimeout(async () => {
         if (requestId !== aiState.currentRequestId) return;
+        clearInterval(thinkTimerInterval);
         loadingDiv.remove();
         aiState.loadingDiv = null;
 
@@ -3121,24 +3141,33 @@ const MODELS = [
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
     name: "Genesis 5.5",
-    desc: "Latest model with improved response quality"
+    desc: "Latest model with improved response quality",
+    supportsThinking: true
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
     name: "Genesis SPT 5.0",
-    desc: "Previous generation model"
+    desc: "Previous generation model",
+    supportsThinking: false
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
     name: "Genesis SPT 4.6",
-    desc: "Balanced model for general conversations"
+    desc: "Balanced model for general conversations",
+    supportsThinking: false
   },
   {
     value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
     name: "Genesis SPT 1.0 (Legacy)",
-    desc: "Original model for simple interactions"
+    desc: "Original model for simple interactions",
+    supportsThinking: false
   }
 ];
+
+function currentModelSupportsThinking() {
+  const info = getModelInfo(jsonURL || defaultModel);
+  return info && info.supportsThinking;
+}
 
 function isModel55(url) {
   return url && url.includes("8897d4c1d_Genesis-55");
@@ -3167,11 +3196,42 @@ function updateModelInfoDisplay() {
   if (modelParamsDisplay) modelParamsDisplay.textContent = vals.params;
 }
 
+function updateThinkingUI() {
+  const supports = currentModelSupportsThinking();
+  // Show/hide the reasoning toggle button in the input area
+  if (reasoningToggleBtn) {
+    reasoningToggleBtn.style.display = supports ? '' : 'none';
+  }
+  // Show/hide the reasoning toggle row in settings
+  const reasoningRow = document.getElementById("reasoningToggle")?.closest('div');
+  if (reasoningRow) {
+    reasoningRow.style.display = supports ? '' : 'none';
+  }
+  // Update lightbulb icon state
+  updateReasoningToggleIcon();
+}
+
+function updateReasoningToggleIcon() {
+  if (!reasoningToggleBtn) return;
+  const svg = reasoningToggleBtn.querySelector('svg');
+  if (!svg) return;
+  if (showReasoning) {
+    svg.setAttribute('fill', '#f59e0b');
+    svg.style.stroke = '#f59e0b';
+    reasoningToggleBtn.classList.add('active');
+  } else {
+    svg.setAttribute('fill', 'none');
+    svg.style.stroke = '';
+    reasoningToggleBtn.classList.remove('active');
+  }
+}
+
 async function switchModel(value) {
   if (aiState.isResponding) stopGeneration();
   await DB.set("selectedModel", value);
   await loadModel(true);
   updateModelInfoDisplay();
+  updateThinkingUI();
 }
 
 // Secret function: wipes all cached models, then downloads and caches the latest model only
@@ -3859,6 +3919,17 @@ async function startApp() {
         };
     }
 
+    // Reasoning (lightbulb) toggle
+    if (reasoningToggleBtn) {
+      reasoningToggleBtn.onclick = () => {
+        showReasoning = !showReasoning;
+        DB.set("showReasoning", showReasoning);
+        updateReasoningToggleIcon();
+      };
+      // Init icon state
+      updateReasoningToggleIcon();
+    }
+
     // Initialize help icons
     const helpTexts = {
         'dark-mode': {
@@ -3964,6 +4035,9 @@ async function startApp() {
         await DB.set("showReasoning", showReasoning);
       };
     }
+
+    // Sync thinking UI for current model
+    updateThinkingUI();
 
     // Set initial send button state
     updateSendButton();
