@@ -1686,23 +1686,11 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
     if (thinkTexts.length > 0) {
       const combinedThink = thinkTexts.join('\n');
       const displayThink = showReasoning ? 'block' : 'none';
-      // Show elapsed time in label when available
-      let thinkLabel = 'Model thinking';
-      if (messageObj && messageObj.elapsedTime != null) {
-        const sec = Math.floor(messageObj.elapsedTime / 1000);
-        if (sec >= 60) {
-          const m = Math.floor(sec / 60);
-          const s = sec % 60;
-          thinkLabel = `Thought for ${m}m ${s}s`;
-        } else {
-          thinkLabel = `Thought for ${sec}s`;
-        }
-      }
       thinkBlocksHtml = `
         <div class="think-block${showReasoning ? ' think-open' : ''}">
           <button class="think-toggle" onclick="this.parentElement.classList.toggle('think-open'); event.stopPropagation();">
             <span class="think-icon">💭</span>
-            <span class="think-label">${thinkLabel}</span>
+            <span class="think-label">Model thinking</span>
             <svg class="think-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
           <div class="think-content" style="display: ${displayThink};">${combinedThink}</div>
@@ -2791,26 +2779,20 @@ async function sendMessage() {
   const loadingLabel = isCalcQuery ? "Calculating" : "Thinking";
 
   const loadingDiv = document.createElement("div");
-  loadingDiv.className = "message ai";
-  const thinkLabel = isCalcQuery ? "Calculating..." : "Thinking...";
+  loadingDiv.className = "message ai wiki-loading";
   loadingDiv.innerHTML = `
-    <div class="think-block think-open">
-      <div class="think-toggle" style="display:flex;align-items:center;gap:6px;padding:10px 12px;cursor:default;">
-        <span class="think-icon">💭</span>
-        <span class="think-label">${thinkLabel} <span class="think-timer">0s</span></span>
-      </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg viewBox="0 0 24 24" width="24" height="24" style="animation: wikiSpin 1.5s linear infinite; transform-origin: center; flex-shrink: 0;">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+          <animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <img src="icon.png" alt="AI" style="width: 24px; height: 24px; border-radius: 4px;">
+      <span style="opacity: 0.7; font-size: 0.9em;">${loadingLabel}</span>
     </div>
   `;
   chatBox.append(loadingDiv); chatBox.scrollTop = chatBox.scrollHeight;
   aiState.loadingDiv = loadingDiv;
-
-  // Live timer update
-  const thinkTimerEl = loadingDiv.querySelector('.think-timer');
-  const thinkTimerInterval = setInterval(() => {
-    if (!thinkTimerEl) return;
-    const elapsed = Math.floor((Date.now() - aiState.responseStartTime) / 1000);
-    thinkTimerEl.textContent = elapsed + 's';
-  }, 1000);
 
     aiState.responseStartTime = Date.now();
     aiState.thinkingTimeout = setTimeout(async () => {
@@ -3163,7 +3145,7 @@ const MODELS = [
 function currentModelSupportsThinking() {
   if (!responses) return false;
   for (const key in responses) {
-    if (typeof responses[key] === 'string' && /<\|think\|>/.test(responses[key])) {
+    if (typeof responses[key] === 'string' && /<\|think\|>.*?<\/\|think\|>/.test(responses[key])) {
       return true;
     }
   }

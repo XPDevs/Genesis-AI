@@ -217,7 +217,10 @@ body.dark .action-btn:hover {
 .input-actions-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  background: var(--active-chat);
+  border-radius: 10px;
+  padding: 2px;
 }
 
 .input-action-btn {
