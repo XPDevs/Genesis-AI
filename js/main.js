@@ -1477,6 +1477,10 @@ async function renderMessages() {
   if (chat) await updateURL(chat.title);
   await updateChatView();
   updatePlaceholder();
+  if (!warningInjected && chatBox && window.innerWidth <= 768) {
+      chatBox.insertAdjacentHTML('beforeend', warningHtml);
+      warningInjected = true;
+  }
 }
 
 function renderTextWithMath(element, text) {
