@@ -330,10 +330,12 @@ body.dark .action-btn:hover {
 
 .input-row-top {
   width: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .input-row-top input {
-  width: 100%;
+  flex: 1;
   padding: 16px 16px 8px 16px;
   border: none;
   background: transparent;
@@ -400,6 +402,7 @@ body.dark .action-btn:hover {
   align-items: center;
   justify-content: center;
   padding: 0;
+  margin-right: 8px;
   transition: opacity 0.2s;
   flex-shrink: 0;
 }
