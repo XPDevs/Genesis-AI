@@ -655,3 +655,54 @@ function stripMarkdown(text) {
     .replace(/^>\s+/gm, '')
     .trim();
 }
+
+// --- GREETING ENRICHMENT (context.js + greetings.js integration) ---
+function prependGreetingIfNeeded(userInput, responseText) {
+  if (!userInput || !responseText) return responseText;
+
+  const trimmed = responseText.trim();
+  if (!trimmed || trimmed.length < 2) return responseText;
+
+  // Model-agnostic: detect if response already starts with a greeting (covers all formats)
+  const greetingStart = /^(hi|hello|hey|good\s+(morning|afternoon|evening|day)|greetings?|howdy|morning[!,]|afternoon[!,]|evening[!,]|what'?s\s+up|sup[!,])[\s,!:;]/i;
+  if (greetingStart.test(trimmed)) return responseText;
+
+  // Don't add if response IS a short greeting itself
+  if (trimmed.length < 30 && /^(hi|hello|hey|good\s+(morning|afternoon|evening|day)|greetings?|howdy|morning|afternoon|evening)/i.test(trimmed)) return responseText;
+
+  // Model-agnostic: detect if user greeted using ContextEngine (preferred) or regex fallback
+  const userGreeted = (() => {
+    if (window.ContextEngine && typeof window.ContextEngine.intent === 'function') {
+      try {
+        const intent = window.ContextEngine.intent(userInput);
+        if (intent && intent.type === 'greeting') return true;
+      } catch (e) {}
+    }
+    const input = userInput.trim();
+    return /^(hi|hello|hey|heyo|sup|yo|greetings|howdy|hiya|hey\s+there|what'?s\s+up|wassup|good\s+(morning|afternoon|evening|day)|morning[!,]|afternoon[!,])/i.test(input)
+      || /^(well\s+)?(hi|hello|hey)\b/i.test(input);
+  })();
+
+  if (userGreeted) {
+    let prefix;
+    // Use greetings.js for time-appropriate greetings when available
+    if (typeof getRandomGreeting === 'function') {
+      try {
+        const g = getRandomGreeting();
+        if (g && g.text) {
+          const m = g.text.match(/^(Good\s+(morning|afternoon|evening|day)|Hi|Hello|Hey)[^,!.!]*/i);
+          prefix = m ? m[1] : null;
+        }
+      } catch (e) {}
+    }
+    if (!prefix) {
+      const fallbacks = ['Hello', 'Hi', 'Hey', 'Hi there', 'Hey there', 'Hello there'];
+      prefix = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+    const cleanResponse = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    if (/^[.!?]/.test(cleanResponse)) return prefix + cleanResponse;
+    return prefix + '! ' + cleanResponse;
+  }
+
+  return responseText;
+}

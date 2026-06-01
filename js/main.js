@@ -2912,6 +2912,11 @@ async function sendMessage() {
                 botMsg.text = removeUnwantedLines(botMsg.text);
             }
 
+            // Enrich response with greeting when user greets (fa.js + context.js + greetings.js)
+            if (typeof prependGreetingIfNeeded === 'function') {
+                botMsg.text = prependGreetingIfNeeded(text, botMsg.text);
+            }
+
             if (botMsg.isWikipedia && window.summariseConversation) {
                 const shortened = (await DB.get("shortenedAnswers")) === "true";
                 if (shortened) {
