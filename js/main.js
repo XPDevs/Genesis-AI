@@ -1474,7 +1474,7 @@ function sendQuickAction(text) {
   sendMessage();
 }
 
-async function renderMessages() {
+async function renderMessages(skipWarning = false) {
   if (isReadOnlyMode) return;
   const chat = chats.find(c => c.id === activeChatId);
   chatTitle.textContent = chat ? chat.title : "New Chat";
@@ -1486,7 +1486,7 @@ async function renderMessages() {
   if (chat) await updateURL(chat.title);
   await updateChatView();
   updatePlaceholder();
-  if (window.innerWidth <= 768) {
+  if (!skipWarning && window.innerWidth <= 768) {
     setTimeout(() => {
       if (!warningInjected && chatBox && window.innerWidth <= 768) {
         chatBox.insertAdjacentHTML('beforeend', warningHtml);
@@ -2667,7 +2667,7 @@ async function sendMessage() {
       if (imgSrc) userMsg.imageUrl = imgSrc;
       chat.lastActive = Date.now();
       chat.messages.push(userMsg);
-      await renderMessages(); await saveChats();
+      await renderMessages(true); await saveChats();
 
       if (chat.messages.filter(m => m.role === "user").length === 1) {
         const newTitle = summariseTitle(text);
@@ -2754,7 +2754,7 @@ async function sendMessage() {
       const userMsg = { role: "user", text: text };
       chat.lastActive = Date.now();
       chat.messages.push(userMsg);
-      await renderMessages(); await saveChats();
+      await renderMessages(true); await saveChats();
 
       if (chat.messages.filter(m => m.role === "user").length === 1) {
         const newTitle = summariseTitle(text);
@@ -2842,7 +2842,7 @@ async function sendMessage() {
   
   chat.lastActive = Date.now();
   chat.messages.push(userMsg);
-  await renderMessages(); await saveChats();
+  await renderMessages(true); await saveChats();
 
   if (chat.messages.filter(m => m.role === "user").length === 1) {
     const newTitle = summariseTitle(text);
