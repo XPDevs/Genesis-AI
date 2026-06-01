@@ -1,156 +1,130 @@
 # Genesis-AI
 
-## Introduction
-Genesis-AI is an experimental, web-based artificial intelligence platform created by XPDevs.
-It represents a new approach to lightweight AI design — replacing traditional machine learning models with a custom binary format and human-readable JSON files that define the AI's core behavior.
+## What's This All About?
 
-While its foundation is a lightweight, rule-based system, it also integrates dynamic features like on-demand image generation, text/image analysis, and real-time Wikipedia lookups, all running locally in your browser.
+Genesis-AI is an experimental web-based AI platform from XPDevs. It's a different take on lightweight AI that uses a custom binary format and plain JSON files to define how the AI behaves, instead of relying on big machine learning models.
 
-Unlike other systems that require users to install software, manage APIs, or process data on remote servers, Genesis-AI runs entirely within the web browser. Users simply visit the website and begin interacting instantly, with no downloads, no setup, and no external dependencies.
+The core chat is rule-based, but it also does on-demand image generation, text and image analysis, and real-time Wikipedia lookups, all in your browser. No server calls for the main chat, no setup, and nothing to install because you just open a website and start typing.
 
-This project exists to explore how far simplicity can go — proving that AI-like systems can be built using structured logic, static content, and an accessible web interface.
+It's about seeing how far you can get with simple, transparent, client-side logic using structured data and JavaScript with no neural networks or black boxes in sight.
 
-## Project Goals
-The purpose of Genesis-AI is to:
-- Demonstrate that AI behavior can be simulated using transparent, open JSON structures.
-- Provide a fast and secure user experience by eliminating the need for cloud-based computation for core chat.
-- Encourage experimentation and learning by keeping all logic readable and modifiable.
-- Promote digital safety and privacy by ensuring all processing occurs locally in the browser.
-- Inspire future developers to build simple, efficient tools that remain understandable to everyone.
+## Why Does This Exist?
 
-## Experimental Notice
-Genesis-AI is **experimental**.  
-Because it uses a structured response system rather than a large language model for its core chat, it may not always:
-- Understand complex or ambiguous sentences.  
-- Generate contextually consistent replies.  
-- Maintain deep conversational memory.  
+- To show you can simulate AI behavior with open, readable JSON files
+- To keep things fast and private by skipping cloud backends for core chat
+- To make it easy for anyone to open the hood and understand how it works
+- To prove that simple tools can still be powerful and fun to experiment with
 
-It is designed primarily for demonstration, testing, and creative experimentation — not production-level use.  
-Users are encouraged to explore its logic, test boundaries, and contribute ideas for improvement.
+## Keep in mind
 
-## How It Works
-Genesis-AI functions entirely on client-side code, meaning:
-- When a user visits the website, the browser loads the HTML, CSS, and JavaScript files.  
-- The AI "model" (called a **modal**) is primarily a custom, compressed binary file (`.bin`) for maximum performance. This binary is decoded in the browser.
-- The system also supports human-readable JSON files, which are ideal for creating and testing custom modals.
-- The modal contains predefined data, including:
-  - Keywords, questions, and responses.
-  - Contextual triggers.
-  - Personality or tone parameters.
+This is **experimental** and it is not an LLM because it is a structured response system, so it won't always:
+- Get tricky or vague sentences
+- Keep context consistent across a long conversation
+- Remember much of what you said before
 
-The JavaScript engine decodes the modal, performs advanced pattern matching against user input, and can combine multiple relevant responses. It also recognizes special commands (prefixed with `@`) to trigger advanced modules like image generation or analysis. For general knowledge questions, it can query Wikipedia and summarize the results, providing a much broader knowledge base than the static modal alone.
-This method removes the need for neural processing for core chat while keeping every behavior transparent to the public.
+Think of it as a prototype, a toy, a sandbox that is great for learning, testing, and messing around, but just don't bet your business on it.
 
-## Features
-Genesis-AI includes a comprehensive set of features for chatting, productivity, and creativity:
+## How Does It Work?
 
-### Core AI Features
-- **Binary & JSON Modals** — AI behavior is defined in a high-performance binary format (`.bin`) or editable JSON files for easy customization
-- **Pattern Matching Engine** — Advanced keyword and phrase matching to find appropriate responses
-- **Multi-Response Combination** — Can combine multiple relevant responses for richer answers
-- **Fallback Handler** — Provides helpful error messages when no match is found
-- **Custom Modal Loading** — Load your own JSON or binary modals via URL or file upload
+Everything runs on the client side:
+- You load the page, your browser grabs the HTML, CSS, and JS
+- The AI's brain (we call it a **modal**) is a compressed `.bin` file for speed, decoded right in the browser. Or you can use JSON files if you want something human-readable for tinkering
+- That modal holds keywords, questions, answers, context triggers, and personality settings
 
-### AI Commands
-- **@ImgAuth** — Analyze uploaded images to detect AI-generated content signatures
-- **@txtauth** — Analyze text for patterns common in AI-generated content
+The JavaScript engine decodes the modal, matches patterns in what you type, and can even combine multiple responses. Special commands starting with `@` unlock extras like image generation or analysis. For general knowledge, it can pull from Wikipedia and summarize the results.
+
+There is no neural processing or cloud dependency, and everything is right there in the open.
+
+## What Can It Do?
+
+### Core AI
+- **Binary & JSON Modals:** Speed of binary with readability of JSON, your choice
+- **Pattern Matching:** Finds the best response for whatever you type
+- **Multi-Response Combination:** Smashes relevant responses together for richer answers
+- **Fallback Handler:** Friendly "I don't know" when nothing matches
+- **Custom Modal Loading:** Load your own modals via URL or file upload
+
+### Commands
+- **@ImgAuth:** Check if an uploaded image looks AI-generated
+- **@txtauth:** Analyze text for AI-written patterns
 
 ### Knowledge & Search
-- **Wikipedia Integration** — Automatically fetches and summarizes Wikipedia articles for general knowledge questions, reducing content to 60% of original length with intelligent summarization and a short concluding sentence based on content length
-- **User Summary Requests** — Ask the AI to summarize any topic and get concise, Wikipedia-sourced answers
-- **Web Search Toggle** — Enable real-time web search functionality for up-to-date information
+- **Wikipedia Lookups:** Fetches and summarizes articles automatically, cuts them to 60% length with a short concluding sentence
+- **Summary Requests:** Ask it to summarize anything and get a Wikipedia-sourced answer
+- **Web Search Toggle:** Turn on real-time web search for up-to-date info
 
 ### Chat Management
-- **Create New Chats** — Start fresh conversations anytime
-- **Rename Chats** — Give your conversations meaningful names
-- **Delete Chats** — Remove unwanted conversations
-- **Pin Chats** — Pin important conversations to the top of your chat list
-- **Shareable Conversations** — Generate unique, shareable links for your chat sessions
+- Create, rename, delete, and pin conversations
+- Share chats via unique links
 
 ### Input & Output
-- **Text Input** — Send messages via the chat box
-- **Image Uploads** — Upload images directly into the chat for analysis
-- **Text-to-Speech** — Listen to the AI's responses with a single click
-- **Stop Generation** — Instantly interrupt the AI's response generation
+- Text input, image uploads, text-to-speech, stop generation button
 
-### Math & Calculation
-- **Built-in Calculator** — Solve mathematical expressions directly in the chat
-- **Math Rendering** — KaTeX support for beautiful mathematical formula display (including LaTeX syntax)
+### Math
+- Built-in calculator and KaTeX rendering for LaTeX formulas
 
-### Themes & Appearance
-- **Light Mode** — Clean, bright theme for daytime use
-- **Dark Mode** — Easy-on-the-eyes dark theme for nighttime
-- **Auto-Theming** — Automatically switches between light and dark based on the time of day
-- **Responsive Layout** — Adapts seamlessly to desktop and mobile screens
-- **Unified Loading Spinner** — Consistent animated spinner across all features (Wikipedia search, image generation, image analysis, text analysis)
-- **Shortened Answers** — Optional setting that reduces Wikipedia responses to 60% of their original length with a short concluding sentence
+### Themes
+- Light mode, dark mode, or auto-switch based on time of day
+- Responsive layout for desktop and mobile
+- Consistent loading spinners across all features
+- Optional shortened answers for Wikipedia results
 
 ### Privacy & Security
-- **Privacy by Design** — No user messages are stored, logged, or transmitted to external servers
-- **Tiered Safety System** — Detects unsafe messages and applies a graduated ban system for repeat violations
-- **Content Warning Modal** — Displays a modal warning when unsafe content is detected, with auto-stop generation and adaptive behavior for first-time vs subsequent messages
-- **Local Processing** — All AI processing happens locally in your browser
+- No messages are stored, logged, or sent anywhere for core chat
+- Tiered safety system with graduated bans for repeat violations
+- Content warning modal with auto-stop
+- Everything stays in your browser
 
-### User Account
-- **Google Sign-In** — Optional authentication to save your chats across sessions
-- **IndexedDB Storage** — Persistent local storage for chats and settings using IndexedDB
+### Account
+- Optional Google sign-in to save chats across sessions
+- IndexedDB for local persistence
 
 ### Performance
-- **Lightweight Performance** — Loads in seconds and responds instantly
-- **Cross-Platform** — Works on all modern desktop and mobile browsers
-- **Robust Error Handling** — Provides clear, helpful messages for load issues and safety violations
+- Loads fast, responds instantly
+- Works on all modern browsers
+- Clear error messages when things go wrong
 
 ## Special Commands
-Genesis-AI supports special commands prefixed with `@` to unlock advanced functionality.
 
-| Command | Example | Description |
+| Command | Example | What It Does |
 |---|---|---|
-| `@ImgAuth` | `@ImgAuth` (with an image uploaded) | Analyzes the uploaded image to determine if it was generated by AI. |
-| `@txtauth` | `@txtauth This text seems very formal...` | Analyzes the provided text for patterns common in AI-generated content. |
+| `@ImgAuth` | `@ImgAuth` (with an image attached) | Checks if the image was AI-generated |
+| `@txtauth` | `@txtauth This looks kinda robotic...` | Checks text for AI-generated patterns |
 
-To use these, simply type the command into the chat box. For `@ImgAuth`, you must first upload an image using the attachment button.
+Just type the command in the chat box and attach an image first if you are using `@ImgAuth`.
 
-## Appearance and Interface
-Genesis-AI provides a clean, minimal interface built for focus and accessibility.  
-The chat layout adapts dynamically, offering:
-- **Theme Toggle:** A visible switch between *Light Mode* and *Dark Mode* for user comfort.  
-- **Auto-Theming:** An option to automatically sync the theme with the time of day.
-- **Text Emphasis:** Responses are displayed in clearly readable text, maintaining accessibility standards.  
-- **Adaptive Layout:** Automatically adjusts spacing and scaling for clarity on desktop screens.  
-- **Message Actions:** Easily copy or listen to AI responses using integrated buttons.
-- **Chat List Sidebar:** Manage multiple conversations from a convenient sidebar
-- **Dropdowns & Modals:** Intuitive UI elements for sharing, settings, and confirmations
+## What It Looks Like
 
-This design approach reflects XPDevs' principle of simplicity — removing unnecessary clutter and keeping interactions smooth, readable, and human.
+The interface is clean, minimal, and focused with a theme toggle between light and dark (or let it auto-switch) and a responsive layout that works on your phone or your desktop. There are message actions to copy or listen to responses, a sidebar for managing chats, and dropdowns and modals for the usual UI stuff, but stripped down to what matters.
 
-## Using Genesis-AI
-There is no setup required.  
-To access Genesis-AI, simply open the official website:
+## How to Use It
+
+There is no setup or downloads required, just go to:
 
 **[https://xpdevs.github.io/Genesis-AI](https://xpdevs.github.io/Genesis-AI)**
 
-Once the page loads:
-1. You'll see the main Genesis-AI interface.  
-2. Type your message or question into the chat box.  
-3. Genesis-AI will respond using its logic.
+When the page loads:
+1. You'll see the chat interface
+2. Type your message or question
+3. Genesis-AI responds using its logic
 
-If a response cannot be generated, an appropriate error message will appear (see below).  
-Because everything is handled in-browser, you can close or refresh the page at any time without data loss or security risk.
+If it can't figure out an answer, you'll get a helpful error instead of silence. Close the page or refresh anytime and nothing gets lost or leaked.
 
-## Architecture Overview
-Genesis-AI is structured around a three-layer design:
+## Architecture
 
-| Layer | Description |
-|-------|--------------|
-| **Frontend (UI)** | HTML/CSS layout built for responsiveness and simplicity. |
-| **Logic Engine** | JavaScript handler that decodes modals, manages state, and selects appropriate responses. |
-| **Model (Modal)** | Compressed binary (`.bin`) or JSON files that define the AI's knowledge base and responses. |
+The architecture has three layers:
 
-This structure separates presentation, logic, and data, allowing developers to update each component independently without breaking the overall system.
+| Layer | What It Is |
+|---|---|
+| **Frontend** | HTML/CSS that is responsive and minimal |
+| **Logic Engine** | JavaScript that decodes modals, manages state, and picks responses |
+| **Modal** | `.bin` or `.json` that stores the AI's knowledge base |
 
-## AI Model (Modal) Structure
-While the primary distribution format is a compressed binary (`.bin`) for performance, the source of this binary is a human-readable JSON file. This allows developers to easily define and extend the AI's behavior.
-A simplified example might look like:
+Separate them cleanly, and you can update any part without breaking the others.
+
+## Modal Structure (The AI's Brain)
+
+The main distribution format is a compressed `.bin` for speed, but it starts life as JSON that looks something like this:
 
 ```json
 {
@@ -160,89 +134,74 @@ A simplified example might look like:
 }
 ```
 
-When a user sends input, the system checks for matching keys or patterns in the JSON and returns the corresponding value.  
-If none are found, the fallback handler displays a general error message.
+You type something, the system matches it against keys or patterns, and returns the matching response. If nothing matches, the fallback kicks in.
 
-This makes Genesis-AI easily expandable — developers can create new modals (such as *Genesis-SPT-2.0* or *Genesis-SPT-4.6*) by editing or extending these files.
+Want to build your own modal? Copy the structure, tweak the keys, and save as JSON, and you are done.
 
 ## Error Messages
-Genesis-AI includes built-in feedback for specific conditions.  
-These messages help users understand what has gone wrong and how to fix it.
 
-### 1. AI Safety Violation
-**Message:**
+### 1. Safety Violation
 > "This message violates AI safety and use policies. Please try again."
 
-**Meaning:**  
-Triggered when the user's input contains a banned or unsafe term.  
-Genesis-AI automatically stops generation and displays a content warning modal. On first message, only the modal is shown. On subsequent messages, the modal is displayed and normal chat continues after dismissal.
+Shows up when the safety filter catches something you typed, causing generation to stop and a warning modal to pop up. On the first offense you only see the modal, on repeat offenses you get a modal plus a chat message, and after five or more the graduated ban kicks in.
 
-**Behavior:**
-- Generation is automatically stopped when the modal appears
-- First message: Modal-only display (no chat message added)
-- Subsequent messages: Modal display + error message in chat
-- Repeat violations (5+) trigger a graduated ban system
-
-**Suggested Action:**  
-Avoid sending restricted or unsafe content. Click OK on the warning modal to dismiss and continue chatting.
+**Fix:** Don't send what you shouldn't and just click OK on the warning to move on.
 
 ### 2. Processing Failure
-**Message:**
 > "I'm not quite sure I follow. Could you give me a bit more detail?"
 
-**Meaning:**  
-A general fallback message shown when Genesis-AI cannot find a valid response or understand the input. This is the most common error message during normal use.
+This is the default "I don't know" response that happens when nothing in the modal matches what you said.
 
-**Suggested Action:**  
-Try rephrasing the question or simplifying your message.
+**Fix:** Try to rephrase or simplify your message to help the system find a matching response.
 
-### Error Summary Table
+### Quick Error Table
 
-| Error Message | Meaning | Suggested Action |
-|----------------|----------|------------------|
-| This message violates AI safety and use policies. | Unsafe or banned input detected. Modal shown with auto-stop. | Remove restricted words and retry. |
-| Image generation took too long and timed out. | Image generation exceeded 5-minute timeout. | Try again with a simpler prompt. |
-| Failed to generate image. Please try again. | Image generation service returned no result. | Retry or adjust your prompt. |
-| I'm not quite sure I follow. Could you give me a bit more detail? | The AI couldn't generate a response. | Rephrase or simplify your message. |
+| Message | What's Wrong | What to Do |
+|---|---|---|
+| This message violates AI safety and use policies. | Unsafe input detected | Remove restricted words, try again |
+| Image generation took too long and timed out. | Generation exceeded 5 minutes | Try a simpler prompt |
+| Failed to generate image. Please try again. | Service returned nothing | Retry or adjust prompt |
+| I'm not quite sure I follow... | No matching response found | Rephrase or simplify |
 
-## Data and Privacy
-Genesis-AI prioritizes privacy:
-- No chat logs or user data are stored or shared (except for optional signed-in users).  
-- Every interaction occurs locally within your browser session.  
-- No external databases, trackers, or analytics are used.  
+## Privacy
 
-This ensures a completely private and ephemeral experience.
+- No chat logs or user data stored or shared (unless you sign in, and even then it's minimal)
+- Everything runs in your browser session
+- No external databases, trackers, or analytics
 
-## Security and Safety
-XPDevs implements multiple layers of content safety:
-- Restricted word detection to block unsafe input.  
-- Automatic message deletion for policy violations.  
-- No external scripts that can access chat data.  
-- Tiered ban system that escalates for repeated violations.
+It is private by default and ephemeral by design.
 
-These precautions help maintain a responsible, safe, and transparent AI environment.
+## Security
+
+- Restricted word detection for unsafe input
+- Automatic message deletion on policy violations
+- No external scripts accessing chat data
+- Tiered ban system for repeat offenders
+
+The system keeps things responsible without getting in your way.
 
 ## Design Philosophy
-Genesis-AI follows three principles that define XPDevs software design:
-1. **Clarity:** Everything visible should be understandable at a glance.  
-2. **Control:** Users should remain in full control of their data and interactions.  
-3. **Simplicity:** Every component exists only if it improves the experience.  
 
-These ideas shape both the interface and the technology behind Genesis-AI.
+Everything at XPDevs follows three rules:
 
-## Terms and Policies
-By using Genesis-AI, you agree to the following official documents:
-- **[Terms of Service](https://xpdevs.github.io/legal/terms-of-service)**  
+1. **Clarity:** If someone has to squint to understand it, it is not done
+2. **Control:** You own your data and your interactions
+3. **Simplicity:** If it does not make things better, it does not belong
+
+These apply to the interface, the logic, and the modals alike.
+
+## Terms & Policies
+
+By using Genesis-AI, you agree to:
+- **[Terms of Service](https://xpdevs.github.io/legal/terms-of-service)**
 - **[Privacy Policy](https://xpdevs.github.io/Genesis-AI/legal/privacy-policy)**
 
-These policies explain how Genesis-AI operates, including acceptable use, safety rules, and privacy standards.
+They cover acceptable use, safety rules, and how privacy works.
 
 ## License
 
-The source code in this repository is provided under the terms found in the LICENSE.md file.
-However, the live Genesis-AI website (https://xpdevs.github.io/Genesis-AI) operates under a separate custom license. That custom license governs your use of the hosted service and may include additional terms regarding usage, content policies, and safety requirements. When using the website directly, the website's custom license and the linked Terms of Service take precedence over the repository's LICENSE.md.
-
+The source code in this repo is under the terms in LICENSE.md. The live site at https://xpdevs.github.io/Genesis-AI follows a separate custom license that covers the hosted service, including usage and content policies. When you use the website directly, that custom license and the Terms of Service take priority.
 
 ## Contact
-For information, suggestions, or inquiries:  
-Visit the [XPDevs official website](https://xpdevs.github.io/) for updates, contact options, and related projects.
+
+If you have questions, suggestions, or random thoughts, head over to the [XPDevs website](https://xpdevs.github.io/) for updates, contact info, and related projects.
