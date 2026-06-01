@@ -336,7 +336,7 @@ body.dark .action-btn:hover {
 
 .input-row-top input {
   flex: 1;
-  padding: 16px 16px 8px 16px;
+  padding: 12px 16px;
   border: none;
   background: transparent;
   color: var(--text);
