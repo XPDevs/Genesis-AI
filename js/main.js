@@ -3301,9 +3301,7 @@ if (modelSelect) {
         const selectedValue = modelSelect.value;
         const currentModel = await DB.get("selectedModel", defaultModel);
         if (selectedValue === "upload-custom") {
-            if (customModelConfirmModal) {
-                customModelConfirmModal.style.display = 'flex';
-            }
+            if (customModelInput) customModelInput.click();
             setTimeout(() => { modelSelect.value = currentModel; }, 100);
         } else if (selectedValue !== currentModel) {
             // Sync desktop dropdown if visible
@@ -3376,9 +3374,7 @@ if (headerModelSelect) {
 
     if (value === "upload-custom") {
       headerModelSelect.classList.remove("open");
-      if (customModelConfirmModal) {
-        customModelConfirmModal.style.display = 'flex';
-      }
+      if (customModelInput) customModelInput.click();
       return;
     }
 
@@ -3899,6 +3895,31 @@ function applyPendingModel() {
     if (customModelUrlInput) customModelUrlInput.value = '';
 }
 
+function applyModelDirectly(modelData) {
+    responses = modelData;
+    isCustomModelLoaded = true;
+    const vals = getModelDisplayValues();
+    if (document.getElementById("modelNameDisplay")) {
+        document.getElementById("modelNameDisplay").textContent = vals.ver;
+    }
+    if (document.getElementById("modelParamsDisplay")) {
+        document.getElementById("modelParamsDisplay").textContent = vals.params;
+    }
+    if (isDevMode) updateDevModalStatus();
+    const nameEl = document.getElementById("modelSelectName");
+    const descEl = document.getElementById("modelSelectDesc");
+    const fileName = modelData.ver || "Custom Model";
+    if (nameEl) nameEl.textContent = fileName;
+    if (descEl) descEl.textContent = "Custom session model";
+    const dd = document.getElementById("modelSelectDropdown");
+    if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
+    const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
+    if (statusEl) {
+        statusEl.textContent = `Loaded "${fileName}" successfully.`;
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    }
+}
+
 if (customModelConfirmCancel) {
     customModelConfirmCancel.onclick = () => {
         customModelConfirmModal.style.display = 'none';
@@ -3919,7 +3940,7 @@ if (customModelConfirmOk) {
     customModelConfirmOk.onclick = applyPendingModel;
 }
 
-// File upload in confirmation modal
+// File upload in confirmation modal — directly apply, no confirmation
 if (customModelConfirmInput) {
     customModelConfirmInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -3934,8 +3955,9 @@ if (customModelConfirmInput) {
                 if (typeof modelData !== 'object' || modelData === null) {
                     throw new Error("Invalid model file.");
                 }
-                showModelConfirmModal(modelData, 'file');
                 statusEl.textContent = '';
+                customModelConfirmModal.style.display = 'none';
+                applyModelDirectly(modelData);
             } catch (err) {
                 statusEl.textContent = `Error: ${err.message}`;
             }
@@ -3971,7 +3993,7 @@ if (customModelUrlInput) {
     });
 }
 
-// Also hook into the original customModelInput file picker (for settings modal "Load from file...")
+// Direct file upload — load model without confirmation modal
 if (customModelInput) {
     customModelInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -3984,7 +4006,7 @@ if (customModelInput) {
                 if (typeof modelData !== 'object' || modelData === null) {
                     throw new Error("Invalid model file.");
                 }
-                showModelConfirmModal(modelData, 'file');
+                applyModelDirectly(modelData);
             } catch (err) {
                 const statusEl = document.getElementById("customModelStatus") || document.getElementById("uploadStatus");
                 if (statusEl) statusEl.textContent = `Error: ${err.message}`;

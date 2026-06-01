@@ -844,4 +844,22 @@ body.is-new-chat .input-container {
 #customModelConfirmModal .modal-content input[type="file"] {
   font-size: 0.85em;
   color: var(--text, #e3e3e3);
+  cursor: pointer;
+}
+
+#customModelConfirmModal .modal-content input[type="file"]::file-selector-button {
+  background: var(--primary, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-right: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#customModelConfirmModal .modal-content input[type="file"]::file-selector-button:hover {
+  background: var(--primary-hover, #2563eb);
 }
