@@ -1486,9 +1486,13 @@ async function renderMessages() {
   if (chat) await updateURL(chat.title);
   await updateChatView();
   updatePlaceholder();
-  if (!warningInjected && chatBox && window.innerWidth <= 768) {
-      chatBox.insertAdjacentHTML('beforeend', warningHtml);
-      warningInjected = true;
+  if (window.innerWidth <= 768) {
+    setTimeout(() => {
+      if (!warningInjected && chatBox && window.innerWidth <= 768) {
+        chatBox.insertAdjacentHTML('beforeend', warningHtml);
+        warningInjected = true;
+      }
+    }, 50);
   }
 }
 
@@ -1805,6 +1809,14 @@ function appendMessage(text, role, isNew = false, imageUrl = null, footerText = 
   if (role === "ai" && isNew) {
     const scheduleReset = () => {
       const capturedId = aiState.currentRequestId;
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          if (!warningInjected && chatBox && window.innerWidth <= 768) {
+            chatBox.insertAdjacentHTML('beforeend', warningHtml);
+            warningInjected = true;
+          }
+        }, 50);
+      }
       aiState.resetTimeout = setTimeout(() => {
         if (capturedId !== aiState.currentRequestId) return;
         userInput.disabled = false;
@@ -2928,11 +2940,7 @@ async function sendMessage() {
         updatePlaceholder();
         
         // Pass botMsg so we can track it in aiState.currentAiMessage
-        appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg); 
-        if (!warningInjected && chatBox && window.innerWidth <= 768) {
-            chatBox.insertAdjacentHTML('beforeend', warningHtml);
-            warningInjected = true;
-        }
+        appendMessage(botMsg.text, botMsg.role, true, null, null, botMsg);
 
     }, 1500);
     
@@ -4074,20 +4082,15 @@ async function startApp() {
         activeChatId = newChat.id;
         await DB.set("activeChatId", activeChatId);
     } else {
-        // Mobile: Load last active chat or create new if none exists
-        if (activeChatId && !chats.find(c => c.id === activeChatId)) activeChatId = null;
-        
-        if (!activeChatId && chats.length > 0) {
-            activeChatId = chats[0].id;
-            await DB.set("activeChatId", activeChatId);
-        }
-        if (!activeChatId && chats.length === 0) {
-            const newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
+        // Mobile: Always start with a New Chat (same as desktop)
+        let newChat = chats.find(c => c.title === "New Chat" && c.messages.length === 0);
+        if (!newChat) {
+            newChat = { id: Date.now().toString(), title: "New Chat", messages: [], lastActive: Date.now() };
             chats.unshift(newChat);
-            activeChatId = newChat.id;
             await saveChats();
-            await DB.set("activeChatId", activeChatId);
         }
+        activeChatId = newChat.id;
+        await DB.set("activeChatId", activeChatId);
     }
     renderChatList();
     await renderMessages();
