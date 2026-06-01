@@ -3286,12 +3286,6 @@ window.Full.FormatRemoveModels = async function() {
 
 // Settings modal model select
 if (modelSelect) {
-    if (!modelSelect.querySelector('option[value="custom"]')) {
-        const customOption = document.createElement('option');
-        customOption.value = "custom";
-        customOption.textContent = "Load from file...";
-        modelSelect.appendChild(customOption);
-    }
     if (!modelSelect.querySelector('option[value="upload-custom"]')) {
         const uploadCustomOption = document.createElement('option');
         uploadCustomOption.value = "upload-custom";
@@ -3306,10 +3300,7 @@ if (modelSelect) {
     modelSelect.onchange = async () => {
         const selectedValue = modelSelect.value;
         const currentModel = await DB.get("selectedModel", defaultModel);
-        if (selectedValue === "custom") {
-            if (customModelInput) customModelInput.click();
-            setTimeout(() => { modelSelect.value = currentModel; }, 100);
-        } else if (selectedValue === "upload-custom") {
+        if (selectedValue === "upload-custom") {
             if (customModelConfirmModal) {
                 customModelConfirmModal.style.display = 'flex';
             }
@@ -3351,10 +3342,6 @@ if (headerModelSelect) {
     </button>
   `).join("") + `
     <div class="model-dropdown-divider"></div>
-    <button class="model-dropdown-option" data-value="custom">
-      <span class="model-option-name">Load from file...</span>
-      <span class="model-option-desc">Upload a custom .json model file</span>
-    </button>
     <button class="model-dropdown-option" data-value="upload-custom">
       <span class="model-option-name">Upload Custom</span>
       <span class="model-option-desc">Upload file or paste URL to preview model info</span>
@@ -3386,12 +3373,6 @@ if (headerModelSelect) {
     if (!option) return;
 
     const value = option.dataset.value;
-
-    if (value === "custom") {
-      headerModelSelect.classList.remove("open");
-      if (customModelInput) customModelInput.click();
-      return;
-    }
 
     if (value === "upload-custom") {
       headerModelSelect.classList.remove("open");
