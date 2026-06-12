@@ -994,7 +994,7 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
+const defaultModel = "https://huggingface.co/XPDevs/Genesis-SPT-5.5/resolve/main/Genesis-5.5-Thinking.json";
 let jsonURL = defaultModel;
 
 let modelLoadingEl = null;
@@ -1057,8 +1057,32 @@ async function loadModel(force = false) {
   try {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
-    
-    const allBytes = await r.arrayBuffer();
+
+    const contentLength = r.headers.get('Content-Length');
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    let loaded = 0;
+
+    const reader = r.body.getReader();
+    const chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.length;
+      if (total) {
+        const pct = Math.round((loaded / total) * 100);
+        showModelLoading(Math.min(pct, 99));
+      }
+    }
+
+    const allBytes = new Uint8Array(loaded);
+    let pos = 0;
+    for (const chunk of chunks) {
+      allBytes.set(chunk, pos);
+      pos += chunk.length;
+    }
+
     const modelData = JSON.parse(new TextDecoder().decode(allBytes));
     responses = modelData;
     await DB.setModel(jsonURL, modelData);
@@ -2425,7 +2449,7 @@ async function findResponses(input, history) {
                       if (summaryText.length > 1500) summaryText = summaryText.substring(0, 1500).replace(/\s+\S*$/, '') + '.';
                   }
               }
-              return { role: "ai", text: `Here's what I found on Wikipedia about ${query}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+              return { role: "ai", text: summaryText, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
           }
           return { role: "ai", text: `I couldn't find anything on Wikipedia for "${query}". Try a different search term.` };
       }
@@ -2603,7 +2627,7 @@ async function findResponses(input, history) {
                 }
                 
                 const searchTopic = decodedInput.replace(/^(?:what|who|where|when|why|how|tell me|define|explain|describe|search|find|look up)\s+/i, '').trim().replace(/[?.,!;:]+$/, '').trim();
-                return { role: "ai", text: `Here's what I found on Wikipedia about ${searchTopic || decodedInput}:\n\n${summaryText}`, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
+                return { role: "ai", text: summaryText, isWikipedia: true, wikiUrl, wikiImageUrl: imageUrl, wikiImageDataUrl, wikiImageDataUrls };
             }
           }
         } catch (e) {
@@ -3169,9 +3193,14 @@ if (userIcon) {
 
 const MODELS = [
   {
+    value: "https://huggingface.co/XPDevs/Genesis-SPT-5.5/resolve/main/Genesis-5.5-Thinking.json",
+    name: "Genesis 5.5-Thinking",
+    desc: "Latest model with thinking/reasoning support"
+  },
+  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
-    name: "Genesis 5.5",
-    desc: "Latest model with improved response quality"
+    name: "Genesis 5.5 Flash",
+    desc: "Fast variant of the latest model"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
@@ -3195,11 +3224,17 @@ function currentModelSupportsThinking() {
 }
 
 function isModel55(url) {
-  return url && url.includes("8897d4c1d_Genesis-55");
+  return url && (url.includes("8897d4c1d_Genesis-55") || url.includes("Genesis-5.5"));
 }
 
 function getModelDisplayValues() {
   const url = jsonURL || "";
+  if (url.includes("Genesis-5.5-Thinking")) {
+    return { ver: "Genesis 5.5-Thinking", params: "525.8K" };
+  }
+  if (url.includes("Genesis-5.5-Flash")) {
+    return { ver: "Genesis 5.5 Flash", params: "525.8K" };
+  }
   if (isModel55(url)) {
     return { ver: "Genesis 5.5", params: "525.8K" };
   }
