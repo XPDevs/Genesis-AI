@@ -3199,18 +3199,18 @@ const MODELS = [
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
-    name: "Genesis 5.5 Flash",
+    name: "Genesis 5.5-Flash",
     desc: "Fast variant of the latest model"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
-    name: "Genesis SPT 5.0",
-    desc: "Previous generation model"
+    name: "Genesis SPT 5.0-Flash",
+    desc: "Flash variant of previous generation"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json",
-    name: "Genesis SPT 4.6",
-    desc: "Balanced model for general conversations"
+    name: "Genesis SPT 4.6-Flash",
+    desc: "Flash variant for general conversations"
   },
   {
     value: "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json",
@@ -3232,11 +3232,8 @@ function getModelDisplayValues() {
   if (url.includes("Genesis-5.5-Thinking")) {
     return { ver: "Genesis 5.5-Thinking", params: "525.8K" };
   }
-  if (url.includes("Genesis-5.5-Flash")) {
-    return { ver: "Genesis 5.5 Flash", params: "525.8K" };
-  }
   if (isModel55(url)) {
-    return { ver: "Genesis 5.5", params: "525.8K" };
+    return { ver: "Genesis 5.5-Flash", params: "525.8K" };
   }
   if (responses) {
     return { ver: responses.ver || "Unknown", params: Object.keys(responses).length };
