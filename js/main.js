@@ -1058,32 +1058,39 @@ async function loadModel(force = false) {
     const r = await fetch(jsonURL + (force ? "?v=" + Date.now() : ""));
     if (!r.ok) throw new Error("File not found!");
 
+    let modelData;
     const contentLength = r.headers.get('Content-Length');
     const total = contentLength ? parseInt(contentLength, 10) : 0;
-    let loaded = 0;
 
-    const reader = r.body.getReader();
-    const chunks = [];
+    if (r.body) {
+      let loaded = 0;
+      const reader = r.body.getReader();
+      const chunks = [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      loaded += value.length;
-      if (total) {
-        const pct = Math.round((loaded / total) * 100);
-        showModelLoading(Math.min(pct, 99));
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        if (total) {
+          const pct = Math.round((loaded / total) * 100);
+          showModelLoading(Math.min(pct, 99));
+        }
       }
+
+      const allBytes = new Uint8Array(loaded);
+      let pos = 0;
+      for (const chunk of chunks) {
+        allBytes.set(chunk, pos);
+        pos += chunk.length;
+      }
+
+      modelData = JSON.parse(new TextDecoder().decode(allBytes));
+    } else {
+      const allBytes = await r.arrayBuffer();
+      modelData = JSON.parse(new TextDecoder().decode(allBytes));
     }
 
-    const allBytes = new Uint8Array(loaded);
-    let pos = 0;
-    for (const chunk of chunks) {
-      allBytes.set(chunk, pos);
-      pos += chunk.length;
-    }
-
-    const modelData = JSON.parse(new TextDecoder().decode(allBytes));
     responses = modelData;
     await DB.setModel(jsonURL, modelData);
     hideModelLoading();
