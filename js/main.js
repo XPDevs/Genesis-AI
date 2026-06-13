@@ -994,7 +994,7 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const defaultModel = "https://huggingface.co/XPDevs/Genesis-SPT-5.5/resolve/main/Genesis-5.5-Thinking.json";
+const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json";
 let jsonURL = defaultModel;
 
 let modelLoadingEl = null;
@@ -3200,7 +3200,7 @@ if (userIcon) {
 
 const MODELS = [
   {
-    value: "https://huggingface.co/XPDevs/Genesis-SPT-5.5/resolve/main/Genesis-5.5-Thinking.json",
+    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json",
     name: "Genesis 5.5-Thinking",
     desc: "Latest model with thinking/reasoning support"
   },
@@ -3236,7 +3236,7 @@ function isModel55(url) {
 
 function getModelDisplayValues() {
   const url = jsonURL || "";
-  if (url.includes("Genesis-5.5-Thinking")) {
+  if (url.includes("Genesis-55-Thinking") || url.includes("Genesis-5.5-Thinking")) {
     return { ver: "Genesis 5.5-Thinking", params: "525.8K" };
   }
   if (isModel55(url)) {
