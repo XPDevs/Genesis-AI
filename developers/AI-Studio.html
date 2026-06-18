@@ -152,7 +152,10 @@
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-300">Base Model</label>
                 <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="Genesis-SPT-4.6">Genesis SPT-4.6</option>
+                    <option value="Genesis-5.5-Thinking">Genesis 5.5-Thinking</option>
+                    <option value="Genesis-5.5-Flash">Genesis 5.5-Flash</option>
+                    <option value="Genesis-SPT-5.0">Genesis SPT-5.0-Flash</option>
+                    <option value="Genesis-SPT-4.6">Genesis SPT-4.6-Flash</option>
                     <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
                 </select>
             </div>
@@ -387,7 +390,7 @@
 
                 <div class="card-bg p-6 md:p-8 rounded-xl shadow-lg space-y-4">
                     <h4 class="text-xl font-semibold text-white">Active Keys</h4>
-                    <p class="text-gray-400 text-sm">The keys below are currently active and ready for use. **The full key value is never stored after generation.**</p>
+                    <p class="text-gray-400 text-sm">The keys below are currently active and ready for use. Click the copy button to copy the full key.</p>
                     <ul id="active-keys-list" class="space-y-3">
                         </ul>
                     <p id="no-keys-message" class="text-gray-500 text-sm italic hidden">No active keys found. Generate one to get started!</p>
@@ -458,8 +461,11 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Model</label>
                             <select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
-                                <option value="spt-4.6-json" selected>Genesis SPT-4.6 (JSON)</option>
-                                <option value="spt-1.0-json">Genesis SPT-1.0 (JSON)</option>
+                                <option value="genesis-5.5-thinking" selected>Genesis 5.5-Thinking (Default)</option>
+                                <option value="genesis-5.5-flash">Genesis 5.5-Flash</option>
+                                <option value="spt-5.0-flash">SPT 5.0-Flash</option>
+                                <option value="spt-4.6-flash">SPT 4.6-Flash</option>
+                                <option value="spt-1.0-json">SPT 1.0 (Legacy)</option>
                             </select>
                         </div>
 
@@ -552,13 +558,39 @@
                 <p class="text-gray-400">Explore the different AI models available on the Genesis platform.</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Genesis SPT-5.0 -->
+                    <!-- Genesis 5.5-Thinking -->
                     <div class="card-bg p-6 rounded-xl border border-indigo-500/50 ring-2 ring-indigo-500/20">
                         <div class="flex justify-between items-start mb-4">
-                            <h4 class="text-xl font-bold text-white">Genesis SPT-5.0</h4>
+                            <h4 class="text-xl font-bold text-white">Genesis 5.5-Thinking</h4>
                             <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Latest</span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4">Our most advanced model yet with 45,000 parameters — 9x larger than SPT-4.6. Delivers significantly deeper reasoning and broader knowledge coverage.</p>
+                        <p class="text-gray-400 text-sm mb-4">The most advanced Genesis model with enhanced reasoning capabilities and broader knowledge coverage. Default model for the chat interface.</p>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json</code></p>
+                        </div>
+                    </div>
+
+                    <!-- Genesis 5.5-Flash -->
+                    <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-xl font-bold text-white">Genesis 5.5-Flash</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">JSON</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">A faster variant of the 5.5 series optimized for speed while maintaining strong reasoning performance.</p>
+                        <div class="space-y-2 text-xs text-gray-500">
+                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json</code></p>
+                        </div>
+                    </div>
+
+                    <!-- Genesis SPT-5.0 -->
+                    <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-5.0-Flash</h4>
+                            <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">JSON</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">A capable JSON model with 45,000 parameters. Optimized for complex reasoning and general knowledge tasks.</p>
                         <div class="space-y-2 text-xs text-gray-500">
                             <p><span class="text-gray-300">Format:</span> Standard JSON</p>
                             <p><span class="text-gray-300">Parameters:</span> 45000</p>
@@ -569,7 +601,7 @@
                     <!-- Genesis SPT-4.6 -->
                     <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
                         <div class="flex justify-between items-start mb-4">
-                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.6</h4>
+                            <h4 class="text-xl font-bold text-white">Genesis SPT-4.6-Flash</h4>
                             <span class="px-2 py-1 text-xs font-semibold bg-gray-800 text-gray-300 rounded">JSON</span>
                         </div>
                         <p class="text-gray-400 text-sm mb-4">A capable JSON model with 5,079 parameters. Optimized for complex reasoning and general knowledge tasks.</p>
@@ -690,7 +722,7 @@
             <b class="text-green-400">'Authorization': 'Bearer <span class="text-red-400">' + apiKey + '</span>'</b>
         },
         body: JSON.stringify({
-            model: "genesis-spt-1.0",
+            model: "genesis-5.5-thinking",
             prompt: prompt,
             max_tokens: 128
         })
@@ -797,11 +829,11 @@ function violatesRules(text) {
                         </div>
 
                         <div class="border-t border-gray-700 my-8 pt-8">
-                            <h4 class="text-xl font-semibold text-white mb-4">Genesis SPT-5.0 Tokenizer Module</h4>
-                            <p class="text-gray-400 text-sm mb-4">Models such as SPT-5.0 encode text using hex escape sequences (<code class="text-indigo-400">\xHH</code>, <code class="text-indigo-400">\uXXXX</code>) to ensure safe transport. The <code class="text-indigo-400">tokenizer.decode()</code> function is required to decode model output correctly. Include this script before loading the model:</p>
+                            <h4 class="text-xl font-semibold text-white mb-4">Tokenizer Module</h4>
+                            <p class="text-gray-400 text-sm mb-4">All current Genesis models encode text using hex escape sequences (<code class="text-indigo-400">\xHH</code>, <code class="text-indigo-400">\uXXXX</code>) to ensure safe transport. The <code class="text-indigo-400">tokenizer.decode()</code> function is required to decode model output correctly. Include this script before loading any model:</p>
                             <div class="code-block text-xs max-h-96 overflow-y-auto">
 <pre>/**
- * Genesis-AI: Tokenizer Module (Decode‑Only)
+ * Genesis-AI: Tokenizer Module
  * 
  * Decodes standard hex escape sequences in a string:
  *   - \xHH  → UTF‑8 byte (multiple consecutive bytes form a character)
@@ -827,7 +859,6 @@ function violatesRules(text) {
             if (input[i] === '\\' && i + 1 < len) {
                 const next = input[i + 1];
 
-                // \xHH (UTF-8 byte)
                 if (next === 'x' && i + 3 < len && /[0-9a-fA-F]{2}/.test(input.substr(i + 2, 2))) {
                     const bytes = [];
                     while (i + 3 < len && input[i] === '\\' && input[i + 1] === 'x' &&
@@ -840,7 +871,6 @@ function violatesRules(text) {
                     continue;
                 }
 
-                // \uXXXX (BMP Unicode)
                 if (next === 'u' && i + 5 < len && /[0-9a-fA-F]{4}/.test(input.substr(i + 2, 4))) {
                     const hex = input.substr(i + 2, 4);
                     result += String.fromCodePoint(parseInt(hex, 16));
@@ -848,7 +878,6 @@ function violatesRules(text) {
                     continue;
                 }
 
-                // \u{H...} (any Unicode)
                 if (next === 'u' && i + 3 < len && input[i + 2] === '{') {
                     let end = i + 3;
                     while (end < len && input[end] !== '}') end++;
@@ -879,9 +908,9 @@ function violatesRules(text) {
                             <div class="mt-4 p-4 bg-yellow-900/30 border border-yellow-700/50 rounded-xl">
                                 <p class="text-yellow-200 text-sm font-semibold flex items-center">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                    Required for SPT-5.0
+                                    Required for all models
                                 </p>
-                                <p class="text-gray-400 text-xs mt-2">Models such as SPT-5.0 encode their output with hex escapes and require <code class="text-gray-300">tokenizer.decode()</code> to produce readable text. Load this module before fetching the model and call <code class="text-gray-300">tokenizer.decode(output)</code> on every response string.</p>
+                                <p class="text-gray-400 text-xs mt-2">All current Genesis models encode their output with hex escapes and require <code class="text-gray-300">tokenizer.decode()</code> to produce readable text. Load this module before fetching the model and call <code class="text-gray-300">tokenizer.decode(output)</code> on every response string.</p>
                             </div>
                         </div>
                     </div>
@@ -966,11 +995,7 @@ function violatesRules(text) {
         function loadKeys() {
             try {
                 const storedKeys = localStorage.getItem(API_KEY_STORAGE_KEY);
-                apiKeys = storedKeys ? JSON.parse(storedKeys).map(key => ({
-                    ...key,
-                    // Ensure fullKey property is absent when loading from storage
-                    fullKey: undefined
-                })) : [];
+                apiKeys = storedKeys ? JSON.parse(storedKeys) : [];
             } catch (error) {
                 apiKeys = [];
                 showModal('Storage Error', 'Could not load API keys from local storage.', true);
@@ -979,12 +1004,7 @@ function violatesRules(text) {
 
         function saveKeys() {
             try {
-                // IMPORTANT: When saving, remove the fullKey property if it exists
-                const safeKeys = apiKeys.map(key => {
-                    const { fullKey, ...rest } = key;
-                    return rest;
-                });
-                localStorage.setItem(API_KEY_STORAGE_KEY, JSON.stringify(safeKeys));
+                localStorage.setItem(API_KEY_STORAGE_KEY, JSON.stringify(apiKeys));
             } catch (error) {
                 showModal('Storage Error', 'Could not save API keys to local storage.', true);
             }
@@ -1008,7 +1028,6 @@ function violatesRules(text) {
             const partialKey = `gs_sk_...${newKey.slice(-13)}`;
             
             const newKeyObject = {
-                // fullKey is TEMPORARILY stored for display/copy upon generation
                 fullKey: newKey, 
                 partialKey: partialKey,
                 generatedAt: timestamp,
@@ -1017,7 +1036,7 @@ function violatesRules(text) {
             };
 
             apiKeys.push(newKeyObject);
-            saveKeys(); // This saves the key without the 'fullKey' property.
+            saveKeys();
             
             nameInput.value = ''; 
             
@@ -1027,14 +1046,7 @@ function violatesRules(text) {
 
             renderKeys();
             
-            // Clear the display after 15 seconds
-            setTimeout(() => {
-                newKeyDisplay.classList.add('hidden');
-                document.getElementById('new-key-value').textContent = '';
-                // Since the fullKey is no longer accessible via apiKeys, we clear it from the temporary object
-                delete newKeyObject.fullKey;
-                showModal('Key Generated', `Key "${keyName}" was generated successfully. Remember to copy the full key now, as it cannot be retrieved later.`, false);
-            }, 15000);
+            showModal('Key Generated', `Key "${keyName}" was generated successfully. You can copy the full key from the Active Keys list below.`, false);
         });
 
         // Utility function to copy text to clipboard
@@ -1055,14 +1067,14 @@ function violatesRules(text) {
             document.body.removeChild(tempInput);
         };
         
-        // Function to handle copying the partial value (for reference)
-        window.copyPartialKey = (keyId) => {
+        // Function to handle copying the full key value
+        window.copyFullKey = (keyId) => {
              const key = apiKeys.find(k => k.id === keyId);
-             if (key) {
-                 window.copyToClipboard(key.partialKey);
-                 showModal('Partial Key Copied', `The partial key: ${key.partialKey} has been copied. The full secret key is not stored.`, false);
+             if (key && key.fullKey) {
+                 window.copyToClipboard(key.fullKey);
+                 showModal('Full Key Copied', 'The full API key has been copied to your clipboard.', false);
              } else {
-                 showModal('Error', 'Key not found.', true);
+                 showModal('Error', 'Full key not found.', true);
              }
         };
 
@@ -1155,14 +1167,17 @@ function violatesRules(text) {
                     <div class="flex-1 min-w-0 mb-4 md:mb-0">
                         <p class="text-white font-medium text-lg">${key.name || 'Unnamed Key'}</p> 
                         <span class="text-xs code-block p-1 text-indigo-300 bg-gray-700/50 rounded inline-block mt-1">${key.partialKey}</span>
+                        <div class="flex items-center mt-1">
+                            <span class="text-xs text-gray-400 font-mono truncate max-w-[300px]">${key.fullKey}</span>
+                            <button onclick="copyFullKey(${key.id})" class="ml-2 p-1 rounded bg-gray-600/30 hover:bg-gray-700/50 transition-colors" title="Copy Full Key">
+                                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V3"></path></svg>
+                            </button>
+                        </div>
                         <p class="text-gray-500 text-xs mt-1">Created: ${date}</p>
                     </div>
                     <div class="flex space-x-2 flex-shrink-0">
                         <button onclick="renameKey(${key.id})" class="p-2 rounded-lg bg-gray-600/30 hover:bg-gray-700/50 transition-colors" title="Rename Key">
                             <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-4 5l-5-5m5 5v-4m0-4h-4m2-5l4-4a2 2 0 013 0l2 2a2 2 0 010 3l-4 4"></path></svg>
-                        </button>
-                        <button onclick="copyPartialKey(${key.id})" class="p-2 rounded-lg bg-indigo-600/30 hover:bg-indigo-700/50 transition-colors" title="Copy Partial Key">
-                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1m-4 4h2a2 2 0 002-2V7m-4 4h.01M10 12h.01M13 15h.01"></path></svg>
                         </button>
                         <button onclick="deleteKey(${key.id})" class="p-2 rounded-lg bg-red-600/30 hover:bg-red-600/50 transition-colors" title="Delete Key">
                             <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -1256,59 +1271,24 @@ function violatesRules(text) {
             return { text: orderedMessages.join(", ") + " and " + last };
         }
 
-        // Binary Decoder (Ported from main.js)
-        function decodeBinary(buffer) {
-            const bytes = new Uint8Array(buffer);
-            const view = new DataView(buffer);
-            const XOR_KEY = 0xAA; 
-            const decoder = new TextDecoder('utf-8');
-            let jsonString = "";
-            let i = 0;
-            try { if (view.getUint32(0, true) === 0x53494E47) i = 4; } catch (e) { i = 0; }
-
-            while (i < bytes.length) {
-                const b = bytes[i];
-                switch(b) {
-                    case 0x01: jsonString += "{"; break;
-                    case 0x02: jsonString += "}"; break;
-                    case 0x03: jsonString += ":"; break;
-                    case 0x04: if (i + 1 < bytes.length && bytes[i + 1] !== 0x02 && bytes[i + 1] !== 0x06) jsonString += ","; break;
-                    case 0x05: jsonString += "["; break;
-                    case 0x06: jsonString += "]"; break;
-                    case 0x07: 
-                        i++; let start = i;
-                        while (i < bytes.length && bytes[i] !== 0x00) i++;
-                        const chunk = bytes.slice(start, i);
-                        const decrypted = new Uint8Array(chunk.length);
-                        for (let j = 0; j < chunk.length; j++) decrypted[j] = chunk[j] ^ XOR_KEY;
-                        jsonString += '"' + decoder.decode(decrypted) + '"';
-                        break;
-                }
-                i++;
-            }
-            return JSON.parse(jsonString.trim());
-        }
-
         async function loadModel() {
             const modelSelect = document.getElementById('model-select');
             const statusEl = document.getElementById('model-status');
-            const statusDot = statusEl.querySelector('span');
+            const modelUrls = {
+                'genesis-5.5-thinking': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json',
+                'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
+                'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
+                'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
+                'spt-1.0-json': 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'
+            };
             
             statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse mr-2"></span> Loading Model...';
             isModelLoading = true;
 
             try {
-                let url = "";
-                if (modelSelect.value === 'spt-4.6-json') {
-                    url = 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json';
-                    const res = await fetch(url);
-                    activeModelData = await res.json();
-                } else {
-                    url = 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json';
-                    const res = await fetch(url);
-                    activeModelData = await res.json();
-                }
-                
+                const url = modelUrls[modelSelect.value] || modelUrls['genesis-5.5-thinking'];
+                const res = await fetch(url);
+                activeModelData = await res.json();
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Ready (${Object.keys(activeModelData).length} keys)`;
             } catch (e) {
                 console.error(e);
@@ -1415,7 +1395,23 @@ function violatesRules(text) {
             const sys = document.getElementById('system-prompt').value;
             const topp = document.getElementById('topp-slider').value;
             const topk = document.getElementById('topk-slider').value;
-            const modelName = model === 'spt-4.6-json' ? 'genesis-spt-4.6' : 'genesis-spt-1.0';
+            
+            const modelNames = {
+                'genesis-5.5-thinking': 'genesis-5.5-thinking',
+                'genesis-5.5-flash': 'genesis-5.5-flash',
+                'spt-5.0-flash': 'genesis-spt-5.0',
+                'spt-4.6-flash': 'genesis-spt-4.6',
+                'spt-1.0-json': 'genesis-spt-1.0'
+            };
+            const modelUrls = {
+                'genesis-5.5-thinking': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json',
+                'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
+                'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
+                'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
+                'spt-1.0-json': 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'
+            };
+            const modelName = modelNames[model] || 'genesis-5.5-thinking';
+            const modelUrl = modelUrls[model] || modelUrls['genesis-5.5-thinking'];
             
             // Collect Examples
             const examples = [];
@@ -1425,11 +1421,11 @@ function violatesRules(text) {
             });
             
             const code = `// Genesis AI Complete Integration
-// Includes: Binary Decoding, Safety System, Calculator, and Response Logic
+// Includes: Safety System, Calculator, and Response Logic
 
 const config = {
     apiUrl: "https://xpdevs.github.io/Genesis-AI/developers/api/generate",
-    modelUrl: "${model === 'spt-4.6-json' ? 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json' : 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'}",
+    modelUrl: "${modelUrl}",
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
     topP: ${topp},
@@ -1460,9 +1456,6 @@ function calc(expression) {
         return eval(sanitized);
     } catch (e) { return null; }
 }
-
-// Binary Decoder (See Usage Guide for full implementation)
-function decodeBinary(buffer) { /* ... implementation ... */ return {}; }
 
 // API Generation Function
 async function generateWithAPI(apiKey, userQuery) {
@@ -1510,7 +1503,7 @@ async function runGenesis(userQuery) {
     const calcResult = calc(userQuery);
     if (calcResult !== null) return "Calculated: " + calcResult;
 
-    // 5. Fetch & Decode Model
+    // 5. Fetch Model
     const response = await fetch(config.modelUrl);
     let knowledgeBase;
     knowledgeBase = await response.json();
