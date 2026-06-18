@@ -564,7 +564,7 @@
                             <h4 class="text-xl font-bold text-white">Genesis 5.5-Thinking</h4>
                             <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Latest</span>
                         </div>
-                        <p class="text-gray-400 text-sm mb-4">The most advanced Genesis model with enhanced reasoning capabilities and broader knowledge coverage. Default model for the chat interface.</p>
+                        <p class="text-gray-400 text-sm mb-4">The most advanced Genesis model with enhanced reasoning capabilities and broader knowledge coverage. Outputs internal reasoning via <code class="text-indigo-400">&lt;|think|&gt;</code> tags. Default model for the chat interface.</p>
                         <div class="space-y-2 text-xs text-gray-500">
                             <p><span class="text-gray-300">Format:</span> Standard JSON</p>
                             <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json</code></p>
@@ -911,6 +911,52 @@ function violatesRules(text) {
                                     Required for all models
                                 </p>
                                 <p class="text-gray-400 text-xs mt-2">All current Genesis models encode their output with hex escapes and require <code class="text-gray-300">tokenizer.decode()</code> to produce readable text. Load this module before fetching the model and call <code class="text-gray-300">tokenizer.decode(output)</code> on every response string.</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-700 my-8 pt-8">
+                            <h4 class="text-xl font-semibold text-white mb-4">Thinking Blocks (5.5-Thinking)</h4>
+                            <p class="text-gray-400 text-sm mb-4">The Genesis 5.5-Thinking model can include internal reasoning steps wrapped in <code class="text-indigo-400">&lt;|think|&gt;</code> tags. You can display these as collapsible sections or strip them for clean output.</p>
+                            <div class="code-block text-xs max-h-96 overflow-y-auto">
+<pre>/**
+ * Parse &lt;|think|&gt; blocks from model output
+ * Returns { parts, hasThinking } where parts is an array of
+ * { type: 'text'|'think', content: string }
+ */
+function parseThinkBlocks(text) {
+  const parts = [];
+  let lastIdx = 0;
+  const regex = /<\|think\|>([\s\S]*?)<\/\|think\|>/g;
+  let match;
+  let hasThinking = false;
+  while ((match = regex.exec(text)) !== null) {
+    hasThinking = true;
+    if (match.index > lastIdx) {
+      parts.push({ type: 'text', content: text.slice(lastIdx, match.index) });
+    }
+    parts.push({ type: 'think', content: match[1].trim() });
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) {
+    parts.push({ type: 'text', content: text.slice(lastIdx) });
+  }
+  if (!hasThinking) {
+    return { parts: [{ type: 'text', content: text }], hasThinking: false };
+  }
+  return { parts, hasThinking };
+}
+
+// Usage: strip thinking blocks for clean display
+function stripThinkBlocks(text) {
+  return text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>/g, '').trim();
+}</pre>
+                            </div>
+                            <div class="mt-4 p-4 bg-blue-900/30 border border-blue-700/50 rounded-xl">
+                                <p class="text-blue-200 text-sm font-semibold flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Only applies to 5.5-Thinking
+                                </p>
+                                <p class="text-gray-400 text-xs mt-2">Other models (5.5-Flash, SPT series) do not emit thinking tags. Use <code class="text-gray-300">stripThinkBlocks()</code> on decoded output to remove them, or <code class="text-gray-300">parseThinkBlocks()</code> to render reasoning separately.</p>
                             </div>
                         </div>
                     </div>
@@ -1457,6 +1503,27 @@ function calc(expression) {
     } catch (e) { return null; }
 }
 
+// Thinking Block Parser (for 5.5-Thinking model)
+function parseThinkBlocks(text) {
+    const parts = [];
+    let lastIdx = 0;
+    const regex = /<\|think\|>([\s\S]*?)<\/\|think\|>/g;
+    let match;
+    let hasThinking = false;
+    while ((match = regex.exec(text)) !== null) {
+        hasThinking = true;
+        if (match.index > lastIdx) parts.push({ type: 'text', content: text.slice(lastIdx, match.index) });
+        parts.push({ type: 'think', content: match[1].trim() });
+        lastIdx = match.index + match[0].length;
+    }
+    if (lastIdx < text.length) parts.push({ type: 'text', content: text.slice(lastIdx) });
+    return hasThinking ? { parts, hasThinking } : { parts: [{ type: 'text', content: text }], hasThinking: false };
+}
+
+function stripThinkBlocks(text) {
+    return text.replace(/<\|think\|>[\s\S]*?<\/\|think\|>/g, '').trim();
+}
+
 // API Generation Function
 async function generateWithAPI(apiKey, userQuery) {
     // Detect Token Limit
@@ -1514,6 +1581,17 @@ async function runGenesis(userQuery) {
     console.log("Calling API...");
     const apiResponse = await generateWithAPI("YOUR_API_KEY", userQuery);
     console.log("API Result:", apiResponse);
+
+    // 7. Handle Thinking Blocks (5.5-Thinking model)
+    if (apiResponse.text) {
+        const clean = stripThinkBlocks(apiResponse.text);
+        const { parts, hasThinking } = parseThinkBlocks(apiResponse.text);
+        console.log("Has thinking blocks:", hasThinking);
+        console.log("Clean text:", clean);
+        // Render parts: show 'think' type in collapsible UI, 'text' as normal
+        return hasThinking ? { text: clean, thinking: parts.filter(p => p.type === 'think').map(p => p.content) } : apiResponse;
+    }
+    return apiResponse;
 }`;
             document.getElementById('code-display').textContent = code;
             document.getElementById('code-modal').classList.add('open');
