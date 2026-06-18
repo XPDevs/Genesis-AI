@@ -300,7 +300,7 @@
         </label>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
-        <span>AI Modal <span class="help-icon" data-help="ai-modal">?</span></span>
+        <span>AI Model <span class="help-icon" data-help="ai-modal">?</span></span>
         <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
           <option value="https://huggingface.co/XPDevs/Genesis-SPT-5.5/resolve/main/Genesis-5.5-Thinking.json">Genesis 5.5-Thinking (Default)</option>
           <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json">Genesis 5.5-Flash</option>
@@ -314,8 +314,8 @@
         <button id="redownloadModelBtn" class="confirm" style="width: 100%; padding: 12px 20px; border-radius: 20px; font-weight: 500; background: var(--primary); color: #fff; border: none; cursor: pointer; transition: filter 0.2s ease;">Redownload Model</button>
       </div>
       <div style="margin: 20px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
-        <div style="font-weight: bold; margin-bottom: 8px;">Modal Infor</div>
-        <div style="font-size: 0.9em; opacity: 0.8;">Current Modal: <span id="modelNameDisplay">Loading</span></div>
+        <div style="font-weight: bold; margin-bottom: 8px;">Model Info</div>
+        <div style="font-size: 0.9em; opacity: 0.8;">Current Model: <span id="modelNameDisplay">Loading</span></div>
         <div style="font-size: 0.9em; opacity: 0.8; display: flex; align-items: center; gap: 5px;">Parameters: <span id="modelParamsDisplay">0</span></div>
       </div>
       <div class="modal-actions">
@@ -417,7 +417,7 @@
         <input type="text" id="customModelUrlInput" placeholder="https://example.com/model.json..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
       </div>
       <div style="margin: 15px 0;">
-        <input type="file" id="customModelConfirmInput" accept=".json,.bin" style="margin-top: 6px;">
+        <input type="file" id="customModelConfirmInput" accept=".json" style="margin-top: 6px;">
         <p style="font-size: 0.8em; opacity: 0.6; margin: 6px 0 0 0;">Upload a .json file, or paste a URL above.</p>
       </div>
       <p id="customModelConfirmStatus" style="font-size: 0.85em; margin: 8px 0; color: var(--primary);"></p>
@@ -505,13 +505,13 @@
       <div id="devModalOptions" style="display: none;">
         <h2 style="margin-top: 0;">Developer Options</h2>
         <div id="devModalStatus">
-          <p><strong>Current Modal:</strong> <span id="devCurrentModalName"></span></p>
+          <p><strong>Current Model:</strong> <span id="devCurrentModalName"></span></p>
           <p><strong>Mode:</strong> <span id="devCurrentModalMode"></span></p>
         </div>
         <hr style="margin: 20px 0; border-color: var(--border);">
-        <h4>Load Custom Session Modal</h4>
-        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json or .bin modal file. This will only be used for the current session and will be lost on refresh.</p>
-        <input type="file" id="customModelInput" accept=".json,.bin" style="margin-top: 10px;">
+        <h4>Load Custom Session Model</h4>
+        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json model file. This will only be used for the current session and will be lost on refresh.</p>
+        <input type="file" id="customModelInput" accept=".json" style="margin-top: 10px;">
         <p id="uploadStatus" style="font-size: 12px; margin-top: 8px; color: var(--primary);"></p>
         <div class="modal-actions">
           <button id="devModalClose" class="cancel">Close</button>
@@ -543,8 +543,8 @@
 
   <div id="refreshWarningModal" class="modal">
     <div class="modal-content">
-      <h2>Switch Modal?</h2>
-      <p>Changing the AI modal requires the page to reload. Any unsaved context might be lost.</p>
+      <h2>Switch Model?</h2>
+      <p>Changing the AI model requires the page to reload. Any unsaved context might be lost.</p>
       <div class="modal-actions">
         <button class="cancel" id="refreshCancel">Cancel</button>
         <button class="confirm" id="refreshConfirm">Switch & Reload</button>

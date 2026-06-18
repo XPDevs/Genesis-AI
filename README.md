@@ -2,9 +2,9 @@
 
 ## What's This All About?
 
-Genesis-AI is an experimental web-based AI platform from XPDevs. It's a different take on lightweight AI that uses a custom binary format and plain JSON files to define how the AI behaves, instead of relying on big machine learning models.
+Genesis-AI is an experimental web-based AI platform from XPDevs. It's a different take on lightweight AI that uses plain JSON files to define how the AI behaves, instead of relying on big machine learning models.
 
-The core chat is rule-based, but it also does on-demand image generation, text and image analysis, and real-time Wikipedia lookups, all in your browser. No server calls for the main chat, no setup, and nothing to install because you just open a website and start typing.
+The core chat is rule-based, but it also does text and image analysis and real-time Wikipedia lookups, all in your browser. No server calls for the main chat, no setup, and nothing to install because you just open a website and start typing.
 
 It's about seeing how far you can get with simple, transparent, client-side logic using structured data and JavaScript with no neural networks or black boxes in sight.
 
@@ -28,21 +28,20 @@ Think of it as a prototype, a toy, a sandbox that is great for learning, testing
 
 Everything runs on the client side:
 - You load the page, your browser grabs the HTML, CSS, and JS
-- The AI's brain (we call it a **modal**) is a compressed `.bin` file for speed, decoded right in the browser. Or you can use JSON files if you want something human-readable for tinkering
-- That modal holds keywords, questions, answers, context triggers, and personality settings
+- The AI's brain (we call it a **model**) is a JSON file containing keywords, questions, answers, context triggers, and personality settings
 
-The JavaScript engine decodes the modal, matches patterns in what you type, and can even combine multiple responses. Special commands starting with `@` unlock extras like image generation or analysis. For general knowledge, it can pull from Wikipedia and summarize the results.
+The JavaScript engine reads the model, matches patterns in what you type, and can even combine multiple responses. Special commands starting with `@` unlock extras like text analysis. For general knowledge, it can pull from Wikipedia and summarize the results.
 
 There is no neural processing or cloud dependency, and everything is right there in the open.
 
 ## What Can It Do?
 
 ### Core AI
-- **Binary & JSON Modals:** Speed of binary with readability of JSON, your choice
+- **JSON Models:** Human-readable and easy to edit
 - **Pattern Matching:** Finds the best response for whatever you type
 - **Multi-Response Combination:** Smashes relevant responses together for richer answers
 - **Fallback Handler:** Friendly "I don't know" when nothing matches
-- **Custom Modal Loading:** Load your own modals via URL or file upload
+- **Custom Model Loading:** Load your own models via URL or file upload
 
 ### Commands
 - **@ImgAuth:** Check if an uploaded image looks AI-generated
@@ -117,14 +116,14 @@ The architecture has three layers:
 | Layer | What It Is |
 |---|---|
 | **Frontend** | HTML/CSS that is responsive and minimal |
-| **Logic Engine** | JavaScript that decodes modals, manages state, and picks responses |
-| **Modal** | `.bin` or `.json` that stores the AI's knowledge base |
+| **Logic Engine** | JavaScript that reads models, manages state, and picks responses |
+| **Model** | `.json` that stores the AI's knowledge base |
 
 Separate them cleanly, and you can update any part without breaking the others.
 
-## Modal Structure (The AI's Brain)
+## Model Structure (The AI's Brain)
 
-The main distribution format is a compressed `.bin` for speed, but it starts life as JSON that looks something like this:
+The model is a JSON file that looks something like this:
 
 ```json
 {
@@ -136,7 +135,7 @@ The main distribution format is a compressed `.bin` for speed, but it starts lif
 
 You type something, the system matches it against keys or patterns, and returns the matching response. If nothing matches, the fallback kicks in.
 
-Want to build your own modal? Copy the structure, tweak the keys, and save as JSON, and you are done.
+Want to build your own model? Copy the structure, tweak the keys, and save as JSON, and you are done.
 
 ## Error Messages
 
@@ -150,7 +149,7 @@ Shows up when the safety filter catches something you typed, causing generation 
 ### 2. Processing Failure
 > "I'm not quite sure I follow. Could you give me a bit more detail?"
 
-This is the default "I don't know" response that happens when nothing in the modal matches what you said.
+This is the default "I don't know" response that happens when nothing in the model matches what you said.
 
 **Fix:** Try to rephrase or simplify your message to help the system find a matching response.
 
@@ -159,8 +158,7 @@ This is the default "I don't know" response that happens when nothing in the mod
 | Message | What's Wrong | What to Do |
 |---|---|---|
 | This message violates AI safety and use policies. | Unsafe input detected | Remove restricted words, try again |
-| Image generation took too long and timed out. | Generation exceeded 5 minutes | Try a simpler prompt |
-| Failed to generate image. Please try again. | Service returned nothing | Retry or adjust prompt |
+
 | I'm not quite sure I follow... | No matching response found | Rephrase or simplify |
 
 ## Privacy
@@ -188,7 +186,7 @@ Everything at XPDevs follows three rules:
 2. **Control:** You own your data and your interactions
 3. **Simplicity:** If it does not make things better, it does not belong
 
-These apply to the interface, the logic, and the modals alike.
+These apply to the interface, the logic, and the models alike.
 
 ## Terms & Policies
 
