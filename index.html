@@ -404,22 +404,50 @@
   </div>
 
   <div id="customModelConfirmModal" class="modal" style="z-index: 100001;">
-    <div class="modal-content" style="max-width: 520px; width: 100%;">
-      <h2 style="margin-top: 0;">Confirm Custom Model</h2>
-      <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
-        <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
-        <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="customModelConfirmParams">0</span></div>
-        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 6px;" id="customModelConfirmReasoning">Reasoning: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
-        <div style="font-size: 0.9em; opacity: 0.8;" id="customModelConfirmWebSearch">Web Search: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
+    <div class="modal-content" style="max-width: 560px; width: 100%;">
+      <h2 style="margin-top: 0;">Load Custom Model</h2>
+
+      <div class="custom-model-tabs" style="display:flex;gap:0;margin-bottom:16px;background:rgba(127,127,127,0.1);border-radius:10px;overflow:hidden;border:1px solid var(--border,#444);">
+        <div class="custom-model-tab active" data-mode="json" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:var(--text,#e0e0e0);transition:all .2s;background:var(--primary,#3b82f6);font-weight:600;">JSON Model</div>
+        <div class="custom-model-tab" data-mode="onnx" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:#888;transition:all .2s;">Local ONNX Model</div>
       </div>
-      <div style="margin: 15px 0;">
-        <label style="font-size: 0.9em; opacity: 0.8; display: block; margin-bottom: 6px;">Or load from URL:</label>
-        <input type="text" id="customModelUrlInput" placeholder="https://example.com/model.json..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
+
+      <div id="customModelTabJson">
+        <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
+          <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
+          <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="customModelConfirmParams">0</span></div>
+          <div style="font-size: 0.9em; opacity: 0.8; margin-top: 6px;" id="customModelConfirmReasoning">Reasoning: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
+          <div style="font-size: 0.9em; opacity: 0.8;" id="customModelConfirmWebSearch">Web Search: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
+        </div>
+        <div style="margin: 15px 0;">
+          <label style="font-size: 0.9em; opacity: 0.8; display: block; margin-bottom: 6px;">Or load from URL:</label>
+          <input type="text" id="customModelUrlInput" placeholder="https://example.com/model.json..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
+        </div>
+        <div style="margin: 15px 0;">
+          <input type="file" id="customModelConfirmInput" accept=".json" style="margin-top: 6px;">
+          <p style="font-size: 0.8em; opacity: 0.6; margin: 6px 0 0 0;">Upload a .json file, or paste a URL above.</p>
+        </div>
       </div>
-      <div style="margin: 15px 0;">
-        <input type="file" id="customModelConfirmInput" accept=".json" style="margin-top: 6px;">
-        <p style="font-size: 0.8em; opacity: 0.6; margin: 6px 0 0 0;">Upload a .json file, or paste a URL above.</p>
+
+      <div id="customModelTabOnnx" style="display:none;">
+        <div style="margin: 15px 0;">
+          <div style="border:2px dashed var(--border,#444);border-radius:12px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:center;" id="customOnnxBox" onclick="document.getElementById('customOnnxInput').click()">
+            <input type="file" id="customOnnxInput" accept=".onnx" style="display:none;">
+            <div style="font-weight:bold;">Model (.onnx)</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">INT8 quantized model</div>
+            <div style="font-size:12px;color:var(--primary);margin-top:4px;" id="customOnnxName"></div>
+          </div>
+          <div style="border:2px dashed var(--border,#444);border-radius:12px;padding:20px;cursor:pointer;text-align:center;" id="customTokBox" onclick="document.getElementById('customTokInput').click()">
+            <input type="file" id="customTokInput" accept=".json" style="display:none;">
+            <div style="font-weight:bold;">tokenizer.json</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">Tokenizer vocabulary</div>
+            <div style="font-size:12px;color:var(--primary);margin-top:4px;" id="customTokName"></div>
+          </div>
+          <p style="font-size:0.8em;opacity:0.6;margin:8px 0 0 0;">Upload both files to run a local ONNX model.</p>
+        </div>
+        <div id="customOnnxStatus" style="font-size:0.85em;margin:8px 0;color:var(--primary);"></div>
       </div>
+
       <p id="customModelConfirmStatus" style="font-size: 0.85em; margin: 8px 0; color: var(--primary);"></p>
       <div class="modal-actions">
         <button class="cancel" id="customModelConfirmCancel">Cancel</button>

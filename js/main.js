@@ -739,6 +739,8 @@ function updateSendButton() {
 function stopGeneration() {
     if (!aiState.isResponding) return;
     
+    onnxStopFlag = true; // Stop ONNX generation if active
+    
     aiState.isResponding = false;
     if (window.speechSynthesis && window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
@@ -755,7 +757,7 @@ function stopGeneration() {
         clearTimeout(aiState.thinkingTimeout);
         aiState.thinkingTimeout = null;
     }
-
+    
     if (aiState.resetTimeout) {
         clearTimeout(aiState.resetTimeout);
         aiState.resetTimeout = null;
@@ -2321,6 +2323,11 @@ function typeChatTitle(newTitle, callback) {
 }
 
 async function findResponses(input, history) {
+  // If ONNX local model is loaded, use local inference instead of JSON matching
+  if (isOnnxModelLoaded && onnxSession && onnxTokenizer) {
+    return await generateOnnxResponse(input, history);
+  }
+
   // Decode any hex escape sequences in the input
   const decodedInput = window.tokenizer.decode(input);
   const cleanInput = typeof normalizeInput === 'function' ? normalizeInput(decodedInput) : decodedInput.toLowerCase().replace(/[^\w\s-]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -3235,6 +3242,9 @@ function isModel55(url) {
 }
 
 function getModelDisplayValues() {
+  if (isOnnxModelLoaded) {
+    return { ver: "Local ONNX Model", params: "Local" };
+  }
   const url = jsonURL || "";
   if (url.includes("Genesis-55-Thinking") || url.includes("Genesis-5.5-Thinking")) {
     return { ver: "Genesis 5.5-Thinking", params: "525.8K" };
@@ -3938,10 +3948,24 @@ function applyPendingModel() {
     if (customModelUrlInput) customModelUrlInput.value = '';
 }
 
+function resetOnnxUpload() {
+    if (customOnnxInput) customOnnxInput.value = '';
+    if (customTokInput) customTokInput.value = '';
+    document.getElementById('customOnnxName').textContent = '';
+    document.getElementById('customTokName').textContent = '';
+    document.getElementById('customOnnxBox').style.borderColor = 'var(--border,#444)';
+    document.getElementById('customOnnxBox').style.background = 'transparent';
+    document.getElementById('customTokBox').style.borderColor = 'var(--border,#444)';
+    document.getElementById('customTokBox').style.background = 'transparent';
+    onnxFileBuf = null;
+    tokFileData = null;
+}
+
 if (customModelConfirmCancel) {
     customModelConfirmCancel.onclick = () => {
         customModelConfirmModal.style.display = 'none';
         pendingModelData = null;
+        resetOnnxUpload();
     };
 }
 
@@ -3950,12 +3974,9 @@ if (customModelConfirmModal) {
         if (e.target === customModelConfirmModal) {
             customModelConfirmModal.style.display = 'none';
             pendingModelData = null;
+            resetOnnxUpload();
         }
     };
-}
-
-if (customModelConfirmOk) {
-    customModelConfirmOk.onclick = applyPendingModel;
 }
 
 // File upload in confirmation modal
@@ -4032,6 +4053,403 @@ if (customModelInput) {
         reader.readAsArrayBuffer(file);
         e.target.value = '';
     });
+}
+
+// --- ONNX Local Model Support ---
+let isOnnxModelLoaded = false;
+let onnxSession = null;
+let onnxTokenizer = null;
+let onnxStopFlag = false;
+let onnxGenerating = false;
+let activeCustomTab = 'json';
+
+// Tab switching for custom model modal
+document.querySelectorAll('.custom-model-tab').forEach(el => {
+    el.addEventListener('click', () => {
+        document.querySelectorAll('.custom-model-tab').forEach(t => {
+            t.style.background = 'transparent';
+            t.style.color = '#888';
+            t.style.fontWeight = 'normal';
+        });
+        el.style.background = 'var(--primary,#3b82f6)';
+        el.style.color = 'var(--text,#e0e0e0)';
+        el.style.fontWeight = '600';
+        activeCustomTab = el.dataset.mode;
+        document.getElementById('customModelTabJson').style.display = activeCustomTab === 'json' ? 'block' : 'none';
+        document.getElementById('customModelTabOnnx').style.display = activeCustomTab === 'onnx' ? 'block' : 'none';
+        if (customModelConfirmOk) {
+            customModelConfirmOk.textContent = activeCustomTab === 'onnx' ? 'Load ONNX Model' : 'Load Model';
+            customModelConfirmOk.disabled = activeCustomTab === 'onnx';
+        }
+        customModelConfirmStatus.textContent = '';
+        if (activeCustomTab === 'json') {
+            customModelConfirmOk.disabled = false;
+        }
+    });
+});
+
+const customOnnxInput = document.getElementById('customOnnxInput');
+const customTokInput = document.getElementById('customTokInput');
+let onnxFileBuf = null;
+let tokFileData = null;
+
+if (customOnnxInput) {
+    customOnnxInput.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        document.getElementById('customOnnxName').textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(1) + ' MB)';
+        document.getElementById('customOnnxBox').style.borderColor = 'var(--primary,#3b82f6)';
+        document.getElementById('customOnnxBox').style.background = 'rgba(59,130,246,0.05)';
+        onnxFileBuf = null;
+        if (customModelConfirmOk) {
+            customModelConfirmOk.disabled = !(customOnnxInput.files[0] && customTokInput && customTokInput.files[0]);
+        }
+    });
+}
+
+if (customTokInput) {
+    customTokInput.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        document.getElementById('customTokName').textContent = f.name + ' (' + (f.size / 1024).toFixed(0) + ' KB)';
+        document.getElementById('customTokBox').style.borderColor = 'var(--primary,#3b82f6)';
+        document.getElementById('customTokBox').style.background = 'rgba(59,130,246,0.05)';
+        tokFileData = null;
+        if (customModelConfirmOk) {
+            customModelConfirmOk.disabled = !(customOnnxInput && customOnnxInput.files[0] && customTokInput.files[0]);
+        }
+    });
+}
+
+if (customModelConfirmOk) {
+    customModelConfirmOk.onclick = () => {
+        if (activeCustomTab === 'onnx') {
+            loadOnnxModel();
+        } else {
+            applyPendingModel();
+        }
+    };
+}
+
+class OnnxTokenizer {
+    constructor(data) {
+        this.vocab = data.model.vocab;
+        this.rev = {};
+        for (const [k, v] of Object.entries(this.vocab)) this.rev[v] = k;
+        this.bpeRanks = {};
+        for (let i = 0; i < data.model.merges.length; i++) {
+            const [a, b] = data.model.merges[i].split(' ');
+            this.bpeRanks[a + ',' + b] = i;
+        }
+        const bs = [], cs = [];
+        for (let i = 33; i <= 126; i++) { bs.push(i); cs.push(i); }
+        for (let i = 161; i <= 172; i++) { bs.push(i); cs.push(i); }
+        for (let i = 174; i <= 256; i++) { bs.push(i); cs.push(i); }
+        let n = 0;
+        for (let b = 0; b < 256; b++) {
+            if (!bs.includes(b)) { bs.push(b); cs.push(256 + n); n++; }
+        }
+        this.byteEnc = {};
+        this.byteDec = {};
+        for (let i = 0; i < bs.length; i++) {
+            this.byteEnc[bs[i]] = String.fromCharCode(cs[i]);
+            this.byteDec[String.fromCharCode(cs[i])] = bs[i];
+        }
+        this.addedTokens = {};
+        for (const t of (data.added_tokens || [])) this.addedTokens[t.content] = t.id;
+        this.gpt2re = /'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
+    }
+    _byteEncode(s) {
+        return Array.from(new TextEncoder().encode(s)).map(b => this.byteEnc[b]).join('');
+    }
+    _byteDecode(s) {
+        const bytes = [];
+        for (const ch of s) { const b = this.byteDec[ch]; if (b !== undefined) bytes.push(b); }
+        return new TextDecoder().decode(new Uint8Array(bytes));
+    }
+    _bpe(tok) {
+        if (tok.length <= 1) return [tok];
+        let c = tok.split('');
+        while (true) {
+            let best = null, bi = -1;
+            for (let i = 0; i < c.length - 1; i++) {
+                const key = c[i] + ',' + c[i + 1];
+                const r = this.bpeRanks[key];
+                if (r !== undefined && (best === null || r < best)) { best = r; bi = i; }
+            }
+            if (bi === -1) break;
+            c = [...c.slice(0, bi), c[bi] + c[bi + 1], ...c.slice(bi + 2)];
+        }
+        return c;
+    }
+    encode(text) {
+        const parts = [];
+        let remaining = text;
+        const added = Object.keys(this.addedTokens).sort((a, b) => b.length - a.length);
+        while (remaining.length > 0) {
+            let matched = false;
+            for (const tok of added) {
+                if (remaining.startsWith(tok)) { parts.push({ type:'added', id: this.addedTokens[tok] }); remaining = remaining.slice(tok.length); matched = true; break; }
+            }
+            if (!matched) {
+                let nextPos = remaining.length;
+                for (const tok of added) { const p = remaining.indexOf(tok, 1); if (p !== -1 && p < nextPos) nextPos = p; }
+                parts.push({ type:'text', text: remaining.slice(0, nextPos) }); remaining = remaining.slice(nextPos);
+            }
+        }
+        const ids = [];
+        for (const part of parts) {
+            if (part.type === 'added') { ids.push(part.id); continue; }
+            this.gpt2re.lastIndex = 0; let m;
+            while ((m = this.gpt2re.exec(part.text)) !== null) {
+                const enc = this._byteEncode(m[0]);
+                for (const bt of this._bpe(enc)) ids.push(this.vocab[bt] !== undefined ? this.vocab[bt] : 0);
+            }
+        }
+        return ids;
+    }
+    decode(ids) {
+        let raw = '';
+        for (const id of ids) { const t = this.rev[id]; if (t !== undefined) raw += t; }
+        return this._byteDecode(raw);
+    }
+    chatTemplate(messages, addGen = true) {
+        let r = '';
+        for (let i = 0; i < messages.length; i++) {
+            if (i === 0 && messages[i].role !== 'system')
+                r += '<|im_start|>system\nYou are a helpful AI assistant.<|im_end|>\n';
+            r += '<|im_start|>' + messages[i].role + '\n' + messages[i].content + '<|im_end|>\n';
+        }
+        if (addGen) r += '<|im_start|>assistant\n';
+        return r;
+    }
+}
+
+const ONNX_VOCAB = 49152;
+const ONNX_NUM_LAYERS = 30;
+const ONNX_NUM_KV = 3;
+const ONNX_HEAD_DIM = 64;
+
+function onnxSample(logits, offset, seen, temp, topK, topP) {
+    const top = [];
+    for (let i = 0; i < ONNX_VOCAB; i++) {
+        let v = logits[offset + i];
+        if (seen && seen.has(i)) v /= 1.2;
+        if (top.length < topK) {
+            top.push([i, v]);
+            if (top.length === topK) top.sort((a, b) => b[1] - a[1]);
+        } else if (v > top[topK - 1][1]) {
+            top[topK - 1] = [i, v];
+            for (let j = topK - 1; j > 0 && top[j][1] > top[j - 1][1]; j--)
+                [top[j], top[j - 1]] = [top[j - 1], top[j]];
+        }
+    }
+    if (top.length < topK) top.sort((a, b) => b[1] - a[1]);
+    const maxL = top[0][1];
+    const exps = new Float64Array(top.length);
+    let sum = 0;
+    for (let i = 0; i < top.length; i++) { exps[i] = Math.exp((top[i][1] - maxL) / temp); sum += exps[i]; }
+    let cutoff = top.length;
+    if (topP < 1) {
+        let cum = 0;
+        for (let i = 0; i < top.length; i++) { cum += exps[i] / sum; if (cum > topP) { cutoff = i + 1; break; } }
+    }
+    let sampleSum = sum;
+    if (cutoff < top.length) { sampleSum = 0; for (let i = 0; i < cutoff; i++) sampleSum += exps[i]; }
+    let rnd = Math.random() * sampleSum, nextId = top[0][0];
+    for (let i = 0; i < cutoff; i++) { rnd -= exps[i]; if (rnd <= 0) { nextId = top[i][0]; break; } }
+    return nextId;
+}
+
+async function* generateOnnx(messages) {
+    const prompt = onnxTokenizer.chatTemplate(messages, true);
+    let ids = onnxTokenizer.encode(prompt);
+    const temp = 0.35, topK = 20, topP = 0.85;
+    const maxNew = 64, maxCtx = 1024;
+    let pastKey = new Array(ONNX_NUM_LAYERS);
+    let pastValue = new Array(ONNX_NUM_LAYERS);
+    let pastLen = 0, nextId, seen = new Set(ids);
+    for (let step = 0; step < maxNew; step++) {
+        if (onnxStopFlag) break;
+        const seq = step === 0 ? ids : [nextId];
+        const seqLen = seq.length;
+        if (pastLen + seqLen > maxCtx) {
+            ids = ids.slice(-(maxCtx >> 1));
+            pastKey.fill(null);
+            pastValue.fill(null);
+            pastLen = 0;
+            const reSeq = ids;
+            const reLen = reSeq.length;
+            const ra = new BigInt64Array(reLen);
+            for (let i = 0; i < reLen; i++) ra[i] = BigInt(reSeq[i]);
+            const rm = new BigInt64Array(reLen);
+            for (let i = 0; i < reLen; i++) rm[i] = 1n;
+            const rp = new BigInt64Array(reLen);
+            for (let i = 0; i < reLen; i++) rp[i] = BigInt(i);
+            const rFeeds = {
+                input_ids: new ort.Tensor('int64', ra, [1, reLen]),
+                attention_mask: new ort.Tensor('int64', rm, [1, reLen]),
+                position_ids: new ort.Tensor('int64', rp, [1, reLen]),
+            };
+            for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
+                rFeeds[`past_key_values.${i}.key`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+                rFeeds[`past_key_values.${i}.value`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+            }
+            const rf = await onnxSession.run(rFeeds);
+            for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
+                pastKey[i] = rf[`present.${i}.key`];
+                pastValue[i] = rf[`present.${i}.value`];
+            }
+            pastLen = reLen;
+            const rLogits = rf.logits.data;
+            const rOff = (reLen - 1) * ONNX_VOCAB;
+            seen = new Set(ids);
+            nextId = onnxSample(rLogits, rOff, seen, temp, topK, topP);
+            ids.push(nextId);
+            seen.add(nextId);
+            if (nextId === 2) break;
+            yield { id: nextId, token: onnxTokenizer.decode([nextId]) };
+            continue;
+        }
+        const arr = new BigInt64Array(seqLen);
+        for (let i = 0; i < seqLen; i++) arr[i] = BigInt(seq[i]);
+        const mask = new BigInt64Array(pastLen + seqLen);
+        for (let i = 0; i < pastLen + seqLen; i++) mask[i] = 1n;
+        const pos = new BigInt64Array(seqLen);
+        for (let i = 0; i < seqLen; i++) pos[i] = BigInt(pastLen + i);
+        const feeds = {
+            input_ids: new ort.Tensor('int64', arr, [1, seqLen]),
+            attention_mask: new ort.Tensor('int64', mask, [1, pastLen + seqLen]),
+            position_ids: new ort.Tensor('int64', pos, [1, seqLen]),
+        };
+        for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
+            if (pastKey[i]) {
+                feeds[`past_key_values.${i}.key`] = pastKey[i];
+                feeds[`past_key_values.${i}.value`] = pastValue[i];
+            } else {
+                feeds[`past_key_values.${i}.key`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+                feeds[`past_key_values.${i}.value`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+            }
+        }
+        const r = await onnxSession.run(feeds);
+        const logits = r.logits.data;
+        const offset = (seqLen - 1) * ONNX_VOCAB;
+        for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
+            pastKey[i] = r[`present.${i}.key`];
+            pastValue[i] = r[`present.${i}.value`];
+        }
+        pastLen += seqLen;
+        nextId = onnxSample(logits, offset, seen, temp, topK, topP);
+        ids.push(nextId);
+        seen.add(nextId);
+        if (nextId === 2) break;
+        yield { id: nextId, token: onnxTokenizer.decode([nextId]) };
+    }
+    onnxStopFlag = false;
+}
+
+async function loadOnnxModel() {
+    const statusEl = document.getElementById('customOnnxStatus') || customModelConfirmStatus;
+    if (!customOnnxInput || !customOnnxInput.files[0] || !customTokInput || !customTokInput.files[0]) {
+        statusEl.textContent = 'Please select both .onnx and tokenizer.json files.';
+        statusEl.style.color = 'var(--error,#ff4d4d)';
+        return;
+    }
+    customModelConfirmOk.disabled = true;
+    customModelConfirmOk.textContent = 'Loading...';
+    statusEl.textContent = 'Reading tokenizer...';
+    statusEl.style.color = 'var(--primary)';
+    try {
+        tokFileData = JSON.parse(await customTokInput.files[0].text());
+        statusEl.textContent = 'Reading model file...';
+        onnxFileBuf = await customOnnxInput.files[0].arrayBuffer();
+        onnxTokenizer = new OnnxTokenizer(tokFileData);
+        tokFileData = null;
+        if (typeof ort === 'undefined') {
+            statusEl.textContent = 'Loading ONNX Runtime from CDN...';
+            await new Promise((res, rej) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js';
+                s.onload = res;
+                s.onerror = rej;
+                document.head.appendChild(s);
+            });
+        }
+        statusEl.textContent = 'Compiling model for WebGL...';
+        let lastErr = null;
+        for (const ep of ['webgl', 'wasm']) {
+            try {
+                onnxSession = await ort.InferenceSession.create(new Uint8Array(onnxFileBuf), {
+                    executionProviders: [ep],
+                    graphOptimizationLevel: 'all'
+                });
+                lastErr = null;
+                break;
+            } catch (e) { lastErr = e; }
+        }
+        if (lastErr) throw lastErr;
+        onnxFileBuf = null;
+        statusEl.textContent = 'Warming up...';
+        const wu = [1, 9690, 198, 2683, 359, 2];
+        const wa = new BigInt64Array(wu.length);
+        for (let i = 0; i < wu.length; i++) wa[i] = BigInt(wu[i]);
+        const wm = new BigInt64Array(wu.length);
+        for (let i = 0; i < wu.length; i++) wm[i] = 1n;
+        const wp = new BigInt64Array(wu.length);
+        for (let i = 0; i < wu.length; i++) wp[i] = BigInt(i);
+        const wf = {
+            input_ids: new ort.Tensor('int64', wa, [1, wu.length]),
+            attention_mask: new ort.Tensor('int64', wm, [1, wu.length]),
+            position_ids: new ort.Tensor('int64', wp, [1, wu.length])
+        };
+        for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
+            wf[`past_key_values.${i}.key`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+            wf[`past_key_values.${i}.value`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
+        }
+        await onnxSession.run(wf);
+        isOnnxModelLoaded = true;
+        statusEl.textContent = 'ONNX model loaded successfully!';
+        statusEl.style.color = 'var(--green,#22c55e)';
+        customModelConfirmModal.style.display = 'none';
+        if (document.getElementById("modelNameDisplay")) {
+            document.getElementById("modelNameDisplay").textContent = 'Local ONNX Model';
+        }
+        if (document.getElementById("modelParamsDisplay")) {
+            document.getElementById("modelParamsDisplay").textContent = 'Local';
+        }
+        const nameEl = document.getElementById("modelSelectName");
+        const descEl = document.getElementById("modelSelectDesc");
+        if (nameEl) nameEl.textContent = 'Local ONNX Model';
+        if (descEl) descEl.textContent = 'Running locally in browser';
+        if (isDevMode) updateDevModalStatus();
+        customModelConfirmOk.textContent = 'Load Model';
+        customModelConfirmOk.disabled = false;
+    } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.style.color = 'var(--error,#ff4d4d)';
+        onnxSession = null;
+        onnxTokenizer = null;
+        onnxFileBuf = null;
+        tokFileData = null;
+        customModelConfirmOk.textContent = 'Load ONNX Model';
+        customModelConfirmOk.disabled = false;
+    }
+}
+
+async function generateOnnxResponse(input, history) {
+    onnxStopFlag = false;
+    const messages = history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text || m.content || '' }));
+    let reply = '';
+    try {
+        for await (const t of generateOnnx(messages)) {
+            reply += t.token;
+            if (onnxStopFlag) break;
+        }
+    } catch (e) {
+        reply = '[Error: ' + e.message + ']';
+    }
+    onnxGenerating = false;
+    return { role: 'ai', text: reply || '(no response)' };
 }
 
 window.handleGoogleCredentialResponse = async function(response) {
