@@ -3290,7 +3290,9 @@ function updateReasoningToggleIcon() {
 }
 
 async function switchModel(value) {
-  if (aiState.isResponding) stopGeneration();
+  if (aiState.isResponding) return;
+  isCustomModelLoaded = false;
+  isOnnxModelLoaded = false;
   await DB.set("selectedModel", value);
   await loadModel(true);
   updateModelInfoDisplay();
@@ -3301,7 +3303,7 @@ async function switchModel(value) {
 window.Full = window.Full || {};
 const LEGACY_MODEL = "https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json";
 window.Full.FormatRemoveModels = async function() {
-  if (aiState.isResponding) stopGeneration();
+  if (aiState.isResponding) return;
 
   // Step 1: Clear all cached models and responses
   const db = await new Promise((resolve, reject) => {
@@ -3347,7 +3349,8 @@ if (modelSelect) {
                 customModelConfirmModal.style.display = 'flex';
             }
             setTimeout(() => { modelSelect.value = currentModel; }, 100);
-        } else if (selectedValue !== currentModel) {
+        } else if (selectedValue !== currentModel || isCustomModelLoaded || isOnnxModelLoaded) {
+            if (aiState.isResponding) return;
             // Sync desktop dropdown if visible
             if (window.innerWidth > 768) {
                 const info = getModelInfo(selectedValue);
@@ -3425,7 +3428,7 @@ if (headerModelSelect) {
     }
 
     const currentModel = await DB.get("selectedModel", defaultModel);
-    if (value === currentModel) {
+    if (value === currentModel && !isCustomModelLoaded && !isOnnxModelLoaded) {
       headerModelSelect.classList.remove("open");
       return;
     }
@@ -4120,6 +4123,10 @@ if (customTokInput) {
 
 if (customModelConfirmOk) {
     customModelConfirmOk.onclick = () => {
+        if (aiState.isResponding) {
+            customModelConfirmStatus.textContent = 'Stop generation first before changing the model.';
+            return;
+        }
         customSystemPrompt = customSystemPromptInput ? customSystemPromptInput.value.trim() : '';
         customModelFilterDisabled = customModelFilterToggle ? customModelFilterToggle.checked : false;
         if (activeCustomTab === 'onnx') {
@@ -4421,6 +4428,8 @@ async function loadOnnxModel() {
         const descEl = document.getElementById("modelSelectDesc");
         if (nameEl) nameEl.textContent = 'Local ONNX Model';
         if (descEl) descEl.textContent = 'Running locally in browser';
+        const dd = document.getElementById("modelSelectDropdown");
+        if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
         if (isDevMode) updateDevModalStatus();
         customModelConfirmOk.textContent = 'Load Model';
         customModelConfirmOk.disabled = false;

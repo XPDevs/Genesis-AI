@@ -411,6 +411,10 @@
         <div class="custom-model-tab" data-mode="onnx" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:#888;transition:all .2s;">Local ONNX Model</div>
       </div>
 
+      <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
+        JSON models are just text files you can make yourself, edit in any editor, or load from a URL. Easy to tweak and share however you want. ONNX models use quantised weights so they run faster, but you need to upload both a .onnx file and a tokenizer.json. If you are just getting started or loading from the web, stick with JSON. If you have a local model and want speed, ONNX is worth it.
+      </p>
+
       <div id="customModelTabJson">
         <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
           <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
