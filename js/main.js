@@ -996,7 +996,7 @@ async function showBanModal() {
   document.body.style.pointerEvents = 'none';
 }
 
-const defaultModel = "onnx:genesis-6.0";
+const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
 let jsonURL = defaultModel;
 
 let modelLoadingEl = null;
@@ -1045,14 +1045,6 @@ function hideModelLoading() {
 
 async function loadModel(force = false) {
   jsonURL = await DB.get("selectedModel", defaultModel);
-
-  if (jsonURL === 'onnx:genesis-6.0') {
-    await loadOnnxModelFromUrls(
-      'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/genesis-int8.onnx',
-      'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/tokenizer.json'
-    );
-    return;
-  }
 
   if (!force) {
     const cached = await DB.getModel(jsonURL);
@@ -3215,14 +3207,9 @@ if (userIcon) {
 
 const MODELS = [
   {
-    value: "onnx:genesis-6.0",
-    name: "Genesis SPT 6.0",
-    desc: "Latest ONNX model running locally in browser"
-  },
-  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
     name: "Genesis 5.5-Flash",
-    desc: "Fast variant of the latest model"
+    desc: "Fast variant of the latest model (Default)"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
@@ -3251,12 +3238,9 @@ function isModel55(url) {
 
 function getModelDisplayValues() {
   if (isOnnxModelLoaded) {
-    return { ver: "Genesis SPT 6.0", params: "135M" };
+    return { ver: "Local ONNX Model", params: "Local" };
   }
   const url = jsonURL || "";
-  if (url === 'onnx:genesis-6.0') {
-    return { ver: "Genesis SPT 6.0", params: "135M" };
-  }
   if (isModel55(url)) {
     return { ver: "Genesis 5.5-Flash", params: "525.8K" };
   }
@@ -3307,15 +3291,6 @@ function updateReasoningToggleIcon() {
 async function switchModel(value) {
   if (aiState.isResponding) stopGeneration();
   await DB.set("selectedModel", value);
-  if (value === 'onnx:genesis-6.0') {
-    await loadOnnxModelFromUrls(
-      'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/genesis-int8.onnx',
-      'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/tokenizer.json'
-    );
-    updateModelInfoDisplay();
-    updateThinkingUI();
-    return;
-  }
   await loadModel(true);
   updateModelInfoDisplay();
   updateThinkingUI();
@@ -3478,19 +3453,13 @@ const redownloadModelBtn = document.getElementById("redownloadModelBtn");
 if (redownloadModelBtn) {
     redownloadModelBtn.onclick = async () => {
         const currentModel = modelSelect ? modelSelect.value : await DB.get("selectedModel", defaultModel);
-        if (currentModel === 'onnx:genesis-6.0') {
-            await loadOnnxModelFromUrls(GENESIS_6_ONNX_URL, GENESIS_6_TOK_URL);
-        } else {
-            await loadModel(true);
-        }
+        await loadModel(true);
         const vals = getModelDisplayValues();
         const modelNameDisplay = document.getElementById("modelNameDisplay");
         const modelParamsDisplay = document.getElementById("modelParamsDisplay");
         if (modelNameDisplay) modelNameDisplay.textContent = vals.ver;
         if (modelParamsDisplay) modelParamsDisplay.textContent = vals.params;
-        if (isOnnxModelLoaded || currentModel !== 'onnx:genesis-6.0') {
-            showInfoModal("Success", "Model re-downloaded successfully!");
-        }
+        showInfoModal("Success", "Model re-downloaded successfully!");
     };
 }
 
@@ -4240,7 +4209,7 @@ class OnnxTokenizer {
         let r = '';
         for (let i = 0; i < messages.length; i++) {
             if (i === 0 && messages[i].role !== 'system')
-                r += '<|im_start|>system\nYou are a chatbot named Genesis SPT 6.0 from XPDevs.<|im_end|>\n';
+                r += '<|im_start|>system\nYou are a helpful AI assistant.<|im_end|>\n';
             r += '<|im_start|>' + messages[i].role + '\n' + messages[i].content + '<|im_end|>\n';
         }
         if (addGen) r += '<|im_start|>assistant\n';
@@ -4369,112 +4338,6 @@ async function* generateOnnx(messages) {
         yield { id: nextId, token: onnxTokenizer.decode([nextId]) };
     }
     onnxStopFlag = false;
-}
-
-const GENESIS_6_ONNX_URL = 'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/genesis-int8.onnx';
-const GENESIS_6_TOK_URL = 'https://huggingface.co/XPDevs/Genesis-SPT-6.0/resolve/main/tokenizer.json';
-
-async function loadOnnxModelFromUrls(onnxUrl, tokUrl) {
-    jsonURL = 'onnx:genesis-6.0';
-    const statusEl = document.getElementById('customOnnxStatus') || customModelConfirmStatus;
-    statusEl.textContent = 'Downloading tokenizer...';
-    statusEl.style.color = 'var(--primary)';
-    try {
-        const tokResp = await fetch(tokUrl);
-        if (!tokResp.ok) throw new Error('Failed to download tokenizer.json');
-        const tokData = await tokResp.json();
-        statusEl.textContent = 'Downloading ONNX model (133 MB)...';
-        const onnxResp = await fetch(onnxUrl);
-        if (!onnxResp.ok) throw new Error('Failed to download model');
-        const reader = onnxResp.body.getReader();
-        const chunks = [];
-        let downloaded = 0;
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-            downloaded += value.length;
-            statusEl.textContent = 'Downloading ONNX model (' + (downloaded / 1024 / 1024).toFixed(0) + ' MB)...';
-        }
-        let totalLen = 0;
-        for (const c of chunks) totalLen += c.length;
-        const onnxBuf = new Uint8Array(totalLen);
-        let pos = 0;
-        for (const c of chunks) { onnxBuf.set(c, pos); pos += c.length; }
-        statusEl.textContent = 'Parsing tokenizer...';
-        onnxTokenizer = new OnnxTokenizer(tokData);
-        if (typeof ort === 'undefined') {
-            statusEl.textContent = 'Loading ONNX Runtime from CDN...';
-            await new Promise((res, rej) => {
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js';
-                s.onload = res;
-                s.onerror = rej;
-                document.head.appendChild(s);
-            });
-        }
-        statusEl.textContent = 'Compiling model for WebGL...';
-        let lastErr = null;
-        for (const ep of ['webgl', 'wasm']) {
-            try {
-                onnxSession = await ort.InferenceSession.create(new Uint8Array(onnxBuf), {
-                    executionProviders: [ep],
-                    graphOptimizationLevel: 'all'
-                });
-                lastErr = null;
-                break;
-            } catch (e) { lastErr = e; }
-        }
-        if (lastErr) throw lastErr;
-        statusEl.textContent = 'Warming up...';
-        const wu = [1, 9690, 198, 2683, 359, 2];
-        const wa = new BigInt64Array(wu.length);
-        for (let i = 0; i < wu.length; i++) wa[i] = BigInt(wu[i]);
-        const wm = new BigInt64Array(wu.length);
-        for (let i = 0; i < wu.length; i++) wm[i] = 1n;
-        const wp = new BigInt64Array(wu.length);
-        for (let i = 0; i < wu.length; i++) wp[i] = BigInt(i);
-        const wf = {
-            input_ids: new ort.Tensor('int64', wa, [1, wu.length]),
-            attention_mask: new ort.Tensor('int64', wm, [1, wu.length]),
-            position_ids: new ort.Tensor('int64', wp, [1, wu.length])
-        };
-        for (let i = 0; i < ONNX_NUM_LAYERS; i++) {
-            wf[`past_key_values.${i}.key`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
-            wf[`past_key_values.${i}.value`] = new ort.Tensor('float16', new Uint16Array(0), [1, ONNX_NUM_KV, 0, ONNX_HEAD_DIM]);
-        }
-        await onnxSession.run(wf);
-        isOnnxModelLoaded = true;
-        statusEl.textContent = 'Genesis SPT 6.0 loaded!';
-        statusEl.style.color = 'var(--green,#22c55e)';
-        if (document.getElementById("modelNameDisplay")) {
-            document.getElementById("modelNameDisplay").textContent = 'Genesis SPT 6.0';
-        }
-        if (document.getElementById("modelParamsDisplay")) {
-            document.getElementById("modelParamsDisplay").textContent = '135M';
-        }
-        const nameEl = document.getElementById("modelSelectName");
-        const descEl = document.getElementById("modelSelectDesc");
-        if (nameEl) nameEl.textContent = 'Genesis SPT 6.0';
-        if (descEl) descEl.textContent = 'Latest ONNX model running locally in browser';
-        const dd = document.getElementById("modelSelectDropdown");
-        if (dd) dd.querySelectorAll(".model-dropdown-option").forEach(o => o.classList.remove("active"));
-        if (dd) {
-            const activeOpt = dd.querySelector('.model-dropdown-option[data-value="onnx:genesis-6.0"]');
-            if (activeOpt) activeOpt.classList.add('active');
-        }
-        if (modelSelect) modelSelect.value = 'onnx:genesis-6.0';
-        if (isDevMode) updateDevModalStatus();
-        hideModelLoading();
-    } catch (e) {
-        statusEl.textContent = 'Error loading Genesis SPT 6.0: ' + e.message;
-        statusEl.style.color = 'var(--error,#ff4d4d)';
-        onnxSession = null;
-        onnxTokenizer = null;
-        isOnnxModelLoaded = false;
-        hideModelLoading();
-        console.error('ONNX model load error:', e);
-    }
 }
 
 async function loadOnnxModel() {
