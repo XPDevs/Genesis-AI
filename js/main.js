@@ -2279,6 +2279,7 @@ function showWarningModal(message, onDismiss) {
 }
 
 function violatesRules(text) {
+  if (customModelFilterDisabled && (isCustomModelLoaded || isOnnxModelLoaded)) return false;
   if (!bannedWords.length) return false;
   if (!window.ContextEngine) {
     const lowerText = text.toLowerCase();
@@ -3893,6 +3894,10 @@ const customModelConfirmReasoning = document.getElementById('customModelConfirmR
 const customModelConfirmWebSearch = document.getElementById('customModelConfirmWebSearch');
 
 let pendingModelData = null;
+let customSystemPrompt = '';
+let customModelFilterDisabled = false;
+const customSystemPromptInput = document.getElementById('customSystemPromptInput');
+const customModelFilterToggle = document.getElementById('customModelFilterToggle');
 
 function showModelConfirmModal(modelData, source) {
     const ver = modelData.ver || "Unknown Model";
@@ -4115,6 +4120,8 @@ if (customTokInput) {
 
 if (customModelConfirmOk) {
     customModelConfirmOk.onclick = () => {
+        customSystemPrompt = customSystemPromptInput ? customSystemPromptInput.value.trim() : '';
+        customModelFilterDisabled = customModelFilterToggle ? customModelFilterToggle.checked : false;
         if (activeCustomTab === 'onnx') {
             loadOnnxModel();
         } else {
@@ -4206,10 +4213,11 @@ class OnnxTokenizer {
         return this._byteDecode(raw);
     }
     chatTemplate(messages, addGen = true) {
+        const sysPrompt = customSystemPrompt || 'You are a helpful AI assistant.';
         let r = '';
         for (let i = 0; i < messages.length; i++) {
             if (i === 0 && messages[i].role !== 'system')
-                r += '<|im_start|>system\nYou are a helpful AI assistant.<|im_end|>\n';
+                r += '<|im_start|>system\n' + sysPrompt + '<|im_end|>\n';
             r += '<|im_start|>' + messages[i].role + '\n' + messages[i].content + '<|im_end|>\n';
         }
         if (addGen) r += '<|im_start|>assistant\n';
