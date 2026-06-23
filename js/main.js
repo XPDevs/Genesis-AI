@@ -4386,7 +4386,21 @@ async function loadOnnxModelFromUrls(onnxUrl, tokUrl) {
         statusEl.textContent = 'Downloading ONNX model (133 MB)...';
         const onnxResp = await fetch(onnxUrl);
         if (!onnxResp.ok) throw new Error('Failed to download model');
-        const onnxBuf = await onnxResp.arrayBuffer();
+        const reader = onnxResp.body.getReader();
+        const chunks = [];
+        let downloaded = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            downloaded += value.length;
+            statusEl.textContent = 'Downloading ONNX model (' + (downloaded / 1024 / 1024).toFixed(0) + ' MB)...';
+        }
+        let totalLen = 0;
+        for (const c of chunks) totalLen += c.length;
+        const onnxBuf = new Uint8Array(totalLen);
+        let pos = 0;
+        for (const c of chunks) { onnxBuf.set(c, pos); pos += c.length; }
         statusEl.textContent = 'Parsing tokenizer...';
         onnxTokenizer = new OnnxTokenizer(tokData);
         if (typeof ort === 'undefined') {
