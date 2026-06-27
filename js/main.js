@@ -3574,11 +3574,112 @@ document.getElementById("exportOptionBtn").onclick = async () => {
     importExportModal.style.display = "none";
 };
 
+// --- ChatGPT Format Detection & Parsing ---
+function isChatGPTConversations(data) {
+  if (!Array.isArray(data)) return false;
+  return data.some(item =>
+    item && typeof item === "object" && item.mapping &&
+    typeof item.mapping === "object" && Object.keys(item.mapping).length > 0
+  );
+}
+
+function parseChatGPTConversations(data) {
+  const chats = [];
+  if (!Array.isArray(data)) return chats;
+
+  for (const convo of data) {
+    if (!convo || !convo.mapping) continue;
+
+    const mapping = convo.mapping;
+    const title = convo.title || "Untitled Chat";
+
+    // Find root node(s) — nodes with parent === null
+    let rootId = null;
+    for (const [id, node] of Object.entries(mapping)) {
+      if (node && (node.parent === null || node.parent === undefined)) {
+        rootId = id;
+        break;
+      }
+    }
+    if (!rootId) continue;
+
+    // Walk tree breadth-first to reconstruct ordered messages
+    const messages = [];
+    const queue = [rootId];
+    const visited = new Set();
+
+    while (queue.length > 0) {
+      const nodeId = queue.shift();
+      if (visited.has(nodeId)) continue;
+      visited.add(nodeId);
+
+      const node = mapping[nodeId];
+      if (!node) continue;
+
+      if (node.message && node.message.author && node.message.content) {
+        const authorRole = (node.message.author.role || "").toLowerCase();
+        let role = "user";
+        if (authorRole === "assistant" || authorRole === "chatgpt" || authorRole === "model") role = "ai";
+        else if (authorRole === "system" || authorRole === "tool") role = "system";
+
+        const parts = node.message.content.parts;
+        const text = Array.isArray(parts)
+          ? parts.filter(p => typeof p === "string").join("\n")
+          : (typeof parts === "string" ? parts : "");
+
+        if (text && text.trim()) {
+          messages.push({ role, text: text.trim() });
+        }
+      }
+
+      if (node.children && Array.isArray(node.children)) {
+        for (const childId of node.children) {
+          if (!visited.has(childId)) {
+            queue.push(childId);
+          }
+        }
+      }
+    }
+
+    if (messages.length > 0) {
+      chats.push({
+        id: "import-chatgpt-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+        title,
+        messages
+      });
+    }
+  }
+
+  return chats;
+}
+
 // --- Import Functionality ---
 async function importAccountData(file) {
     try {
-        const text = await file.text();
-        const data = JSON.parse(text);
+        let data;
+        const isZip = file.name.toLowerCase().endsWith(".zip");
+
+        if (isZip) {
+            if (typeof JSZip === "undefined") {
+                throw new Error("Zip support requires JSZip library which failed to load.");
+            }
+            const zip = await JSZip.loadAsync(file);
+            let conversationsFile = zip.file("conversations.json") || zip.file("chatgpt_export.json");
+            if (!conversationsFile) {
+                const jsonFiles = zip.filter((relPath) => relPath.endsWith(".json"));
+                if (jsonFiles.length > 0) {
+                    conversationsFile = jsonFiles[0];
+                }
+            }
+            if (!conversationsFile) {
+                throw new Error("No JSON data found inside the zip file.");
+            }
+            const text = await conversationsFile.async("string");
+            data = JSON.parse(text);
+        } else {
+            const text = await file.text();
+            data = JSON.parse(text);
+        }
         
         let importedChats = [];
         let importedUserInfo = null;
@@ -3623,10 +3724,11 @@ async function importAccountData(file) {
         
         renderChatList();
         
+        const sourceLabel = isZip ? "ChatGPT" : "";
         showInfoModal(
             "Import Complete",
             addedCount > 0
-                ? `Successfully imported ${addedCount} chat${addedCount > 1 ? 's' : ''}!${importedUserInfo && importedUserInfo.name ? ' User profile was also restored.' : ''}`
+                ? `Successfully imported ${addedCount} chat${addedCount > 1 ? 's' : ''}${sourceLabel ? " from " + sourceLabel : ""}!${importedUserInfo && importedUserInfo.name ? ' User profile was also restored.' : ''}`
                 : "No new chats were imported (they may already exist in your account)."
         );
     } catch (e) {
@@ -3637,6 +3739,20 @@ async function importAccountData(file) {
 function extractExternalChats(data) {
     const chats = [];
     let user = null;
+
+    // ChatGPT conversations.json format (array with mapping objects)
+    if (isChatGPTConversations(data)) {
+        const gptChats = parseChatGPTConversations(data);
+        chats.push(...gptChats);
+        return { chats, user };
+    }
+
+    // ChatGPT single conversation format (object with mapping)
+    if (data && data.mapping && typeof data.mapping === "object" && !Array.isArray(data)) {
+        const gptChats = parseChatGPTConversations([data]);
+        chats.push(...gptChats);
+        return { chats, user };
+    }
     
     let messages = data.messages || data.history || data.conversations || [];
     
