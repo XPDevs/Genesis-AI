@@ -133,8 +133,12 @@ function parseGeminiConversations(data) {
 
 // --- DeepSeek Format Detection & Parsing ---
 function isDeepSeekConversations(data) {
-  if (!Array.isArray(data)) return false;
-  return data.some(item =>
+  let arr = data;
+  if (data && !Array.isArray(data) && Array.isArray(data.conversations)) {
+    arr = data.conversations;
+  }
+  if (!Array.isArray(arr)) return false;
+  return arr.some(item =>
     item && typeof item === "object" && Array.isArray(item.messages) && item.messages.length > 0 &&
     item.messages.some(m => m && (m.reasoning_content !== undefined || m.content !== undefined))
   );
@@ -142,8 +146,12 @@ function isDeepSeekConversations(data) {
 
 function parseDeepSeekConversations(data) {
   const chats = [];
-  if (!Array.isArray(data)) return chats;
-  for (const convo of data) {
+  let arr = data;
+  if (data && !Array.isArray(data) && Array.isArray(data.conversations)) {
+    arr = data.conversations;
+  }
+  if (!Array.isArray(arr)) return chats;
+  for (const convo of arr) {
     if (!convo || !Array.isArray(convo.messages)) continue;
     const title = convo.title || convo.name || "Untitled Chat";
     const messages = [];
@@ -223,6 +231,14 @@ function extractExternalChats(data) {
     if (Array.isArray(data)) {
         for (const item of data) {
             const msgs = item.messages || item.history || item.conversations || item.chat_messages || [];
+            if (msgs.length > 0) {
+                const title = item.title || item.name || "Imported Chat";
+                chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
+            }
+        }
+    } else if (Array.isArray(data.conversations)) {
+        for (const item of data.conversations) {
+            const msgs = item.messages || item.history || item.chat_messages || [];
             if (msgs.length > 0) {
                 const title = item.title || item.name || "Imported Chat";
                 chats.push({ id: "import-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), title, messages: msgs.map(normalizeMessage) });
