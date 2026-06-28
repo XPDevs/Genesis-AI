@@ -151,9 +151,8 @@
             </div>
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-300">Base Model</label>
-                <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="Genesis-5.5-Thinking">Genesis 5.5-Thinking</option>
-                    <option value="Genesis-5.5-Flash">Genesis 5.5-Flash</option>
+                    <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="Genesis-5.5-Flash">Genesis 5.5-Flash</option>
                     <option value="Genesis-SPT-5.0">Genesis SPT-5.0-Flash</option>
                     <option value="Genesis-SPT-4.6">Genesis SPT-4.6-Flash</option>
                     <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
@@ -461,8 +460,7 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Model</label>
                             <select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
-                                <option value="genesis-5.5-thinking" selected>Genesis 5.5-Thinking (Default)</option>
-                                <option value="genesis-5.5-flash">Genesis 5.5-Flash</option>
+                                <option value="genesis-5.5-flash" selected>Genesis 5.5-Flash (Default)</option>
                                 <option value="spt-5.0-flash">SPT 5.0-Flash</option>
                                 <option value="spt-4.6-flash">SPT 4.6-Flash</option>
                                 <option value="spt-1.0-json">SPT 1.0 (Legacy)</option>
@@ -558,19 +556,6 @@
                 <p class="text-gray-400">Explore the different AI models available on the Genesis platform.</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Genesis 5.5-Thinking -->
-                    <div class="card-bg p-6 rounded-xl border border-indigo-500/50 ring-2 ring-indigo-500/20">
-                        <div class="flex justify-between items-start mb-4">
-                            <h4 class="text-xl font-bold text-white">Genesis 5.5-Thinking</h4>
-                            <span class="px-2 py-1 text-xs font-semibold bg-indigo-900 text-indigo-200 rounded">Latest</span>
-                        </div>
-                        <p class="text-gray-400 text-sm mb-4">The most advanced Genesis model with enhanced reasoning capabilities and broader knowledge coverage. Outputs internal reasoning via <code class="text-indigo-400">&lt;|think|&gt;</code> tags. Default model for the chat interface.</p>
-                        <div class="space-y-2 text-xs text-gray-500">
-                            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
-                            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json</code></p>
-                        </div>
-                    </div>
-
                     <!-- Genesis 5.5-Flash -->
                     <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
                         <div class="flex justify-between items-start mb-4">
@@ -722,7 +707,7 @@
             <b class="text-green-400">'Authorization': 'Bearer <span class="text-red-400">' + apiKey + '</span>'</b>
         },
         body: JSON.stringify({
-            model: "genesis-5.5-thinking",
+            model: "genesis-5.5-flash",
             prompt: prompt,
             max_tokens: 128
         })
@@ -915,8 +900,8 @@ function violatesRules(text) {
                         </div>
 
                         <div class="border-t border-gray-700 my-8 pt-8">
-                            <h4 class="text-xl font-semibold text-white mb-4">Thinking Blocks (5.5-Thinking)</h4>
-                            <p class="text-gray-400 text-sm mb-4">The Genesis 5.5-Thinking model can include internal reasoning steps wrapped in <code class="text-indigo-400">&lt;|think|&gt;</code> tags. You can display these as collapsible sections or strip them for clean output.</p>
+                            <h4 class="text-xl font-semibold text-white mb-4">Thinking Blocks</h4>
+                            <p class="text-gray-400 text-sm mb-4">Some models may include internal reasoning steps wrapped in <code class="text-indigo-400">&lt;|think|&gt;</code> tags. You can display these as collapsible sections or strip them for clean output. This is optional and depends on whether the model supports thinking.</p>
                             <div class="code-block text-xs max-h-96 overflow-y-auto">
 <pre>/**
  * Parse &lt;|think|&gt; blocks from model output
@@ -954,9 +939,9 @@ function stripThinkBlocks(text) {
                             <div class="mt-4 p-4 bg-blue-900/30 border border-blue-700/50 rounded-xl">
                                 <p class="text-blue-200 text-sm font-semibold flex items-center">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    Only applies to 5.5-Thinking
+                                    Optional, model-dependent
                                 </p>
-                                <p class="text-gray-400 text-xs mt-2">Other models (5.5-Flash, SPT series) do not emit thinking tags. Use <code class="text-gray-300">stripThinkBlocks()</code> on decoded output to remove them, or <code class="text-gray-300">parseThinkBlocks()</code> to render reasoning separately.</p>
+                                <p class="text-gray-400 text-xs mt-2">Not all models emit thinking tags. Use <code class="text-gray-300">stripThinkBlocks()</code> on decoded output to remove them for a clean display, or <code class="text-gray-300">parseThinkBlocks()</code> to render reasoning separately. Future models may add support for thinking blocks.</p>
                             </div>
                         </div>
                     </div>
@@ -1321,7 +1306,6 @@ function stripThinkBlocks(text) {
             const modelSelect = document.getElementById('model-select');
             const statusEl = document.getElementById('model-status');
             const modelUrls = {
-                'genesis-5.5-thinking': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json',
                 'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
                 'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
@@ -1332,7 +1316,7 @@ function stripThinkBlocks(text) {
             isModelLoading = true;
 
             try {
-                const url = modelUrls[modelSelect.value] || modelUrls['genesis-5.5-thinking'];
+                const url = modelUrls[modelSelect.value] || modelUrls['genesis-5.5-flash'];
                 const res = await fetch(url);
                 activeModelData = await res.json();
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Ready (${Object.keys(activeModelData).length} keys)`;
@@ -1443,21 +1427,19 @@ function stripThinkBlocks(text) {
             const topk = document.getElementById('topk-slider').value;
             
             const modelNames = {
-                'genesis-5.5-thinking': 'genesis-5.5-thinking',
                 'genesis-5.5-flash': 'genesis-5.5-flash',
                 'spt-5.0-flash': 'genesis-spt-5.0',
                 'spt-4.6-flash': 'genesis-spt-4.6',
                 'spt-1.0-json': 'genesis-spt-1.0'
             };
             const modelUrls = {
-                'genesis-5.5-thinking': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ccb1815c0_Genesis-55-Thinking.json',
                 'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
                 'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
                 'spt-1.0-json': 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'
             };
-            const modelName = modelNames[model] || 'genesis-5.5-thinking';
-            const modelUrl = modelUrls[model] || modelUrls['genesis-5.5-thinking'];
+            const modelName = modelNames[model] || 'genesis-5.5-flash';
+            const modelUrl = modelUrls[model] || modelUrls['genesis-5.5-flash'];
             
             // Collect Examples
             const examples = [];
@@ -1503,7 +1485,7 @@ function calc(expression) {
     } catch (e) { return null; }
 }
 
-// Thinking Block Parser (for 5.5-Thinking model)
+// Thinking Block Parser (for models that support thinking)
 function parseThinkBlocks(text) {
     const parts = [];
     let lastIdx = 0;
@@ -1582,7 +1564,7 @@ async function runGenesis(userQuery) {
     const apiResponse = await generateWithAPI("YOUR_API_KEY", userQuery);
     console.log("API Result:", apiResponse);
 
-    // 7. Handle Thinking Blocks (5.5-Thinking model)
+    // 7. Handle Thinking Blocks (if model supports thinking)
     if (apiResponse.text) {
         const clean = stripThinkBlocks(apiResponse.text);
         const { parts, hasThinking } = parseThinkBlocks(apiResponse.text);
