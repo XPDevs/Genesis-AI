@@ -534,8 +534,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Developer Modal -->
   <div id="devModal" class="modal" style="display: none; z-index: 100000;">
     <div class="modal-content" style="max-width: 600px; width: 100%;">
       <div id="devModalWaiting">
@@ -599,7 +597,8 @@
   </div>
 
 <script>
-  const MAINTENANCE_MODE = 0;
+  const DESKTOP_MAINTENANCE = 0;
+  const MOBILE_MAINTENANCE = 0;
 
   const loadStyle = (href) => {
     return new Promise((resolve) => {
@@ -624,15 +623,14 @@
   };
 
 (async () => {
-  if (MAINTENANCE_MODE === 1) {
+  const isMobile = window.innerWidth <= 768;
+  if ((isMobile ? MOBILE_MAINTENANCE : DESKTOP_MAINTENANCE) === 1) {
     const overlay = document.getElementById('maintenanceOverlay');
     if (overlay) overlay.style.display = 'flex';
     document.documentElement.style.backgroundColor = '#fff';
     document.body.style.visibility = 'visible';
     return;
   }
-
-  // 1. Auth check (IndexedDB with localStorage fallback)
   const isAuthenticated = await (() => {
     return new Promise((resolve) => {
       try {
@@ -659,22 +657,13 @@
     window.location.href = 'landing.html';
     return;
   }
-
-  // 2. Identify platform
-  const isMobile = window.innerWidth <= 768;
-  
-  // 2. Set handshake code to bypass mobile redirect logic in main.js
   window.GENESIS_CODE = "9980748324";
-
-// 3. Load appropriate CSS based on device
   await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/sidebar.css');
 if (isMobile) {
   await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
 } else {
   await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
 }
-
-  // 4. Load common assets
   await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
   
   document.body.style.visibility = 'visible';
@@ -698,8 +687,6 @@ await Promise.all([
   loadScript('https://xpdevs.github.io/Genesis-AI/js/import.js'),
   loadScript('https://xpdevs.github.io/Genesis-AI/js/export.js')
 ]);
-
-  // 6. Universal Sidebar Toggle Logic (Works if element exists)
   const toggleBtn = document.getElementById('sidebarToggle');
   const sidebar = document.querySelector('.sidebar');
   
@@ -715,8 +702,6 @@ await Promise.all([
       }
     });
   }
-  
-  // Format parameter display
   const formatParams = (num) => {
     const n = parseFloat(num);
     if (isNaN(n)) return num;
