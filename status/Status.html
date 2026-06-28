@@ -427,12 +427,16 @@
     async function checkMaintenanceMode() {
         try {
             const resp = await fetch('https://xpdevs.github.io/Genesis-AI/index.html');
-            if (!resp.ok) return 0;
+            if (!resp.ok) return { desktop: 0, mobile: 0 };
             const html = await resp.text();
-            const match = html.match(/const\s+MAINTENANCE_MODE\s*=\s*(\d)/);
-            return match ? parseInt(match[1]) : 0;
+            const desktopMatch = html.match(/const\s+DESKTOP_MAINTENANCE\s*=\s*(\d)/);
+            const mobileMatch = html.match(/const\s+MOBILE_MAINTENANCE\s*=\s*(\d)/);
+            return {
+                desktop: desktopMatch ? parseInt(desktopMatch[1]) : 0,
+                mobile: mobileMatch ? parseInt(mobileMatch[1]) : 0
+            };
         } catch {
-            return 0;
+            return { desktop: 0, mobile: 0 };
         }
     }
 
@@ -459,18 +463,16 @@
             loading.style.display = 'none';
             mainContent.style.display = 'block';
 
-            if (maintenanceMode === 1) {
+            const anyMaintenance = maintenanceMode.desktop === 1 || maintenanceMode.mobile === 1;
+            if (anyMaintenance) {
                 banner.innerHTML = `<span>Scheduled Maintenance In Progress</span>`;
                 banner.className = "status-banner warning";
             }
 
-            let allFine = maintenanceMode !== 1;
+            let allFine = !anyMaintenance;
             systemsGrid.innerHTML = '';
             for (const [name, status] of Object.entries(data.systems || {})) {
                 let s = status.toLowerCase();
-                if (maintenanceMode === 1 && name === "Genesis-AI Website") {
-                    s = 'maintenance';
-                }
                 if (s !== 'operational') allFine = false;
                 const item = document.createElement('div');
                 item.className = 'status-item';
@@ -482,7 +484,29 @@
                 systemsGrid.appendChild(item);
             }
 
-            if (!allFine && maintenanceMode !== 1) {
+            // Add Desktop site status
+            const desktopStatus = maintenanceMode.desktop === 1 ? 'maintenance' : 'operational';
+            const desktopItem = document.createElement('div');
+            desktopItem.className = 'status-item';
+            desktopItem.innerHTML = `
+                <span class="service-name">Desktop Site</span>
+                <span class="status-label ${desktopStatus}">${desktopStatus === 'maintenance' ? 'Maintenance' : 'Operational'}</span>
+            `;
+            systemsGrid.appendChild(desktopItem);
+            if (desktopStatus !== 'operational') allFine = false;
+
+            // Add Mobile site status
+            const mobileStatus = maintenanceMode.mobile === 1 ? 'maintenance' : 'operational';
+            const mobileItem = document.createElement('div');
+            mobileItem.className = 'status-item';
+            mobileItem.innerHTML = `
+                <span class="service-name">Mobile Site</span>
+                <span class="status-label ${mobileStatus}">${mobileStatus === 'maintenance' ? 'Maintenance' : 'Operational'}</span>
+            `;
+            systemsGrid.appendChild(mobileItem);
+            if (mobileStatus !== 'operational') allFine = false;
+
+            if (!allFine && !anyMaintenance) {
                 banner.innerHTML = `<span>Systems Experiencing Issues</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
                 banner.className = "status-banner warning";
             }
