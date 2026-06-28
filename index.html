@@ -412,11 +412,10 @@
         <div class="custom-model-tab" data-mode="onnx" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:#888;transition:all .2s;">Local ONNX Model</div>
       </div>
 
-      <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
-        JSON models are just text files you can make yourself, edit in any editor, or load from a URL. Easy to tweak and share however you want. ONNX models use quantised weights so they run faster, but you need to upload both a .onnx file and a tokenizer.json. If you are just getting started or loading from the web, stick with JSON. If you have a local model and want speed, ONNX is worth it.
-      </p>
-
       <div id="customModelTabJson">
+        <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
+          JSON models are just text files you can make yourself, edit in any editor, or load from a URL. Easy to tweak and share however you want. If you are just getting started or loading from the web, stick with JSON.
+        </p>
         <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
           <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
           <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="customModelConfirmParams">0</span></div>
@@ -434,6 +433,9 @@
       </div>
 
       <div id="customModelTabOnnx" style="display:none;">
+        <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
+          ONNX models use quantised weights so they run faster, but you need to upload both a .onnx file and a tokenizer.json. If you have a local model and want speed, ONNX is worth it.
+        </p>
         <div style="margin: 15px 0;">
           <div style="border:2px dashed var(--border,#444);border-radius:12px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:center;" id="customOnnxBox" onclick="document.getElementById('customOnnxInput').click()">
             <input type="file" id="customOnnxInput" accept=".onnx" style="display:none;">
@@ -598,7 +600,7 @@
 
 <script>
   const DESKTOP_MAINTENANCE = 0;
-  const MOBILE_MAINTENANCE = 1;
+  const MOBILE_MAINTENANCE = 0;
 
   const loadStyle = (href) => {
     return new Promise((resolve) => {
