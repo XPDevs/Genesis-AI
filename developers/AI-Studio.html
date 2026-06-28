@@ -464,7 +464,27 @@
                                 <option value="spt-5.0-flash">SPT 5.0-Flash</option>
                                 <option value="spt-4.6-flash">SPT 4.6-Flash</option>
                                 <option value="spt-1.0-json">SPT 1.0 (Legacy)</option>
+                                <option value="custom-model">Custom Model</option>
                             </select>
+                        </div>
+
+                        <div id="custom-model-section" class="hidden pt-4 border-t border-gray-700 space-y-3">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Custom Model</label>
+                            <div>
+                                <label class="text-xs text-gray-300 block mb-1">Upload JSON file</label>
+                                <input type="file" id="custom-model-file" accept=".json" class="w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-300 block mb-1">Or load from URL</label>
+                                <div class="flex space-x-1">
+                                    <input type="text" id="custom-model-url" placeholder="https://example.com/model.json" class="flex-1 bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <button id="fetch-custom-model-btn" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium">Fetch</button>
+                                </div>
+                            </div>
+                            <div id="custom-model-status" class="text-xs text-gray-500 flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
+                                No custom model loaded
+                            </div>
                         </div>
 
                         <div>
@@ -1223,6 +1243,7 @@ function stripThinkBlocks(text) {
         
         let activeModelData = null;
         let isModelLoading = false;
+        let isCustomModelActive = false;
 
         // Sliders
         const tempSlider = document.getElementById('temp-slider');
@@ -1311,7 +1332,15 @@ function stripThinkBlocks(text) {
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
                 'spt-1.0-json': 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'
             };
-            
+
+            if (modelSelect.value === 'custom-model') {
+                if (!isCustomModelActive) {
+                    statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-500 mr-2"></span> Load a custom model file or URL above';
+                }
+                return;
+            }
+
+            isCustomModelActive = false;
             statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse mr-2"></span> Loading Model...';
             isModelLoading = true;
 
@@ -1329,8 +1358,70 @@ function stripThinkBlocks(text) {
             }
         }
 
-        // Load model on select change
-        document.getElementById('model-select').addEventListener('change', loadModel);
+        // Show/hide custom model section and load model on select change
+        document.getElementById('model-select').addEventListener('change', () => {
+            const section = document.getElementById('custom-model-section');
+            if (document.getElementById('model-select').value === 'custom-model') {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+            loadModel();
+        });
+
+        // Custom Model: file upload
+        document.getElementById('custom-model-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('custom-model-status');
+            statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse mr-2"></span> Reading file...';
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const rawText = new TextDecoder().decode(ev.target.result).trim();
+                    const modelData = JSON.parse(rawText);
+                    if (typeof modelData !== 'object' || modelData === null) throw new Error('Invalid model format.');
+                    activeModelData = modelData;
+                    isCustomModelActive = true;
+                    const keyCount = Object.keys(modelData).length;
+                    statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Loaded "${file.name}" (${keyCount} keys)`;
+                    const mainStatus = document.getElementById('model-status');
+                    mainStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Custom model ready (${keyCount} keys)`;
+                    document.getElementById('model-select').value = 'custom-model';
+                    showModal('Custom Model Loaded', `"${file.name}" loaded with ${keyCount} response keys.`, false);
+                } catch (err) {
+                    statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Error: ' + err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        });
+
+        // Custom Model: fetch from URL
+        document.getElementById('fetch-custom-model-btn').addEventListener('click', async () => {
+            const urlInput = document.getElementById('custom-model-url');
+            const url = urlInput.value.trim();
+            if (!url) { showModal('Error', 'Enter a valid URL.'); return; }
+            const statusEl = document.getElementById('custom-model-status');
+            statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse mr-2"></span> Fetching...';
+            try {
+                const r = await fetch(url);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const rawText = await r.text();
+                const modelData = JSON.parse(rawText);
+                if (typeof modelData !== 'object' || modelData === null) throw new Error('Invalid model format.');
+                activeModelData = modelData;
+                isCustomModelActive = true;
+                const keyCount = Object.keys(modelData).length;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Loaded from URL (${keyCount} keys)`;
+                const mainStatus = document.getElementById('model-status');
+                mainStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Custom model ready (${keyCount} keys)`;
+                document.getElementById('model-select').value = 'custom-model';
+                showModal('Custom Model Loaded', `Model from URL loaded with ${keyCount} response keys.`, false);
+            } catch (err) {
+                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Error: ' + err.message;
+            }
+        });
 
         // Token Counting (Simulated)
         window.updateTokenCount = () => {
@@ -1438,8 +1529,9 @@ function stripThinkBlocks(text) {
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
                 'spt-1.0-json': 'https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json'
             };
-            const modelName = modelNames[model] || 'genesis-5.5-flash';
-            const modelUrl = modelUrls[model] || modelUrls['genesis-5.5-flash'];
+            const isCustom = model === 'custom-model' && isCustomModelActive;
+            const modelName = isCustom ? 'custom-model' : (modelNames[model] || 'genesis-5.5-flash');
+            const modelUrl = isCustom ? '/* loaded from file or URL */' : (modelUrls[model] || modelUrls['genesis-5.5-flash']);
             
             // Collect Examples
             const examples = [];
@@ -1448,12 +1540,14 @@ function stripThinkBlocks(text) {
                 if(inputs[0].value && inputs[1].value) examples.push({ input: inputs[0].value, output: inputs[1].value });
             });
             
+            const customModelHint = isCustom ? `\n// Note: This integration uses an in-memory custom model loaded from file or URL.
+// Replace the modelUrl below with your actual model JSON URL if hosting it online.` : '';
             const code = `// Genesis AI Complete Integration
 // Includes: Safety System, Calculator, and Response Logic
 
 const config = {
     apiUrl: "https://xpdevs.github.io/Genesis-AI/developers/api/generate",
-    modelUrl: "${modelUrl}",
+    modelUrl: "${modelUrl}",${customModelHint}
     bannedWordsUrl: "https://xpdevs.github.io/Genesis-AI/js/banned/words.json",
     temperature: ${temp},
     topP: ${topp},
