@@ -872,10 +872,11 @@ function ensureBanModal() {
   modal.className = 'modal ban-modal';
   modal.innerHTML = `
     <div class="modal-content ban-modal-content">
+      <div class="ban-modal-icon">!</div>
       <h2 id="banModalTitle">You have been banned</h2>
       <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
       <p id="banModalCountdown" class="ban-countdown">Time left: calculating...</p>
-      <p class="ban-footer">Read our <a id="banTosLink" href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+      <p class="ban-footer">Read our <a id="banTosLink" href="legal/terms-of-service.html" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
     </div>
   `;
   document.body.appendChild(modal);
@@ -924,7 +925,6 @@ async function showBanModal() {
     msg.textContent = 'This account is permanently banned due to repeated violations of our terms.';
     countdownEl.textContent = 'Permanent ban — no countdown.';
     modal.style.display = 'flex';
-    document.body.style.pointerEvents = 'none';
     return;
   }
   const end = info.bannedUntil;
@@ -933,7 +933,7 @@ async function showBanModal() {
     const remaining = end - Date.now();
     if (remaining <= 0) {
       countdownEl.textContent = 'Ban expired — you may continue.';
-      await liftBan(); document.body.style.pointerEvents = 'auto'; return;
+      await liftBan(); return;
     }
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
@@ -943,7 +943,6 @@ async function showBanModal() {
   if (banCountdownInterval) clearInterval(banCountdownInterval);
   banCountdownInterval = setInterval(updateCountdown, 1000);
   modal.style.display = 'flex';
-  document.body.style.pointerEvents = 'none';
 }
 
 const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
