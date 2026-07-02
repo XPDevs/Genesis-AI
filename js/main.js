@@ -3157,6 +3157,11 @@ if (userIcon) {
 
 const MODELS = [
   {
+    value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json",
+    name: "Genesis 6.0",
+    desc: "A new upgraded model with much more knowledge"
+  },
+  {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
     name: "Genesis 5.5-Flash",
     desc: "Fast variant of the latest model (Default)"
