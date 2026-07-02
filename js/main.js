@@ -945,7 +945,7 @@ async function showBanModal() {
   modal.style.display = 'flex';
 }
 
-const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json";
+const defaultModel = "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json";
 let jsonURL = defaultModel;
 
 let modelLoadingEl = null;
@@ -3159,12 +3159,12 @@ const MODELS = [
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json",
     name: "Genesis 6.0",
-    desc: "A new upgraded model with much more knowledge"
+    desc: "A new upgraded model with much more knowledge (Default)"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json",
     name: "Genesis 5.5-Flash",
-    desc: "Fast variant of the latest model (Default)"
+    desc: "Fast variant of the latest model"
   },
   {
     value: "https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json",
@@ -4388,7 +4388,7 @@ async function startApp() {
         },
         'ai-modal': {
             title: 'AI Modal',
-            text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. SPT 5.0 is the latest default model with 45,000 parameters. SPT 4.6 (5,000 parameters) remains available as a secondary option.'
+            text: 'Choose which AI model to use. Different models have different capabilities and knowledge bases. SPT 6.0 is the latest default model with 800,000 parameters.'
         },
         'shortened-answers': {
             title: 'Shortened Answers',
