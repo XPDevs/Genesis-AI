@@ -151,12 +151,13 @@
             </div>
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-300">Base Model</label>
-                    <select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="Genesis-5.5-Flash">Genesis 5.5-Flash</option>
-                    <option value="Genesis-SPT-5.0">Genesis SPT-5.0-Flash</option>
-                    <option value="Genesis-SPT-4.6">Genesis SPT-4.6-Flash</option>
-                    <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
-                </select>
+<select id="tune-base" class="w-full px-4 py-2 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-indigo-500 focus:border-indigo-500">
+    <option value="Genesis-6.0">Genesis 6.0</option>
+    <option value="Genesis-5.5-Flash">Genesis 5.5-Flash</option>
+    <option value="Genesis-SPT-5.0">Genesis SPT-5.0-Flash</option>
+    <option value="Genesis-SPT-4.6">Genesis SPT-4.6-Flash</option>
+    <option value="Genesis-SPT-1.0">Genesis SPT-1.0</option>
+</select>
             </div>
             <div class="flex justify-end space-x-3 mt-4">
                 <button onclick="document.getElementById('create-tune-modal').classList.remove('open')" class="px-4 py-2 rounded-lg text-gray-400 hover:text-white text-sm font-medium">Cancel</button>
@@ -459,13 +460,14 @@
                     <div class="w-full lg:w-72 card-bg rounded-xl p-5 space-y-6 overflow-y-auto h-full border-l border-gray-700/30">
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Model</label>
-                            <select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
-                                <option value="genesis-5.5-flash" selected>Genesis 5.5-Flash (Default)</option>
-                                <option value="spt-5.0-flash">SPT 5.0-Flash</option>
-                                <option value="spt-4.6-flash">SPT 4.6-Flash</option>
-                                <option value="spt-1.0-json">SPT 1.0 (Legacy)</option>
-                                <option value="custom-model">Custom Model</option>
-                            </select>
+<select id="model-select" class="w-full bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+    <option value="genesis-6.0" selected>Genesis 6.0 (Default)</option>
+    <option value="genesis-5.5-flash">Genesis 5.5-Flash</option>
+    <option value="spt-5.0-flash">SPT 5.0-Flash</option>
+    <option value="spt-4.6-flash">SPT 4.6-Flash</option>
+    <option value="spt-1.0-json">SPT 1.0 (Legacy)</option>
+    <option value="custom-model">Custom Model</option>
+</select>
                         </div>
 
                         <div id="custom-model-section" class="hidden pt-4 border-t border-gray-700 space-y-3">
@@ -575,8 +577,22 @@
                 <h3 class="text-3xl font-bold text-white">Available Models</h3>
                 <p class="text-gray-400">Explore the different AI models available on the Genesis platform.</p>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Genesis 5.5-Flash -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Genesis 6.0 -->
+    <div class="card-bg p-6 rounded-xl border border-indigo-500 shadow-lg shadow-indigo-500/10">
+        <div class="flex justify-between items-start mb-4">
+            <h4 class="text-xl font-bold text-white">Genesis 6.0</h4>
+            <span class="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white rounded">Default</span>
+        </div>
+        <p class="text-gray-400 text-sm mb-4">The newest flagship model. Features advanced cognitive architectures for superior reasoning, deep knowledge integration, and enhanced output precision.</p>
+        <div class="space-y-2 text-xs text-gray-500">
+            <p><span class="text-gray-300">Format:</span> Standard JSON</p>
+            <p><span class="text-gray-300">Status:</span> Active</p>
+            <p><span class="text-gray-300">URL:</span> <code class="bg-gray-800 px-1 rounded">https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json</code></p>
+        </div>
+    </div>
+
+    <!-- Genesis 5.5-Flash -->
                     <div class="card-bg p-6 rounded-xl border border-gray-700 hover:border-indigo-500 transition-colors">
                         <div class="flex justify-between items-start mb-4">
                             <h4 class="text-xl font-bold text-white">Genesis 5.5-Flash</h4>
@@ -1327,6 +1343,7 @@ function stripThinkBlocks(text) {
             const modelSelect = document.getElementById('model-select');
             const statusEl = document.getElementById('model-status');
             const modelUrls = {
+                'genesis-6.0': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json',
                 'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
                 'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
@@ -1518,12 +1535,14 @@ function stripThinkBlocks(text) {
             const topk = document.getElementById('topk-slider').value;
             
             const modelNames = {
+                'genesis-6.0': 'genesis-6.0',
                 'genesis-5.5-flash': 'genesis-5.5-flash',
                 'spt-5.0-flash': 'genesis-spt-5.0',
                 'spt-4.6-flash': 'genesis-spt-4.6',
                 'spt-1.0-json': 'genesis-spt-1.0'
             };
             const modelUrls = {
+                'genesis-6.0': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json',
                 'genesis-5.5-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json',
                 'spt-5.0-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json',
                 'spt-4.6-flash': 'https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json',
