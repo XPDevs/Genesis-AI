@@ -3356,14 +3356,9 @@ if (userIcon) {
     userIcon.onclick = async () => {
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name || "User";
+        const initial = name.charAt(0).toUpperCase();
         
-        if (userInfo.picture) {
-            userIcon.textContent = "";
-            userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
-        } else {
-            userIcon.textContent = name.charAt(0).toUpperCase();
-            userIcon.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
-        }
+        setPfpElement(userIcon, userInfo.picture, initial);
 
         if (accountModal) {
             accountModal.style.display = "flex";
@@ -3373,14 +3368,7 @@ if (userIcon) {
             const accAvatar = document.getElementById("accountAvatar");
             
             if (accName) accName.textContent = currentName;
-            
-            if (currentInfo.picture && accAvatar) {
-                accAvatar.textContent = "";
-                accAvatar.style.background = `url('${currentInfo.picture}') center/cover no-repeat`;
-            } else if (accAvatar) {
-                accAvatar.textContent = currentName.charAt(0).toUpperCase();
-                accAvatar.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
-            }
+            setPfpElement(accAvatar, currentInfo.picture, currentName.charAt(0).toUpperCase());
             
             const gBtn = document.getElementById("googleSignInContainer");
             if (gBtn) {
@@ -3393,12 +3381,7 @@ if (userIcon) {
     (async () => {
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name || "User";
-        if (userInfo.picture) {
-            userIcon.textContent = "";
-            userIcon.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
-        } else {
-            userIcon.textContent = name.charAt(0).toUpperCase();
-        }
+        setPfpElement(userIcon, userInfo.picture, name.charAt(0).toUpperCase());
     })();
 }
 
@@ -3752,6 +3735,39 @@ document.getElementById("deleteAccountConfirm").onclick = async () => {
 
 // --- Account Management & Google Sign-In ---
 
+function setPfpElement(el, pictureUrl, initial) {
+    if (!el) return;
+    if (!pictureUrl) {
+        el.textContent = initial;
+        el.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        const existingImg = el.querySelector('img');
+        if (existingImg) existingImg.remove();
+        return;
+    }
+    const testImg = new Image();
+    testImg.onload = () => {
+        el.textContent = "";
+        el.style.background = "none";
+        let img = el.querySelector('img');
+        if (!img) {
+            img = document.createElement('img');
+            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;position:absolute;top:0;left:0;';
+            img.draggable = false;
+            el.style.position = 'relative';
+            el.style.overflow = 'hidden';
+            el.appendChild(img);
+        }
+        img.src = pictureUrl;
+    };
+    testImg.onerror = () => {
+        el.textContent = initial;
+        el.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
+        const existingImg = el.querySelector('img');
+        if (existingImg) existingImg.remove();
+    };
+    testImg.src = pictureUrl;
+}
+
 async function updateUserProfile(newName, newPicture) {
     const userInfo = await DB.get("userInfo", {});
     userInfo.name = newName;
@@ -3765,19 +3781,8 @@ async function updateUserProfile(newName, newPicture) {
     const userIcon = document.getElementById("userIcon");
     
     if (accName) accName.textContent = newName;
-    
-    const updateEl = (el) => {
-        if (!el) return;
-        if (userInfo.picture) {
-            el.textContent = "";
-            el.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
-        } else {
-            el.textContent = initial;
-            el.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
-        }
-    };
-    updateEl(accAvatar);
-    updateEl(userIcon);
+    setPfpElement(accAvatar, userInfo.picture, initial);
+    setPfpElement(userIcon, userInfo.picture, initial);
 }
 
 const editNameBtn = document.getElementById("editNameBtn");
@@ -3821,13 +3826,7 @@ function updatePfpPreview() {
     userInfo.then(info => {
         const name = info.name || "User";
         const initial = name.charAt(0).toUpperCase();
-        if (info.picture && pfpPreview) {
-            pfpPreview.textContent = "";
-            pfpPreview.style.background = `url('${info.picture}') center/cover no-repeat`;
-        } else if (pfpPreview) {
-            pfpPreview.textContent = initial;
-            pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
-        }
+        setPfpElement(pfpPreview, info.picture, initial);
         if (pfpRemoveContainer) pfpRemoveContainer.style.display = info.picture ? 'block' : 'none';
         if (pfpGoogleContainer) pfpGoogleContainer.style.display = info.googleId ? 'block' : 'none';
     });
@@ -3840,15 +3839,7 @@ if (accAvatar) {
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name || "User";
         const initial = name.charAt(0).toUpperCase();
-        if (pfpPreview) {
-            if (userInfo.picture) {
-                pfpPreview.textContent = "";
-                pfpPreview.style.background = `url('${userInfo.picture}') center/cover no-repeat`;
-            } else {
-                pfpPreview.textContent = initial;
-                pfpPreview.style.background = "linear-gradient(135deg, #007bff, #0056b3)";
-            }
-        }
+        setPfpElement(pfpPreview, userInfo.picture, initial);
         if (pfpRemoveContainer) pfpRemoveContainer.style.display = userInfo.picture ? 'block' : 'none';
         if (pfpGoogleContainer) pfpGoogleContainer.style.display = userInfo.googleId ? 'block' : 'none';
         if (pfpModal) pfpModal.style.display = 'flex';

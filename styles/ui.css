@@ -506,6 +506,8 @@ body.dark .action-btn:hover {
   font-size: 2.5rem;
   margin: 0 auto 15px auto;
   font-weight: bold;
+  overflow: hidden;
+  position: relative;
 }
 
 #accountName {

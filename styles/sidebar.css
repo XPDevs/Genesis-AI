@@ -371,6 +371,11 @@ body.dark .chat-item:hover {
   height: 40px;
   border-radius: 50%;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
 }
 
 .genesis-sidebar.collapsed #settingsBtn {
