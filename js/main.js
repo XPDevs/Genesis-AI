@@ -1608,7 +1608,8 @@ function renderWikiHeader(div, msg) {
         if (msg.externalUrl) {
             const siteBtn = document.createElement('button');
             const domain = new URL(msg.externalUrl).hostname.replace('www.', '');
-            siteBtn.innerHTML = `<img src="https://www.google.com/s2/favicons?sz=32&domain=${domain}" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;" onerror="this.style.display='none'">Open ${domain}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+            const logoSrc = msg.externalLogoUrl || `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+            siteBtn.innerHTML = `<img src="${logoSrc}" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px;" onerror="this.src='https://www.google.com/s2/favicons?sz=32&domain=${domain}';this.onerror=null;">Open ${domain}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:6px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
             siteBtn.style.cssText = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:8px;background:rgba(255,152,0,0.12);color:var(--text);font-size:0.85em;cursor:pointer;border:1px solid rgba(255,152,0,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:all .2s;margin-left:8px;';
             siteBtn.onmouseenter = () => siteBtn.style.background = 'rgba(255,152,0,0.2)';
             siteBtn.onmouseleave = () => siteBtn.style.background = 'rgba(255,152,0,0.12)';
@@ -2059,16 +2060,63 @@ async function fetchPageImages(pageTitle, maxImages = 8) {
 
 async function fetchWikiExternalUrl(pageTitle) {
     try {
-        const slug = pageTitle.replace(/ /g, '_');
-        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(slug)}`;
-        const res = await fetch(url, {
+        const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=text&format=json&origin=*`;
+        const res = await fetch(parseUrl, {
             headers: { 'User-Agent': 'GenesisAI/1.0 (wiki@genesis-ai)' }
         });
         if (!res.ok) return null;
         const data = await res.json();
-        if (data.external_urls && data.external_urls.official) return data.external_urls.official;
-        if (data.originalimage && data.originalimage.source) return null;
-        return null;
+        const html = data.parse?.text?.['*'];
+        if (!html) return null;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        let websiteUrl = null;
+        let logoUrl = null;
+
+        // Find the infobox
+        const infobox = doc.querySelector('.infobox, .infobox.biography, .infobox.vcard');
+        if (infobox) {
+            // Find "Website" row in the infobox
+            const rows = infobox.querySelectorAll('tr');
+            for (const row of rows) {
+                const th = row.querySelector('th');
+                const td = row.querySelector('td');
+                if (th && td) {
+                    const label = th.textContent.trim().toLowerCase();
+                    if (label === 'website' || label === 'websites') {
+                        const link = td.querySelector('a[href]');
+                        if (link && link.href) {
+                            websiteUrl = link.href;
+                        } else {
+                            const text = td.textContent.trim();
+                            if (text.startsWith('http')) websiteUrl = text;
+                        }
+                    }
+                }
+            }
+
+            // Get logo from infobox image
+            const img = infobox.querySelector('img');
+            if (img && img.src) {
+                logoUrl = img.src;
+            }
+        }
+
+        // Fallback: look for external links in the page
+        if (!websiteUrl) {
+            const extLinks = doc.querySelectorAll('.external.text');
+            for (const link of extLinks) {
+                const href = link.href;
+                if (href && !href.includes('wikipedia.org') && !href.includes('wikimedia.org') && !href.includes('wiki')) {
+                    websiteUrl = href;
+                    break;
+                }
+            }
+        }
+
+        return { websiteUrl, logoUrl };
     } catch {
         return null;
     }
@@ -2193,21 +2241,25 @@ function extractXPDevsSection(wikiText, query) {
     return sections.find(s => s.title === 'XPDevs')?.content || sections[0]?.content || null;
 }
 
-async function fetchXPDevsSummary(query) {
+async function fetchXPDevsSummary(query, shortened = false) {
     const wikiText = await loadXPDevsWiki();
     if (!wikiText) return null;
 
-    const content = extractXPDevsSection(wikiText, query);
-    if (!content) return null;
-
-    const cleaned = content
-        .replace(/\s*\(accessed \d+ \w+ \d{4}\)/g, '')
-        .replace(/\[?\d+\]?/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+    let text;
+    if (!shortened) {
+        text = wikiText;
+    } else {
+        const content = extractXPDevsSection(wikiText, query);
+        if (!content) return null;
+        text = content
+            .replace(/\s*\(accessed \d+ \w+ \d{4}\)/g, '')
+            .replace(/\[?\d+\]?/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
 
     return {
-        text: cleaned,
+        text,
         title: 'XPDevs',
         imageUrl: null,
         wikiUrl: null,
@@ -2329,8 +2381,10 @@ async function fetchWikipediaSummary(topic) {
         // Remove ellipsis (...) from truncated text
         extract = extract.replace(/\u2026|\.{3,}/g, '');
         if (!extract) return null;
-        const externalUrl = await fetchWikiExternalUrl(pageTitle);
-        return { text: extract, title: pageTitle, imageUrl, wikiUrl, externalUrl };
+        const wikiInfo = await fetchWikiExternalUrl(pageTitle);
+        const externalUrl = wikiInfo?.websiteUrl || null;
+        const externalLogoUrl = wikiInfo?.logoUrl || null;
+        return { text: extract, title: pageTitle, imageUrl, wikiUrl, externalUrl, externalLogoUrl };
     } catch (error) {
         console.error(`Wikipedia failed for '${topic}':`, error);
         return null;
@@ -2552,8 +2606,9 @@ async function findResponses(input, history) {
           chatBox.scrollTop = chatBox.scrollHeight;
 
           let wikiResult;
+          const shortenedPre = (await DB.get("shortenedAnswers")) === "true";
           if (isXPDevsQuery(query)) {
-              wikiResult = await fetchXPDevsSummary(query);
+              wikiResult = await fetchXPDevsSummary(query, shortenedPre);
           } else {
               wikiResult = await fetchWikipediaSummary(query);
           }
@@ -2561,7 +2616,7 @@ async function findResponses(input, history) {
 
           if (wikiResult) {
               const { text: cleanText, title: pageTitle, imageUrl, wikiUrl, isXPDevs, externalUrl, externalLogoUrl } = wikiResult;
-              const shortened = (await DB.get("shortenedAnswers")) === "true";
+              const shortened = shortenedPre;
               let wikiImageDataUrls = [];
               if (!shortened && !isXPDevs) {
                   const imageUrls = await fetchPageImages(pageTitle);
@@ -2728,8 +2783,9 @@ async function findResponses(input, history) {
             }
             
             let wikiResult;
+            const shortenedPre = (await DB.get("shortenedAnswers")) === "true";
             if (isXPDevsQuery(decodedInput)) {
-                wikiResult = await fetchXPDevsSummary(decodedInput);
+                wikiResult = await fetchXPDevsSummary(decodedInput, shortenedPre);
             } else {
                 wikiResult = await fetchWikipediaSummary(decodedInput);
             }
@@ -2739,7 +2795,7 @@ async function findResponses(input, history) {
             
             if (wikiResult) {
                 const { text: cleanText, title: pageTitle, imageUrl, wikiUrl, isXPDevs, externalUrl, externalLogoUrl } = wikiResult;
-                const shortened = (await DB.get("shortenedAnswers")) === "true";
+                const shortened = shortenedPre;
                 let wikiImageDataUrls = [];
                 if (!shortened && !isXPDevs) {
                     const imageUrls = await fetchPageImages(pageTitle);
