@@ -2043,7 +2043,7 @@ let xpdevsWikiCache = null;
 async function loadXPDevsWiki() {
     if (xpdevsWikiCache) return xpdevsWikiCache;
     try {
-        const res = await fetch('XPDevs-wiki.txt?v=' + Date.now());
+        const res = await fetch('js/XPDevs-wiki.txt?v=' + Date.now());
         if (!res.ok) return null;
         xpdevsWikiCache = await res.text();
         return xpdevsWikiCache;
@@ -2109,55 +2109,51 @@ function extractXPDevsSection(wikiText, query) {
     }
 
     const lines = wikiText.split('\n');
+    const sepRegex = /^[=\-~]{10,}\s*$/;
     let sections = [];
-    let currentSection = null;
-    let currentContent = [];
+    let currentTitle = null;
+    let currentLines = [];
+
+    function flushSection() {
+        if (currentTitle !== null) {
+            const content = currentLines.join('\n').trim();
+            if (content.length > 30) {
+                sections.push({ title: currentTitle, content });
+            }
+        }
+    }
 
     for (const line of lines) {
         const trimmed = line.trim();
-        const sectionMatch = trimmed.match(/^(\d+(?:\.\d+)*)\.\s+(.+)/);
-        const subSectionMatch = trimmed.match(/^(\d+\.\d+(?:\.\d+)*)\s+(.+)/);
-        const headerMatch = trimmed.match(/^(~{3,}|={3,}|-{3,})\s*$/);
-
-        if (sectionMatch || subSectionMatch) {
-            if (currentSection) {
-                sections.push({ title: currentSection, content: currentContent.join('\n').trim() });
-            }
-            currentSection = (sectionMatch || subSectionMatch)[2].trim();
-            currentContent = [];
-        } else if (trimmed && !headerMatch && !trimmed.match(/^\d+$/) && !trimmed.match(/^Categories:/) && !trimmed.match(/^This article/) && !trimmed.match(/^================================================================================$/) && !trimmed.match(/^--------------------------------------------------------------------------------$/) && !trimmed.match(/^Contents$/)) {
-            currentContent.push(line);
-        }
+        if (sepRegex.test(trimmed)) continue;
+        if (/^Contents$/i.test(trimmed)) { flushSection(); currentTitle = 'Contents'; currentLines = []; continue; }
+        const m = trimmed.match(/^(\d+(?:\.\d+)*)\.\s+(.+)/);
+        if (m) { flushSection(); currentTitle = m[2].trim(); currentLines = []; continue; }
+        if (currentTitle === null && trimmed.length > 0) { currentTitle = 'XPDevs'; }
+        if (trimmed.length > 0) currentLines.push(line);
     }
-    if (currentSection) {
-        sections.push({ title: currentSection, content: currentContent.join('\n').trim() });
-    }
+    flushSection();
 
     if (matchedSection) {
         const found = sections.find(s => s.title.toLowerCase().includes(matchedSection.toLowerCase()));
-        if (found && found.content.length > 50) return found.content;
+        if (found) return found.content;
     }
 
-    const queryWords = lower.split(/\s+/).filter(w => w.length > 3);
+    const queryWords = lower.split(/\s+/).filter(w => w.length > 2);
     let bestSection = null;
     let bestScore = 0;
     for (const section of sections) {
+        if (section.title === 'Contents') continue;
         const sectionLower = (section.title + ' ' + section.content).toLowerCase();
         let score = 0;
         for (const word of queryWords) {
-            if (sectionLower.includes(word)) score += (section.title.toLowerCase().includes(word) ? 5 : 1);
+            if (sectionLower.includes(word)) score += (section.title.toLowerCase().includes(word) ? 10 : 1);
         }
-        if (score > bestScore) {
-            bestScore = score;
-            bestSection = section;
-        }
+        if (score > bestScore) { bestScore = score; bestSection = section; }
     }
-    if (bestSection && bestScore > 0 && bestSection.content.length > 50) return bestSection.content;
+    if (bestSection && bestScore > 0) return bestSection.content;
 
-    const introSection = sections.find(s => s.title === 'XPDevs');
-    if (introSection && introSection.content.length > 50) return introSection.content;
-
-    return sections.length > 0 ? sections[0].content : null;
+    return sections.find(s => s.title === 'XPDevs')?.content || sections[0]?.content || null;
 }
 
 async function fetchXPDevsSummary(query) {
