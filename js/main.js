@@ -2037,6 +2037,150 @@ async function fetchPageImages(pageTitle, maxImages = 8) {
     }
 }
 
+// --- XPDevs LOCAL WIKI ---
+let xpdevsWikiCache = null;
+
+async function loadXPDevsWiki() {
+    if (xpdevsWikiCache) return xpdevsWikiCache;
+    try {
+        const res = await fetch('XPDevs-wiki.txt?v=' + Date.now());
+        if (!res.ok) return null;
+        xpdevsWikiCache = await res.text();
+        return xpdevsWikiCache;
+    } catch (e) {
+        console.error('Failed to load XPDevs wiki:', e);
+        return null;
+    }
+}
+
+function isXPDevsQuery(text) {
+    const lower = text.toLowerCase();
+    return /\bxpdevs?\b|\bgenesis[\s-]*ai\b|\bdoors[\s-]*os\b|\bexam[\s-]*os\b|\bnex[\s-]*shell\b|\bjames\s+turner\b/.test(lower);
+}
+
+function extractXPDevsSection(wikiText, query) {
+    const lower = query.toLowerCase().replace(/[?.,!;:]+$/g, '').trim();
+
+    const topicMap = [
+        { keywords: ['genesis', 'genesis-ai', 'genesis ai', 'ai platform', 'artificial intelligence', 'genesis studio', 'genesis ai studio'], section: 'Genesis-AI' },
+        { keywords: ['door', 'doorsos', 'door-os', 'door os', 'flagship'], section: 'DoorsOS' },
+        { keywords: ['exam', 'examos', 'exam-os', 'exam os', 'education', 'school', 'assessment'], section: 'ExamOS' },
+        { keywords: ['kernel', 'nexshell', 'nex-shell', 'nex shell', 'basekernel'], section: 'NexShell Kernel' },
+        { keywords: ['retroboot', 'retro-boot', 'uefi', 'bios'], section: 'RetroBoot' },
+        { keywords: ['webvm', 'vm', 'virtual', 'boxedwine', 'exe'], section: 'WebVM' },
+        { keywords: ['netshield', 'adblock', 'ad block'], section: 'NetShield' },
+        { keywords: ['nodechat', 'chat', 'peer-to-peer', 'messaging'], section: 'NodeChat' },
+        { keywords: ['hostly', 'host', 'hosting'], section: 'Hostly' },
+        { keywords: ['lm-studio', 'image search', 'mcp'], section: 'LM-Studio-Search' },
+        { keywords: ['aimi', 'programming language'], section: 'aimi' },
+        { keywords: ['xjs', 'javascript variant'], section: 'XJS' },
+        { keywords: ['paral', '3d', 'three.js'], section: 'Paral' },
+        { keywords: ['windows10', 'windows 10', 'web simulation'], section: 'Windows10' },
+        { keywords: ['macos', 'mac os'], section: 'MacOS' },
+        { keywords: ['auraos', 'aura os'], section: 'AuraOS' },
+        { keywords: ['chess', 'game'], section: 'chess' },
+        { keywords: ['undertale'], section: 'Undertale' },
+        { keywords: ['hue', 'mood', 'art'], section: 'Hue' },
+        { keywords: ['url', 'shorten', 'tinyurl'], section: 'URL' },
+        { keywords: ['gateway', 'search engine'], section: 'gateway' },
+        { keywords: ['beta', 'tester', 'testing'], section: 'Beta Programme' },
+        { keywords: ['eula', 'legal', 'rules', 'licence', 'license', 'terms'], section: 'Legal Framework' },
+        { keywords: ['contact', 'email', 'support'], section: 'Community and Contact' },
+        { keywords: ['philosophy', 'mission', 'open source', 'privacy', 'free'], section: 'Philosophy and Mission' },
+        { keywords: ['history', 'founded', 'founding', 'origin'], section: 'History' },
+        { keywords: ['technical', 'language', 'programming', 'infrastructure'], section: 'Technical Infrastructure' },
+        { keywords: ['website', 'account', 'feedback'], section: 'Website and Online Presence' },
+        { keywords: ['cmd', 'command'], section: 'CMD' },
+        { keywords: ['foresight'], section: 'Foresight' },
+        { keywords: ['beluma'], section: 'Beluma' },
+        { keywords: ['genvid', 'video'], section: 'Genvid' },
+        { keywords: ['audionoise', 'audio'], section: 'AudioNoise' },
+        { keywords: ['xmrig', 'miner', 'crypto'], section: 'xmrigC' },
+        { keywords: ['scanner', 'codebase'], section: 'A-bad-codebase-scanner' },
+        { keywords: ['studio', 'xpdevs-studio'], section: 'XPDevs-Studio' },
+    ];
+
+    let matchedSection = null;
+    for (const { keywords, section } of topicMap) {
+        if (keywords.some(kw => lower.includes(kw))) {
+            matchedSection = section;
+            break;
+        }
+    }
+
+    const lines = wikiText.split('\n');
+    let sections = [];
+    let currentSection = null;
+    let currentContent = [];
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const sectionMatch = trimmed.match(/^(\d+(?:\.\d+)*)\.\s+(.+)/);
+        const subSectionMatch = trimmed.match(/^(\d+\.\d+(?:\.\d+)*)\s+(.+)/);
+        const headerMatch = trimmed.match(/^(~{3,}|={3,}|-{3,})\s*$/);
+
+        if (sectionMatch || subSectionMatch) {
+            if (currentSection) {
+                sections.push({ title: currentSection, content: currentContent.join('\n').trim() });
+            }
+            currentSection = (sectionMatch || subSectionMatch)[2].trim();
+            currentContent = [];
+        } else if (trimmed && !headerMatch && !trimmed.match(/^\d+$/) && !trimmed.match(/^Categories:/) && !trimmed.match(/^This article/) && !trimmed.match(/^================================================================================$/) && !trimmed.match(/^--------------------------------------------------------------------------------$/) && !trimmed.match(/^Contents$/)) {
+            currentContent.push(line);
+        }
+    }
+    if (currentSection) {
+        sections.push({ title: currentSection, content: currentContent.join('\n').trim() });
+    }
+
+    if (matchedSection) {
+        const found = sections.find(s => s.title.toLowerCase().includes(matchedSection.toLowerCase()));
+        if (found && found.content.length > 50) return found.content;
+    }
+
+    const queryWords = lower.split(/\s+/).filter(w => w.length > 3);
+    let bestSection = null;
+    let bestScore = 0;
+    for (const section of sections) {
+        const sectionLower = (section.title + ' ' + section.content).toLowerCase();
+        let score = 0;
+        for (const word of queryWords) {
+            if (sectionLower.includes(word)) score += (section.title.toLowerCase().includes(word) ? 5 : 1);
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestSection = section;
+        }
+    }
+    if (bestSection && bestScore > 0 && bestSection.content.length > 50) return bestSection.content;
+
+    const introSection = sections.find(s => s.title === 'XPDevs');
+    if (introSection && introSection.content.length > 50) return introSection.content;
+
+    return sections.length > 0 ? sections[0].content : null;
+}
+
+async function fetchXPDevsSummary(query) {
+    const wikiText = await loadXPDevsWiki();
+    if (!wikiText) return null;
+
+    const content = extractXPDevsSection(wikiText, query);
+    if (!content) return null;
+
+    const cleaned = content
+        .replace(/\s*\(accessed \d+ \w+ \d{4}\)/g, '')
+        .replace(/\[?\d+\]?/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return {
+        text: cleaned,
+        title: 'XPDevs',
+        imageUrl: null,
+        wikiUrl: 'https://xpdevs.github.io/'
+    };
+}
+
 async function fetchWikipediaSummary(topic) {
     const questionPrefixes = [
         "how to", "what is", "who is", "where is", "when is", "why is",
@@ -2370,7 +2514,12 @@ async function findResponses(input, history) {
           document.getElementById('chatBox')?.appendChild(spinnerDiv);
           chatBox.scrollTop = chatBox.scrollHeight;
 
-          const wikiResult = await fetchWikipediaSummary(query);
+          let wikiResult;
+          if (isXPDevsQuery(query)) {
+              wikiResult = await fetchXPDevsSummary(query);
+          } else {
+              wikiResult = await fetchWikipediaSummary(query);
+          }
           if (spinnerDiv.parentNode) spinnerDiv.remove();
 
           if (wikiResult) {
@@ -2541,7 +2690,12 @@ async function findResponses(input, history) {
               chatBox.scrollTop = chatBox.scrollHeight;
             }
             
-            const wikiResult = await fetchWikipediaSummary(decodedInput);
+            let wikiResult;
+            if (isXPDevsQuery(decodedInput)) {
+                wikiResult = await fetchXPDevsSummary(decodedInput);
+            } else {
+                wikiResult = await fetchWikipediaSummary(decodedInput);
+            }
             
             // Remove spinner
             if (spinnerDiv.parentNode) spinnerDiv.remove();
