@@ -1,0 +1,1247 @@
+================================================================================
+                              XPDevs
+================================================================================
+
+XPDevs is a small indie technology company and open-source software development
+project founded and primarily operated by James Turner, based in the United
+Kingdom. The project focuses on the development of operating systems, artificial
+intelligence platforms, web-based applications, and low-level systems
+programming tools, with a core emphasis on privacy, simplicity, accessibility,
+and the belief that all software should be free. All software produced by XPDevs
+is released under free and open-source licences.
+
+The project maintains a public presence on GitHub, where it hosts over 55
+repositories encompassing operating system kernels, browser-based virtual
+machines, artificial intelligence platforms, ad-blocking browser extensions,
+chat applications, URL shorteners, programming language experiments, and a
+variety of web-based simulations and utilities. As of July 2026, the GitHub
+account has attracted 6 followers and 15 starred repositories across its
+portfolio.[1]
+
+XPDevs also maintains an official website at xpdevs.github.io, hosted via
+GitHub Pages, which serves as the central hub for product information, software
+downloads, beta programme enrolment, and user feedback collection.[2]
+
+--------------------------------------------------------------------------------
+Contents
+--------------------------------------------------------------------------------
+
+  1. History
+     1.1 Founding and Early Development
+     1.2 Transition to Kernel-Level Development
+     1.3 Expansion into Artificial Intelligence
+     1.4 Current Status
+  2. Philosophy and Mission
+     2.1 Open-Source Commitment
+     2.2 Privacy-First Design
+     2.3 Simplicity and Accessibility
+     2.4 Transparency
+     2.5 Free Software Ethos
+  3. Products and Projects
+     3.1 Operating Systems
+         3.1.1 DoorsOS
+         3.1.2 ExamOS
+     3.2 Artificial Intelligence Platforms
+         3.2.1 Genesis-AI
+         3.2.2 Genesis AI Studio
+     3.3 Kernel and Low-Level Development
+         3.3.1 NexShell Kernel
+         3.3.2 RetroBoot
+     3.4 Browser-Based Virtualisation
+         3.4.1 WebVM
+         3.4.2 VirtualDoors
+     3.5 Privacy and Security Tools
+         3.5.1 NetShield
+         3.5.2 NodeChat
+     3.6 Web Hosting and URL Services
+         3.6.1 Hostly
+         3.6.2 URL
+     3.7 Artificial Intelligence and Machine Learning Tools
+         3.7.1 LM-Studio-Image-Search
+     3.8 Programming Language Experiments
+         3.8.1 aimi
+         3.8.2 XJS
+     3.9 Web-Based Operating System Simulations
+         3.9.1 Windows10 (Web)
+         3.9.2 MacOS (Web)
+         3.9.3 AuraOS
+     3.10 Web Applications and Games
+         3.10.1 chess
+         3.10.2 Undertale (Web Remake)
+         3.10.3 Hue
+     3.11 Developer Tools and Libraries
+         3.11.1 Paral
+         3.11.2 A-bad-codebase-scanner
+         3.11.3 gateway
+         3.11.4 XPDevs-Studio
+         3.11.5 Genvid
+         3.11.6 CMD
+         3.11.7 Foresight
+         3.11.8 Beluma
+     3.12 Forked and Community Projects
+         3.12.1 AudioNoise
+         3.12.2 xmrigC
+  4. Technical Infrastructure
+     4.1 Programming Languages
+     4.2 Hosting and Deployment
+     4.3 Licensing
+  5. Website and Online Presence
+     5.1 Official Website
+     5.2 Account System
+     5.3 Beta Programme
+     5.4 Feedback System
+  6. Legal Framework
+     6.1 Rules and Guidelines
+     6.2 End User Licence Agreement
+     6.3 Privacy Policy
+  7. Community and Contact
+     7.1 Contact Channels
+     7.2 Community Engagement
+  8. See Also
+  9. References
+  10. External Links
+
+--------------------------------------------------------------------------------
+1. History
+--------------------------------------------------------------------------------
+
+1.1 Founding and Early Development
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs was established on 21 May 2024, when the project's primary GitHub
+account was created under the username "XPDevs."[1] The project was founded by
+James Turner, a developer based in the United Kingdom, who describes his
+interests as "making my own operating systems, doing html and just some random
+weird projects I sometimes use everyday."[1]
+
+The project's earliest repositories consisted primarily of web-based
+experiments and proof-of-concept interfaces. Among the first notable projects
+were web-based simulations of mainstream operating systems, including HTML
+recreations of Windows 10 and MacOS, which demonstrated Turner's interest in
+operating system design and user interface emulation. These early projects laid
+the groundwork for XPDevs' later transition into actual operating system
+development.
+
+The project's initial website was hosted at the repository Doors-Operating-
+System, which contained a single HTML file serving as the project's landing
+page.[3] This was subsequently replaced by a more comprehensive website hosted
+at xpdevs.github.io, built with a full navigation system, product pages, and
+account functionality.[2]
+
+1.2 Transition to Kernel-Level Development
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A significant turning point in XPDevs' development trajectory came with the
+creation of NexShell, a custom operating system kernel written in C and
+Assembly.[4] NexShell was based on the open-source basekernel project created
+by David Thain (dthain) at the University of Wisconsin-Madison, which provides
+a minimal educational kernel framework.[5]
+
+XPDevs extended and optimised basekernel to create a kernel suitable for
+production use in its operating systems. The NexShell repository contains 18
+commits and is structured into the following directories: DOCS (documentation),
+include (header files), kernel (kernel source code), library (support
+libraries), and user (user-space programs).[4] The kernel is written
+predominantly in C (95.6%) with a small amount of Assembly code (3.8%) and
+Makefile build scripts (0.6%).[4]
+
+This transition from purely web-based demonstrations to kernel-level
+development marked a maturation of the project's ambitions, establishing the
+technical foundation for both DoorsOS and ExamOS.
+
+1.3 Expansion into Artificial Intelligence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In 2025 and 2026, XPDevs expanded its scope significantly with the development
+of Genesis-AI, an experimental web-based artificial intelligence platform.[6]
+This represented the project's first major foray into artificial intelligence
+and marked a shift toward privacy-focused, client-side computing.
+
+The Genesis-AI project became the most actively developed repository in the
+XPDevs portfolio, accumulating over 1,024 commits as of July 2026.[6] The
+platform's development was accompanied by the creation of Genesis AI Studio, a
+more advanced interface designed for power users and content creators.[7]
+
+1.4 Current Status
+~~~~~~~~~~~~~~~~~~~
+
+As of July 2026, XPDevs maintains 55 public repositories on GitHub, with
+development activity spanning operating systems, artificial intelligence,
+web applications, browser extensions, and experimental programming tools.[1]
+The project continues active development across multiple fronts, with recent
+commits indicating ongoing work on the Genesis-AI platform, the NexShell
+kernel, and various utility projects.
+
+The project has established a formal rules and EULA framework, a beta
+testing programme, and dedicated contact channels for customer support and
+custom software enquiries.[8][9]
+
+--------------------------------------------------------------------------------
+2. Philosophy and Mission
+--------------------------------------------------------------------------------
+
+2.1 Open-Source Commitment
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs operates under a firmly held open-source philosophy. The project's
+founder has publicly stated:
+
+    "I don't think anyone should have to pay for software, so everything from
+    XPDevs is and will always be free and open source. Thanks for checking out
+    my work and for being part of a different way of thinking about technology.
+    I believe it should be simple, open, and made with care."[2]
+
+All source code for XPDevs projects is publicly available on GitHub, and the
+NexShell kernel is released under the GNU General Public License v2.0.[4] The
+Genesis-AI platform includes its own LICENSE.md file governing source code
+usage, with a separate custom licence covering the hosted live service.[6]
+
+2.2 Privacy-First Design
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A central tenet of XPDevs' design philosophy is privacy. The Genesis-AI
+platform, for example, runs entirely within the user's browser, with no
+backend servers processing conversations.[6] The project states:
+
+    "No chat logs or user data stored or shared (unless you sign in, and even
+    then it's minimal). Everything runs in your browser session. No external
+    databases, trackers, or analytics. It is private by default and ephemeral
+    by design."[6]
+
+This philosophy extends to other projects such as NodeChat, which enables
+peer-to-peer messaging without requiring a centralised server, and ExamOS,
+which is designed to operate in a completely locked-down, offline
+environment.[10][11]
+
+2.3 Simplicity and Accessibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs explicitly designs its software to be accessible to users of all
+experience levels. DoorsOS, the project's flagship operating system, is
+designed to "run smoothly on low-end hardware while still delivering a
+full-featured experience, with a minimal footprint and clean interface."[12]
+The project avoids "unnecessary complexity" in favour of "clean, secure
+code."[2]
+
+This principle is articulated in the Genesis-AI design philosophy, which
+states three rules:
+
+    1. "Clarity: If someone has to squint to understand it, it is not done."
+    2. "Control: You own your data and your interactions."
+    3. "Simplicity: If it does not make things better, it does not belong."[6]
+
+2.4 Transparency
+~~~~~~~~~~~~~~~~
+
+XPDevs emphasises transparency in both its development process and its
+software architecture. The Genesis-AI platform, for instance, uses structured
+JSON files as its "brain," which are human-readable and easily editable by
+users.[6] The project describes this approach as:
+
+    "A different take on lightweight AI that uses plain JSON files to define
+    how the AI behaves, instead of relying on big machine learning models...
+    It's about seeing how far you can get with simple, transparent, client-
+    side logic using structured data and JavaScript with no neural networks or
+    black boxes in sight."[6]
+
+2.5 Free Software Ethos
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs operates a zero-cost distribution model for all its software. The
+project offers free downloads of all operating system builds, provides
+Genesis-AI as a free web-based service, and releases all source code under
+open-source licences.[2] The project also provides free website hosting
+through its Hostly service.[13]
+
+For organisations requiring custom software development, XPDevs offers
+bespoke development services through a dedicated contact channel.[2]
+
+--------------------------------------------------------------------------------
+3. Products and Projects
+--------------------------------------------------------------------------------
+
+3.1 Operating Systems
+---------------------
+
+XPDevs has developed two primary operating systems, both built upon the custom
+NexShell kernel. These represent the project's most ambitious technical
+undertakings, moving from web-based demonstrations to functional operating
+system development.
+
+3.1.1 DoorsOS
+~~~~~~~~~~~~~~
+
+DoorsOS is the flagship operating system of XPDevs, described as "redefining
+simplicity, speed, and accessibility in computing."[12] It is designed for
+users of all experience levels, from students and hobbyists to developers and
+professionals.
+
+Key features and characteristics:
+
+    * Minimal footprint and clean interface
+    * Optimised performance on low-end hardware
+    * Native shell commands via NexShell kernel
+    * Custom programs and low-level system enhancements
+    * Bootable ISO format for physical installation
+    * Experimental mouse cursor support (introduced in build 2101261104)
+    * Boot screen and main screen in text mode via NexShell
+
+DoorsOS has undergone multiple development builds. The latest builds
+introduce experimental mouse cursor support, though this feature remains in
+early development and may exhibit instability as refinement continues.[2]
+The operating system is distributed as a bootable ISO image and can also be
+run in a web browser through the VirtualDoors project.[14]
+
+The DoorsOS project includes both the operating system itself and a
+comprehensive product page on the XPDevs website featuring screenshots of
+the NexShell main screen (text mode), boot screen, and a visual
+demonstration of the operating system in use.[12]
+
+3.1.2 ExamOS
+~~~~~~~~~~~~~
+
+ExamOS is a specialised secure operating system designed for educational
+institutions, tailored specifically for use during examinations and
+assessments.[11] It represents a unique niche product in the operating system
+landscape, addressing the specific needs of educational integrity.
+
+Key features and characteristics:
+
+    * Password-protected boot process preventing unauthorised access
+    * Controlled text editor environment for exam responses
+    * Complete lockdown of external programs, internet, and system functions
+    * Disabled keyboard shortcuts and system-level interactions
+    * Session logging for comprehensive audit purposes
+    * Optimised for reliability on low-end educational hardware
+    * Built on NexShell kernel for tight low-level control and minimal
+      attack surface
+
+ExamOS boots directly into a secure text editor where students can compose
+answers but cannot access any external resources. The system is designed to
+prevent both early exits and tampering, with only authorised administrators
+able to unlock the system using the correct password.[11]
+
+The operating system is designed for use in scenarios ranging from mock
+examinations to full-scale national assessments, providing confidence that
+students remain focused and that exam integrity is maintained throughout
+each session.
+
+3.2 Artificial Intelligence Platforms
+--------------------------------------
+
+3.2.1 Genesis-AI
+~~~~~~~~~~~~~~~~
+
+Genesis-AI is an experimental, web-based artificial intelligence platform
+created by XPDevs.[6] It represents the project's most actively developed
+repository, with over 1,024 commits as of July 2026. The platform is
+distinguished by its emphasis on privacy, running entirely within the user's
+browser without requiring backend servers or cloud processing.
+
+The platform uses a fundamentally different approach from traditional AI
+systems. Rather than relying on neural networks or machine learning models,
+Genesis-AI employs structured response systems using JSON files as its
+"model" definition.[6] This makes the system transparent, auditable, and
+fully client-side.
+
+Core capabilities:
+
+    * Natural Language Processing — Local language understanding and context
+      matching without server communication. The system reads JSON model
+      files containing keywords, questions, answers, context triggers, and
+      personality settings, then matches user input against patterns to
+      generate responses.[6]
+
+    * Visual Generation — An integrated diffusion pipeline generates images
+      directly on the user's device from text prompts, providing creative
+      freedom without cloud dependencies.[6]
+
+    * Content Analysis — Detection capabilities for AI-generated content
+      in both images and text, accessible via the @ImgAuth and @txtauth
+      special commands.[6]
+
+    * Knowledge Retrieval — Secure fetching and automatic summarisation of
+      Wikipedia articles for general knowledge queries. Summaries are
+      automatically reduced to 60% of original length with a concluding
+      sentence.[6]
+
+    * Chat Management — Full conversation management including creation,
+      renaming, deletion, pinning, and sharing via unique links.[6]
+
+    * Text-to-Speech — Built-in text-to-speech functionality for reading
+      responses aloud.[6]
+
+    * Mathematical Capabilities — Built-in calculator functionality and
+      KaTeX rendering for LaTeX formula display.[6]
+
+    * Theming — Light mode, dark mode, and automatic time-of-day switching,
+      with responsive layouts for both desktop and mobile devices.[6]
+
+    * Safety System — A tiered graduated ban system for content policy
+      violations, with automatic message deletion and warning modals.[6]
+
+The Genesis-AI repository is structured with the following directories:
+developers (developer resources), docs (documentation), images (visual
+assets), js (JavaScript source code), legal (terms and policies), modals
+(UI modal components), status (system status), and styles (CSS).[6]
+
+Technical specifications:
+
+    * Primary language: JavaScript (61.7%)
+    * Markup: HTML (33.0%)
+    * Styling: CSS (5.3%)
+    * Authentication: Optional Google sign-in for session persistence
+    * Storage: IndexedDB for local data persistence
+    * Model format: JSON files with configurable response patterns
+    * Licence: Custom licence for hosted service; LICENSE.md for source code
+
+3.2.2 Genesis AI Studio
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Genesis AI Studio is an expanded, power-user variant of the Genesis-AI
+platform, designed for content creators and professional users who require
+more granular control over AI interactions and outputs.[7] It builds upon
+the core Genesis-AI engine but provides additional interfaces for advanced
+control over behaviour and output.
+
+Additional features beyond standard Genesis-AI:
+
+    * Advanced Parameter Controls — Fine-tune generation parameters
+      including steps, guidance scales, and seed values for precise,
+      reproducible results.[7]
+
+    * Project Management — Organise conversations and generations within
+      dedicated project spaces for workflow management.[7]
+
+    * Batch Processing — Generate multiple variations of images or text
+      analyses in a single queue operation.[7]
+
+    * Deep Inspection — Analyse token probabilities and generation metadata
+      for deeper insights into system behaviour.[7]
+
+    * Export Tools — Export data in JSON, PNG, or raw text formats for
+      external use and integration with other tools.[7]
+
+    * Asset Management — View, compare, and export generated content with
+      organisational tools.[7]
+
+Both Genesis-AI and Genesis AI Studio require user authentication for access.
+By using either platform, users agree to the platform's Terms of Service and
+Privacy Policy.[6][7]
+
+3.3 Kernel and Low-Level Development
+-------------------------------------
+
+3.3.1 NexShell Kernel
+~~~~~~~~~~~~~~~~~~~~~~
+
+NexShell is the custom open-source kernel developed by XPDevs, serving as the
+foundational layer for both DoorsOS and ExamOS.[4] It represents the project's
+most technically demanding work, operating at the lowest level of system
+software.
+
+NexShell is based on the basekernel project by David Thain, an educational
+kernel framework originally developed at the University of Wisconsin-Madison.[5]
+XPDevs has extended and optimised this foundation to create a kernel suitable
+for use in the XPDevs ecosystem of operating systems.
+
+Key technical features:
+
+    * Outstanding Performance — Optimised for high efficiency across a wide
+      range of applications and workloads.[15]
+
+    * Advanced Security — Built-in robust security features designed to
+      protect systems against emerging threats and vulnerabilities.[15]
+
+    * Scalability — Efficiently scales from personal devices to large-scale
+      enterprise environments to handle diverse computing needs.[15]
+
+    * Flexibility — Modular design allowing for customisation and adaptation,
+      providing a versatile solution for various use cases.[15]
+
+    * Open Source — Released under the GNU General Public License v2.0,
+      welcoming community contributions and modifications.[4]
+
+Repository structure:
+
+    * DOCS/ — Documentation files for kernel development and usage
+    * include/ — Header files defining kernel interfaces and data structures
+    * kernel/ — Core kernel source code implementing process management,
+      memory management, and system calls
+    * library/ — Support libraries providing higher-level abstractions
+    * user/ — User-space programs and utilities that run on top of the kernel
+
+Language composition:
+
+    * C: 95.6% — Primary implementation language for kernel and user-space
+    * Assembly: 3.8% — Low-level boot code and hardware interface routines
+    * Makefile: 0.6% — Build system configuration
+
+The kernel has accumulated 18 commits as of July 2026 and has received 1
+star on GitHub.[4]
+
+3.3.2 RetroBoot
+~~~~~~~~~~~~~~~
+
+RetroBoot is a lightweight compatibility layer written in C, designed to bridge
+the gap between modern UEFI firmware and legacy BIOS-based operating systems.[16]
+It enables older operating systems that expect a traditional BIOS environment
+to boot and run on modern UEFI hardware without any modification to the
+operating system itself.
+
+Technical operation:
+
+    1. Boot Environment Detection — The application determines whether the
+       system is running in BIOS compatibility mode or native UEFI mode.[16]
+
+    2. BIOS Mode Handling — If the system is already operating in BIOS mode,
+       RetroBoot displays a message indicating that the compatibility layer
+       is unnecessary and safely halts.[16]
+
+    3. UEFI Mode Initialisation — When running under UEFI, RetroBoot begins
+       preparing a minimal BIOS-like execution environment.[16]
+
+    4. Legacy Boot Emulation — The program loads the legacy boot code and
+       provides the expected runtime conditions required for BIOS-based
+       operating systems.[16]
+
+    5. Operating System Handoff — Control is passed to the legacy OS
+       bootloader, allowing it to continue the boot process as if it were
+       running on a traditional BIOS system.[16]
+
+Design principles:
+
+    * Compatibility First — Legacy operating systems should run without
+      modification whenever possible.[16]
+    * Minimalism — Lightweight and easy to understand, avoiding unnecessary
+      complexity.[16]
+    * Transparency — The boot process should remain clear and predictable
+      for developers, hobbyists, and system researchers.[16]
+    * Hardware Preservation — Many older operating systems become unusable on
+      modern hardware; RetroBoot aims to help keep them accessible.[16]
+
+Use cases include running older operating systems on modern machines, OS
+development and testing, studying legacy boot processes, preserving historical
+software environments, and experimenting with firmware-level compatibility
+layers.[16]
+
+RetroBoot is currently in early development and is written in C (98.0%) with
+Makefile build scripts (2.0%).[16]
+
+3.4 Browser-Based Virtualisation
+--------------------------------
+
+3.4.1 WebVM
+~~~~~~~~~~~~
+
+WebVM is a collection of virtual machines accessible entirely through web
+browsers, forked from the lrusso/WinAppRunner project.[17] It represents one
+of XPDevs' most popular repositories, having accumulated 9 stars and 5 forks
+as of July 2026.
+
+The tool allows users to run Windows .exe files directly in their browser
+using a modified version of BoxedWine, a WebAssembly-based emulator.[17]
+
+Key features:
+
+    * Drag and Drop Support — Users can drag and drop .exe or .zip files
+      containing executables directly into the browser interface.[17]
+    * File Selection — Alternative file selection via standard file input
+      buttons.[17]
+    * Executable Launch — Launch selected executables with a single button
+      click within the virtual environment.[17]
+    * Zip File Handling — Automatic extraction of .exe files from uploaded
+      .zip archives.[17]
+    * Cross-Platform Support — Runs on any operating system with a modern
+      web browser, including Windows, Linux, macOS, and mobile devices.[17]
+
+The repository contains 98 commits and includes a comprehensive set of files:
+the core WinAppRunner system (HTML, JavaScript, WebAssembly binary), a VM
+directory containing the virtual machine configuration, an hfix directory
+for hotfixes, and various supporting files including icons, favicons, and
+download pages.[17]
+
+Technical specifications:
+
+    * Primary language: HTML (94.8%)
+    * Secondary language: JavaScript (5.2%)
+    * Emulation: BoxedWine (WebAssembly-based)
+    * Licence: MIT License
+
+Known limitations include performance overhead from browser-based emulation,
+incomplete compatibility with all Windows applications, and potential file
+size restrictions imposed by browser environments.[17]
+
+3.4.2 VirtualDoors
+~~~~~~~~~~~~~~~~~~~
+
+VirtualDoors is a fork of the lrusso/VirtualXP project that enables DoorsOS
+to run as a virtual machine within a web browser.[18] This allows users to
+experience the DoorsOS operating system without requiring physical hardware
+or creating bootable media. The project serves as both a demonstration of
+DoorsOS capabilities and a testing platform for development builds.
+
+3.5 Privacy and Security Tools
+------------------------------
+
+3.5.1 NetShield
+~~~~~~~~~~~~~~~~
+
+NetShield is a JavaScript-based browser extension designed to function as an
+ad blocker.[19] The project is described by its creator as "a very bad but
+semi-functional adblocker," though it represents a functional privacy tool
+with a structured architecture.
+
+The extension is built using the WebExtensions API and includes the following
+components:
+
+    * css/ — Stylesheet files for the extension interface
+    * filters/ — Ad-blocking filter lists defining blocking rules
+    * icons/ — Extension icons in various sizes
+    * js/ — Core JavaScript logic for content filtering and blocking
+    * legal/ — Legal notices and licence information
+    * blocked.html — Displayed page when a request is blocked
+    * homepage.html — Extension homepage and welcome screen
+    * manifest.json — WebExtensions manifest defining permissions and
+      configuration
+    * popup.html — Browser action popup interface
+    * settings.html — User configuration and settings page
+
+Language composition:
+
+    * JavaScript: 62.4%
+    * HTML: 22.2%
+    * CSS: 15.4%
+
+NetShield has one published release (V1) dated 19 June 2026.[19]
+
+3.5.2 NodeChat
+~~~~~~~~~~~~~~~
+
+NodeChat is a peer-to-peer chat platform designed to enable messaging between
+users without requiring a centralised server.[10] All communications remain
+private and local, aligning with XPDevs' privacy-first design philosophy.
+
+The platform is built with the following technology stack:
+
+    * CSS: 62.5% — Interface styling and layout
+    * Python: 19.4% — Backend processing and networking logic
+    * HTML: 18.1% — Page structure and markup
+
+The repository includes css/ (stylesheets), icon/ (application icons), and
+js/ (client-side JavaScript) directories alongside the main index.html file.[10]
+
+3.6 Web Hosting and URL Services
+---------------------------------
+
+3.6.1 Hostly
+~~~~~~~~~~~~~
+
+Hostly is a free website hosting service provided by XPDevs, enabling users
+to host websites at no cost.[13] The service is implemented as a simple
+HTML-based application with the following structure:
+
+    * index.html — Main landing page and service interface
+    * host.html — Website hosting configuration and upload interface
+    * 404.html — Custom error page for non-existent hosted sites
+
+The service is accessible at xpdevs.github.io/Hostly and represents XPDevs'
+commitment to providing free technology services.[13]
+
+3.6.2 URL
+~~~~~~~~~~
+
+URL is a URL shortening service developed by XPDevs, providing an alternative
+to commercial services such as TinyURL.[20] The service is implemented in
+HTML and allows users to create shortened versions of long URLs for easier
+sharing and distribution.
+
+3.7 Artificial Intelligence and Machine Learning Tools
+------------------------------------------------------
+
+3.7.1 LM-Studio-Search
+~~~~~~~~~~~~~~~~~~~~~~~
+
+LM-Studio-Image-Search is a Model Context Protocol (MCP) server that enables
+language models running in LM Studio to search the web for images and display
+them directly in chat responses.[21] It represents XPDevs' most recent
+repository as of July 2026, created on 3 July 2026.
+
+The server searches DuckDuckGo for images without requiring an API key,
+downloads and resizes results, and returns them inline in LM Studio
+conversations.[21]
+
+Configuration within LM Studio:
+
+    {
+      "mcpServers": {
+        "XPDevs/image-search": {
+          "command": "node",
+          "args": ["/full/path/to/image-search-mcp/dist/index.js"]
+        }
+      }
+    }
+
+Tool parameters:
+
+    * query (required) — Search description for image retrieval
+    * count (optional, 1-10, default 1) — Number of images to return
+    * site (optional) — Restrict search to a specific domain
+    * width (optional, default 800) — Output width in pixels
+    * height (optional, default 800) — Output height in pixels
+
+Technical specifications:
+
+    * Primary language: TypeScript (100%)
+    * Dependencies: Node.js (bundled with LM Studio)
+    * Licence: MIT License
+    * Release: v1.0.0 (3 July 2026)
+
+3.8 Programming Language Experiments
+-------------------------------------
+
+3.8.1 aimi
+~~~~~~~~~~~
+
+aimi is an experimental programming language described as "the language of C
+but giving the dev more control."[22] The project represents XPDevs'
+exploration into programming language design and implementation, though the
+repository is currently empty of source code as of July 2026, suggesting
+the project is in its earliest conceptual stages.
+
+3.8.2 XJS
+~~~~~~~~~~
+
+XJS is a custom variant of JavaScript developed by XPDevs, designed to be
+"easily interchangeable" with standard JavaScript.[23] The project aims to
+provide a modified syntax or feature set while maintaining compatibility
+with the existing JavaScript ecosystem. XJS is implemented entirely in
+JavaScript and is hosted in a repository that also contains supporting
+HTML files.
+
+3.9 Web-Based Operating System Simulations
+-------------------------------------------
+
+XPDevs has created several web-based simulations of mainstream operating
+systems using HTML, CSS, and JavaScript. These projects serve as both
+educational demonstrations and technical experiments in web-based interface
+design.
+
+3.9.1 Windows10 (Web)
+~~~~~~~~~~~~~~~~~~~~~~
+
+Windows10 is an HTML-based recreation of the Microsoft Windows 10 user
+interface, designed to run entirely within a web browser.[24] The project
+has accumulated 1 star and 2 forks on GitHub, making it one of the more
+popular XPDevs repositories.[24]
+
+3.9.2 MacOS (Web)
+~~~~~~~~~~~~~~~~~~
+
+MacOS is an HTML-based recreation of the Apple macOS user interface.[25] The
+repository description notes that if Apple wishes the project to be removed,
+they should contact XPDevs through their website.[25]
+
+3.9.3 AuraOS
+~~~~~~~~~~~~~
+
+AuraOS is an operating system interface project contained in a dedicated
+repository.[26] The project provides an alternative operating system
+interface design implemented in HTML.
+
+3.10 Web Applications and Games
+--------------------------------
+
+3.10.1 chess
+~~~~~~~~~~~~~
+
+chess is a web-based chess application described by its creator as "a very
+bad chess website."[27] Despite the self-deprecating description, the
+project represents a functional chess game implementation using HTML.
+
+3.10.2 Undertale (Web Remake)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Undertale is a work-in-progress recreation of the complete Undertale video
+game, implemented entirely in HTML, CSS, and JavaScript.[28] The project
+aims to recreate the full game experience within a web browser environment
+without requiring any plugins or external dependencies.
+
+3.10.3 Hue
+~~~~~~~~~~~
+
+Hue is a creative web application that generates small artistic images based
+on the user's moods for a given week, using colours selected by the
+user.[29] The application serves as a mood-tracking visual diary,
+translating emotional states into abstract visual representations.
+
+3.11 Developer Tools and Libraries
+-----------------------------------
+
+3.11.1 Paral
+~~~~~~~~~~~~~
+
+Paral is a JavaScript 3D graphics library built upon the THREE.js
+framework.[30] It provides additional abstractions and utilities for 3D
+rendering and scene management, extending THREE.js with XPDevs-specific
+functionality and optimisations.
+
+3.11.2 A-bad-codebase-scanner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A-bad-codebase-scanner is a code analysis tool written in C, designed to
+scan and analyse codebases for patterns and potential issues.[31] The project
+description acknowledges that the tool is not fully functional, stating "this
+was supposed to be working but i kinda doesnt if you want to modify it you
+can freely."[31]
+
+3.11.3 gateway
+~~~~~~~~~~~~~~
+
+gateway is a basic search engine implementation developed by XPDevs.[32]
+The project is implemented in JavaScript and represents an experiment in
+search engine design and web indexing.
+
+3.11.4 XPDevs-Studio
+~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs-Studio is the official XPDevs studio website, providing a web-based
+interface for project presentation and management.[33] The site is built
+entirely in HTML.
+
+3.11.5 Genvid
+~~~~~~~~~~~~~
+
+Genvid is a video generation experiment described as "TEST" in the repository
+description.[34] The project is implemented in JavaScript and represents
+exploratory work in browser-based video creation.
+
+3.11.6 CMD
+~~~~~~~~~~~
+
+CMD is a command-line interface simulation implemented in HTML.[35] The
+project recreates a terminal-like environment within a web browser,
+providing a familiar interface for users accustomed to command-line
+interaction.
+
+3.11.7 Foresight
+~~~~~~~~~~~~~~~~~
+
+Foresight is an HTML-based project whose specific functionality is not
+detailed in the repository description.[36]
+
+3.11.8 Beluma
+~~~~~~~~~~~~~
+
+Beluma is an additional web-based project by XPDevs, accessible at
+xpdevs.github.io/Beluma.[37]
+
+3.12 Forked and Community Projects
+-----------------------------------
+
+3.12.1 AudioNoise
+~~~~~~~~~~~~~~~~~~
+
+AudioNoise is a fork of the torvalds/AudioNoise project, providing random
+digital audio effects processing.[38] The project is written in C and
+released under the GNU General Public License v2.0.
+
+3.12.2 xmrigC
+~~~~~~~~~~~~~~~
+
+xmrigC is a fork of the xmrig/xmrig cryptocurrency mining project, recoded
+entirely in C.[39] It supports RandomX, KawPow, CryptoNight, and GhostRider
+algorithms for unified CPU/GPU mining and RandomX benchmarking. The project
+is released under the GNU General Public License v3.0.
+
+--------------------------------------------------------------------------------
+4. Technical Infrastructure
+--------------------------------------------------------------------------------
+
+4.1 Programming Languages
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs develops software using a diverse range of programming languages and
+technologies:
+
+    * C — Kernel development (NexShell), low-level systems programming
+      (RetroBoot), code analysis tools (A-bad-codebase-scanner), audio
+      processing (AudioNoise), and cryptocurrency mining (xmrigC)
+    * JavaScript — Web applications (Genesis-AI, gateway, NetShield),
+      browser-based tools, 3D libraries (Paral), and client-side logic
+    * TypeScript — AI/ML tooling (LM-Studio-Image-Search)
+    * HTML/CSS — Website development (xpdevs.github.io), web simulations
+      (Windows10, MacOS), user interfaces, and extension markup (NetShield)
+    * Python — Backend processing and networking (NodeChat)
+    * Assembly — Low-level kernel boot code and hardware interfaces
+      (NexShell)
+
+4.2 Hosting and Deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All XPDevs web content is hosted via GitHub Pages at xpdevs.github.io.[2]
+This includes:
+
+    * Main project website and navigation
+    * Product pages for DoorsOS, ExamOS, Genesis-AI, and NexShell
+    * Download pages for operating system builds
+    * Account system and beta programme enrolment
+    * Feedback submission system
+    * Individual project pages (WebVM, Hostly, etc.)
+
+Source code is version-controlled and publicly hosted on GitHub under the
+XPDevs account.[1]
+
+4.3 Licensing
+~~~~~~~~~~~~~
+
+XPDevs applies different licences to different projects:
+
+    * NexShell Kernel — GNU General Public License v2.0[4]
+    * RetroBoot — Not specified in repository
+    * WebVM — MIT License[17]
+    * LM-Studio-Image-Search — MIT License[21]
+    * AudioNoise — GNU General Public License v2.0 (inherited from
+      upstream)[38]
+    * xmrigC — GNU General Public License v3.0 (inherited from upstream)[39]
+    * Genesis-AI — Custom licence for hosted service; LICENSE.md for
+      source code[6]
+    * Other projects — Various open-source licences or unspecified
+
+The XPDevs website itself is governed by a custom End User Licence Agreement
+and Rules and Guidelines document.[8][9]
+
+--------------------------------------------------------------------------------
+5. Website and Online Presence
+--------------------------------------------------------------------------------
+
+5.1 Official Website
+~~~~~~~~~~~~~~~~~~~~~
+
+The official XPDevs website is located at xpdevs.github.io and is hosted via
+GitHub Pages.[2] The site features a responsive design with navigation
+elements including:
+
+    * About Us — Company philosophy and mission statement
+    * Preview — Sneak peek of upcoming projects
+    * Contact — Support and custom software enquiry forms
+    * Product Pages — Dedicated pages for DoorsOS, ExamOS, Genesis-AI
+    * Downloads — Central download hub for all operating system builds
+    * Rules — Legal framework and EULA
+    * Beta Programme — Tester enrolment and information
+    * Kernel — NexShell documentation and technical details
+    * Feedback — User feedback submission system
+    * Account System — User registration and authentication
+
+The website displays the XPDevs logo (both vertical and horizontal
+typography versions) and includes a download dropdown menu, product
+navigation links, and a footer with copyright notice and legal links.[2]
+
+5.2 Account System
+~~~~~~~~~~~~~~~~~~~
+
+XPDevs provides a user account system accessible through the website,
+featuring:
+
+    * Sign Up / Sign In functionality
+    * User icon and account management interface
+    * Integration with Genesis-AI for optional Google authentication
+    * Session persistence via IndexedDB for local data storage
+
+5.3 Beta Programme
+~~~~~~~~~~~~~~~~~~
+
+XPDevs operates a formal beta testing programme for early access to new
+features and operating system builds.[9] Benefits for beta testers include:
+
+    * Early Access — First access to latest features and improvements
+    * Influence Development — Direct impact on product refinement
+    * Skill Enhancement — Valuable software testing experience
+    * Exclusive Rewards — Access to exclusive rewards and recognition
+    * Community — Joining a community of technology enthusiasts
+
+Enrolment requires completing an application form with personal details and
+experience information, followed by email confirmation with further
+instructions.[9]
+
+5.4 Feedback System
+~~~~~~~~~~~~~~~~~~~~
+
+XPDevs maintains a dedicated feedback submission system on its website,
+enabling users to provide constructive input on all aspects of the project's
+products and services.[8]
+
+--------------------------------------------------------------------------------
+6. Legal Framework
+--------------------------------------------------------------------------------
+
+XPDevs has established a comprehensive legal framework governing the use of
+its website, services, and software products.[8][9]
+
+6.1 Rules and Guidelines
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The XPDevs Rules and Guidelines document establishes standards for user
+conduct across all project interactions.[8] Key provisions include:
+
+    * Code of Conduct — Requirements for respectful, professional, and
+      inclusive behaviour in all communications.[8]
+    * Privacy Policy — Protections for personal information and data
+      security, with explicit prohibitions against unauthorised data
+      sharing.[8]
+    * Terms of Use — Compliance requirements, account responsibility, and
+      restrictions on automated tool usage.[8]
+    * User Content — Guidelines for appropriate, respectful, and lawful
+      content, with explicit prohibitions against hate speech, pornographic
+      material, and spam.[8]
+    * Prohibited Activities — Bans on illegal activities, unauthorised
+      access attempts, and malware distribution.[8]
+    * Dispute Resolution — Processes for handling disputes under United
+      Kingdom jurisdiction, specifically the laws of England and Wales.[8]
+
+6.2 End User Licence Agreement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The XPDevs EULA governs access to and use of the XPDevs website and its
+content.[8] Key terms include:
+
+    * Limited, non-exclusive, non-transferable, revocable licence for
+      personal or internal business use only.[8]
+    * Prohibition on copying, modifying, distributing, or creating
+      derivative works without permission.[8]
+    * Prohibition on reverse-engineering, decompiling, or disassembling
+      website content.[8]
+    * "AS IS" and "AS AVAILABLE" warranty disclaimer.[8]
+    * Limitation of liability for indirect, incidental, special,
+      consequential, punitive, or exemplary damages.[8]
+    * Governing law under the laws of England and Wales.[8]
+
+6.3 Privacy Policy
+~~~~~~~~~~~~~~~~~~~
+
+The XPDevs privacy policy, integrated within the Rules and Guidelines
+document, establishes that:[8]
+
+    * Personal information sharing without consent is prohibited.[8]
+    * Unauthorised access to, misuse of, or distribution of personal or
+      company data is prohibited.[8]
+    * XPDevs will never share user data with third parties without explicit
+      consent.[8]
+
+--------------------------------------------------------------------------------
+7. Community and Contact
+--------------------------------------------------------------------------------
+
+7.1 Contact Channels
+~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs maintains the following official contact channels:
+
+    * General Customer Support: xpdevs.github.io.com@gmail.com
+    * Custom Software Enquiries: xpdevsclient@gmail.com
+    * GitHub: https://github.com/XPDevs
+    * Official Website: https://xpdevs.github.io/
+    * Hugging Face: https://huggingface.co/XPDevs
+
+The project also provides feedback submission through its website and
+maintains a beta programme for engaged community members.[2][9]
+
+7.2 Community Engagement
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+XPDevs encourages community contributions to its open-source projects,
+stating in its Rules and Guidelines that "significant contributions to
+XPDevs projects may be acknowledged publicly, with your consent."[8] The
+NexShell kernel repository specifically welcomes community contributions
+through the standard GitHub fork-and-pull-request workflow.[4]
+
+The project maintains 6 followers on GitHub and encourages user engagement
+through its beta programme, feedback system, and open-source contribution
+guidelines.[1]
+
+--------------------------------------------------------------------------------
+8. See Also
+--------------------------------------------------------------------------------
+
+    * Open-source operating systems
+    * Free and open-source software
+    * Privacy-focused software
+    * Web-based operating systems
+    * Browser-based artificial intelligence
+    * Client-side computing
+    * JSON-based configuration systems
+    * UEFI compatibility layers
+    * Educational operating systems
+    * WebAssembly emulation
+    * Model Context Protocol (MCP)
+
+--------------------------------------------------------------------------------
+9. References
+--------------------------------------------------------------------------------
+
+[1]   GitHub. "XPDevs (James Turner) — Profile." GitHub, Inc.
+      https://github.com/XPDevs (accessed 15 July 2026).
+
+[2]   XPDevs. "Welcome to XPDevs." XPDevs.
+      https://xpdevs.github.io/ (accessed 15 July 2026).
+
+[3]   GitHub. "Doors-Operating-System — This is the old website for the
+      XPDevs website." GitHub, Inc.
+      https://github.com/XPDevs/Doors-Operating-System (accessed
+      15 July 2026).
+
+[4]   GitHub. "NexShell — NexShell Source Code." GitHub, Inc.
+      https://github.com/XPDevs/NexShell (accessed 15 July 2026).
+
+[5]   GitHub. "dthain/basekernel." GitHub, Inc.
+      https://github.com/dthain/basekernel (accessed 15 July 2026).
+
+[6]   GitHub. "Genesis-AI — This is the official website for the Genesis AI
+      made by XPDevs." GitHub, Inc.
+      https://github.com/XPDevs/Genesis-AI (accessed 15 July 2026).
+
+[7]   XPDevs. "Genesis AI Studio — Unleashed." XPDevs.
+      https://xpdevs.github.io/Genesis-AI/Studio (accessed 15 July 2026).
+
+[8]   XPDevs. "Rules & EULA — Public Rules and Guidelines / End User
+      Licence Agreement." XPDevs. https://xpdevs.github.io/rules
+      (accessed 15 July 2026).
+
+[9]   XPDevs. "Beta Programme — Help Shape the Future of XPDevs Operating
+      Systems." XPDevs. https://xpdevs.github.io/beta (accessed
+      15 July 2026).
+
+[10]  GitHub. "NodeChat — A Chat Platform That Allows You to Message
+      Others Without Requiring a Server." GitHub, Inc.
+      https://github.com/XPDevs/NodeChat (accessed 15 July 2026).
+
+[11]  XPDevs. "ExamOS — Secure. Simple. Purpose-Built for Education."
+      XPDevs. https://xpdevs.github.io/ExamOS (accessed 15 July 2026).
+
+[12]  XPDevs. "DoorsOS — Redefining Simplicity, Speed, and Accessibility
+      in Computing." XPDevs. https://xpdevs.github.io/Doors (accessed
+      15 July 2026).
+
+[13]  GitHub. "Hostly — Host Any Website for Free." GitHub, Inc.
+      https://github.com/XPDevs/Hostly (accessed 15 July 2026).
+
+[14]  GitHub. "VirtualDoors — DoorsOS VM Running in Browser." GitHub, Inc.
+      https://github.com/XPDevs/VirtualDoors (accessed 15 July 2026).
+
+[15]  XPDevs. "Our Custom Kernel — NexShell." XPDevs.
+      https://xpdevs.github.io/kernel (accessed 15 July 2026).
+
+[16]  GitHub. "RetroBoot — Allows BIOS Based OS to Run on UEFI Based PCs
+      Only Without Modification." GitHub, Inc.
+      https://github.com/XPDevs/RetroBoot (accessed 15 July 2026).
+
+[17]  GitHub. "WebVM — Collection of VMs for a Variety of Devices All in
+      the Web Browser." GitHub, Inc.
+      https://github.com/XPDevs/WebVM (accessed 15 July 2026).
+
+[18]  GitHub. "VirtualDoors — DoorsOS VM Running in Browser (Forked from
+      lrusso/VirtualXP)." GitHub, Inc.
+      https://github.com/XPDevs/VirtualDoors (accessed 15 July 2026).
+
+[19]  GitHub. "NetShield." GitHub, Inc.
+      https://github.com/XPDevs/NetShield (accessed 15 July 2026).
+
+[20]  GitHub. "URL — Shortens URLs Instead of Using Tiny URL." GitHub, Inc.
+      https://github.com/XPDevs/URL (accessed 15 July 2026).
+
+[21]  GitHub. "LM-Studio-Image-Search — A Simple MCP Server That Allows
+      Models Trained for Tool Use in LM Studio to Search the Web for
+      Images." GitHub, Inc.
+      https://github.com/XPDevs/LM-Studio-Image-Search (accessed
+      15 July 2026).
+
+[22]  GitHub. "aimi — The Language of C but Giving the Dev More Control."
+      GitHub, Inc. https://github.com/XPDevs/aimi (accessed 15 July 2026).
+
+[23]  GitHub. "XJS — XJS Is the Custom XPDevs Version of Normal JS
+      Allowing to Be Easily Interchangeable." GitHub, Inc.
+      https://github.com/XPDevs/XJS (accessed 15 July 2026).
+
+[24]  GitHub. "Windows10 — Windows 10 in the Web." GitHub, Inc.
+      https://github.com/XPDevs/Windows10 (accessed 15 July 2026).
+
+[25]  GitHub. "MacOS — MacOS in HTML." GitHub, Inc.
+      https://github.com/XPDevs/MacOS (accessed 15 July 2026).
+
+[26]  GitHub. "AuraOS — This Repo Contains the Code for the AuraOS
+      Interface." GitHub, Inc.
+      https://github.com/XPDevs/AuraOS (accessed 15 July 2026).
+
+[27]  GitHub. "chess — A Very Bad Chess Website." GitHub, Inc.
+      https://github.com/XPDevs/chess (accessed 15 July 2026).
+
+[28]  GitHub. "Undertale — Working in Progress to Make the Entire
+      UNDERTALE Game in Pure HTML CSS and JS." GitHub, Inc.
+      https://github.com/XPDevs/Undertale (accessed 15 July 2026).
+
+[29]  GitHub. "Hue — An App That Makes Small Images of Art Based on Your
+      Moods." GitHub, Inc. https://github.com/XPDevs/Hue (accessed
+      15 July 2026).
+
+[30]  GitHub. "Paral — Javascript 3D Library Built Upon THREE.js." GitHub,
+      Inc. https://github.com/XPDevs/Paral (accessed 15 July 2026).
+
+[31]  GitHub. "A-bad-codebase-scanner." GitHub, Inc.
+      https://github.com/XPDevs/A-bad-codebase-scanner (accessed
+      15 July 2026).
+
+[32]  GitHub. "gateway — A Simple Basic Search Engine." GitHub, Inc.
+      https://github.com/XPDevs/gateway (accessed 15 July 2026).
+
+[33]  GitHub. "XPDevs-Studio — XPDevs Studio Website." GitHub, Inc.
+      https://github.com/XPDevs/XPDevs-Studio (accessed 15 July 2026).
+
+[34]  GitHub. "Genvid — TEST." GitHub, Inc.
+      https://github.com/XPDevs/Genvid (accessed 15 July 2026).
+
+[35]  GitHub. "CMD." GitHub, Inc.
+      https://github.com/XPDevs/CMD (accessed 15 July 2026).
+
+[36]  GitHub. "Foresight." GitHub, Inc.
+      https://github.com/XPDevs/Foresight (accessed 15 July 2026).
+
+[37]  GitHub. "Beluma." GitHub, Inc.
+      https://github.com/XPDevs/Beluma (accessed 15 July 2026).
+
+[38]  GitHub. "AudioNoise (Forked from torvalds/AudioNoise) — Random
+      Digital Audio Effects." GitHub, Inc.
+      https://github.com/XPDevs/AudioNoise (accessed 15 July 2026).
+
+[39]  GitHub. "xmrigC (Forked from xmrig/xmrig) — RandomX, KawPow,
+      CryptoNight and GhostRider Unified CPU/GPU Miner Recoded All Into
+      C." GitHub, Inc.
+      https://github.com/XPDevs/xmrigC (accessed 15 July 2026).
+
+--------------------------------------------------------------------------------
+10. External Links
+--------------------------------------------------------------------------------
+
+    * Official website: https://xpdevs.github.io/
+    * GitHub organisation: https://github.com/XPDevs
+    * Hugging Face profile: https://huggingface.co/XPDevs
+    * DoorsOS product page: https://xpdevs.github.io/Doors
+    * ExamOS product page: https://xpdevs.github.io/ExamOS
+    * Genesis-AI platform: https://xpdevs.github.io/Genesis-AI
+    * Genesis AI Studio: https://xpdevs.github.io/Genesis-AI/Studio
+    * NexShell kernel documentation: https://xpdevs.github.io/kernel
+    * Downloads: https://xpdevs.github.io/download/OS-downloader
+    * Beta programme: https://xpdevs.github.io/beta
+    * Rules and EULA: https://xpdevs.github.io/rules
+    * Customer support: mailto:xpdevs.github.io.com@gmail.com
+    * Custom software enquiries: mailto:xpdevsclient@gmail.com
+
+--------------------------------------------------------------------------------
+This article is about a technology company. You can help improve this article
+by expanding it with additional sourced information.
+
+Categories: Technology companies established in 2024 | Open-source software
+companies | Operating system developers | Software companies of the United
+Kingdom | Privacy software | Free software companies | Artificial intelligence
+companies | Web browsers | Browser extensions | Virtualization software |
+Single-developer companies | Companies based in the United Kingdom
+================================================================================
