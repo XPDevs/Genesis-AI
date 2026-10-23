@@ -1265,7 +1265,8 @@ async function updateChatView() {
         const userInfo = await DB.get("userInfo", {});
         const name = userInfo.name ? userInfo.name.split(' ')[0] : 'User';
         const greetingResult = typeof getRandomGreeting === 'function' ? getRandomGreeting() : { text: 'Hello', appendName: false };
-        greetingEl.innerHTML = greetingResult.appendName ? `${greetingResult.text}, ${name}` : greetingResult.text;
+        const greetingText = greetingResult.appendName ? `${greetingResult.text}, ${name}` : greetingResult.text;
+        greetingEl.innerHTML = `<div class="greeting-brand"><img src="icon.png" alt="Genesis AI" class="greeting-logo"><span class="greeting-text">${greetingText}</span></div>`;
         const qaSetting = await DB.get("quickActionsEnabled", "false");
         if (qaSetting === "true" || qaSetting === "new") {
           greetingEl.innerHTML += `<div class="quick-actions"></div>`;
