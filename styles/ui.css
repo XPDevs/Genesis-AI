@@ -605,6 +605,26 @@ input:checked + .slider:before { transform: translateX(24px); }
   margin-bottom: 24px;
 }
 
+.greeting-brand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.greeting-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.greeting-text {
+  display: inline-block;
+}
+
 body.is-new-chat .chat-main {
   justify-content: center;
   align-items: center;
