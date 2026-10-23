@@ -1,106 +1,61 @@
 <!DOCTYPE html>
-<html lang="en-GB" style="background-color: #000;">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="icon.ico">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<title>Genesis AI - Under Maintenance</title>
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>404 - Page Not Found | Genesis-AI</title>
 <style>
-  html, body {
-    background-color: #000 !important;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: sans-serif;
-    overflow: hidden;
-  }
-
-  #maintenanceOverlay {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #fff;
-    z-index: 999999;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Inter', -apple-system, sans-serif;
-    text-align: center;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  #maintenanceOverlay .maint-icon-big {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 32px;
-  }
-  #maintenanceOverlay .brand-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  #maintenanceOverlay .brand-row img {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-  }
-  #maintenanceOverlay .brand-row span {
-    font-size: 16px;
-    font-weight: 500;
-    color: #6e6e73;
-  }
-  #maintenanceOverlay .maint-heading {
-    font-size: 1.8rem;
-    font-weight: 500;
-    color: #1f1f1f;
-    margin: 0 0 8px 0;
-  }
-  #maintenanceOverlay .maint-desc {
-    color: #6e6e73;
-    font-size: 16px;
-    margin: 0 0 32px 0;
-    line-height: 1.6;
-    max-width: 400px;
-  }
-  #maintenanceOverlay a {
-    background: #1a73e8;
-    color: #fff;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 24px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-  }
-  #maintenanceOverlay a:hover {
-    filter: brightness(0.9);
-    transform: translateY(-1px);
-  }
+:root { --bg:#ffffff; --text:#1f1f1f; --input-bg:#f0f4f9; --border:#dee2e6; --primary:#1a73e8; }
+body.dark { --bg:#000000; --text:#e3e3e3; --input-bg:#1e1f20; --border:#444746; }
+* { box-sizing: border-box; }
+body { margin:0; font-family:"Inter","Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; }
+.card { max-width:520px; }
+.code { font-size:5rem; font-weight:700; color:var(--primary); line-height:1; margin:0 0 12px; }
+h1 { font-size:1.6rem; margin:0 0 8px; }
+p { opacity:0.8; line-height:1.6; margin:0 0 24px; }
+a.btn { display:inline-block; background:var(--primary); color:#fff; text-decoration:none; padding:12px 24px; border-radius:20px; font-weight:500; }
+a.btn:hover { filter:brightness(0.9); }
 </style>
 </head>
 <body>
-  <div id="maintenanceOverlay">
-    <img src="https://xpdevs.github.io/Genesis-AI/images/maintenance-icon.png" alt="" class="maint-icon-big">
-    <h1 class="maint-heading">Under Maintenance</h1>
-    <p class="maint-desc">Genesis-AI is currently under maintenance. We appreciate your patience and will be back soon.</p>
-    <div class="brand-row">
-      <img src="https://xpdevs.github.io/Genesis-AI/icon.png" alt="">
-      <span>Genesis-AI</span>
-    </div>
-    <a href="status/Status.html">View Status &rarr;</a>
-  </div>
-  <script>
-    document.documentElement.style.backgroundColor = '#fff';
-  </script>
+<div class="card">
+  <div class="code">404</div>
+  <h1>Page not found</h1>
+  <p>The page you are looking for doesn't exist or may have been moved. Head back to the Genesis-AI home page to keep exploring.</p>
+  <a class="btn" href="https://xpdevs.github.io/Genesis-AI/">Go Home</a>
+  <p style="margin-top:20px;font-size:14px;"><a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" style="color:var(--primary);">Check Status</a></p>
+</div>
+<script>
+(function() {
+  var path = window.location.pathname.replace(/\/+$/, '');
+  var base = '/Genesis-AI';
+  var idx = path.indexOf(base);
+  var rel = idx >= 0 ? path.slice(idx + base.length) : path;
+  if (rel === '' || rel === '/') rel = '/index';
+  var map = {
+    '/chat': 'chat.html',
+    '/blog': 'blog/index.html',
+    '/index': 'index.html',
+    '/legal/terms-of-service': 'legal/terms-of-service.html',
+    '/legal/privacy-policy': 'legal/privacy-policy.html',
+    '/legal/setup': 'legal/setup.html',
+    '/status': 'status/Status.html',
+    '/developers/AI-Studio': 'developers/AI-Studio.html'
+  };
+  if (map[rel]) {
+    var target = base + '/' + map[rel] + window.location.search + window.location.hash;
+    window.location.replace(target);
+    return;
+  }
+  if (!rel.endsWith('.html')) {
+    window.location.replace(base + rel + '.html' + window.location.search + window.location.hash);
+    return;
+  }
+  const t = localStorage.getItem('genesis-landing-theme');
+  if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.body.classList.add('dark');
+})();
+</script>
 </body>
 </html>
