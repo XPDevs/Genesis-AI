@@ -664,7 +664,7 @@ const warningHtml = `
     <br>
     <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Privacy Policy</a> • 
     <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Terms Of Service</a> • 
-    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Status</a>
+    <a href="https://xpdevs.github.io/Genesis-AI/status/Status" target="_blank" style="color:var(--primary,#3b82f6);text-decoration:none;">Status</a>
   </div>`;
 
 // Function to update send button based on input content
@@ -876,7 +876,7 @@ function ensureBanModal() {
       <h2 id="banModalTitle">You have been banned</h2>
       <p id="banModalMessage">Reason: multiple violations of terms of service.</p>
       <p id="banModalCountdown" class="ban-countdown">Time left: calculating...</p>
-      <p class="ban-footer">Read our <a id="banTosLink" href="legal/terms-of-service.html" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
+      <p class="ban-footer">Read our <a id="banTosLink" href="legal/terms-of-service" target="_blank" rel="noopener">Terms of Service</a> for details.</p>
     </div>
   `;
   document.body.appendChild(modal);
@@ -4731,7 +4731,7 @@ window.addEventListener('app-ready', startApp);
         return;
       }
     }
-    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup.html";
+    window.location.href = "https://xpdevs.github.io/Genesis-AI/legal/setup";
     return;
   }
   initializeApp();

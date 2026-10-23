@@ -212,18 +212,18 @@
         <div class="checkbox-group">
             <input type="checkbox" id="tosCheckbox">
             <label for="tosCheckbox">
-                I have read and agree to the <a href="terms-of-service.html" target="_blank">Terms of Service</a>.
+                I have read and agree to the <a href="terms-of-service" target="_blank">Terms of Service</a>.
             </label>
         </div>
         <div class="checkbox-group">
             <input type="checkbox" id="ppCheckbox">
             <label for="ppCheckbox">
-                I have read and agree to the <a href="privacy-policy.html" target="_blank">Privacy Policy</a>.
+                I have read and agree to the <a href="privacy-policy" target="_blank">Privacy Policy</a>.
             </label>
         </div>
 
         <button class="btn" id="legalContinueBtn" disabled>Continue</button>
-        <a href="../index.html" class="back-link">&larr; Back</a>
+        <a href="../index" class="back-link">&larr; Back</a>
     </div>
 
     <div class="setup-card hidden" id="step2">
@@ -237,7 +237,7 @@
         <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off">
 
         <button class="btn" id="finishBtn">Finish Setup</button>
-        <a href="../index.html" class="back-link">&larr; Back</a>
+        <a href="../index" class="back-link">&larr; Back</a>
     </div>
     
     <script>
@@ -287,7 +287,7 @@
             if (name) {
                 await setAppState('userInfo', JSON.stringify({ name: name }));
                 await setAppState('SETUP', 'FLAG_TRUE');
-                window.location.href = '../chat.html';
+                window.location.href = '../chat';
             } else {
                 nameInput.focus();
             }
@@ -321,7 +321,7 @@
                         googleId: payload.sub
                     }));
                     await setAppState('SETUP', 'FLAG_TRUE');
-                    window.location.href = '../chat.html';
+                    window.location.href = '../chat';
                 }
             } catch (e) {
                 console.error("Error parsing Google credential", e);
