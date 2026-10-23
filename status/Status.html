@@ -426,7 +426,7 @@
 
     async function checkMaintenanceMode() {
         try {
-            const resp = await fetch('https://xpdevs.github.io/Genesis-AI/index.html');
+            const resp = await fetch('https://xpdevs.github.io/Genesis-AI/chat.html');
             if (!resp.ok) return { desktop: 0, mobile: 0 };
             const html = await resp.text();
             const desktopMatch = html.match(/const\s+DESKTOP_MAINTENANCE\s*=\s*(\d)/);

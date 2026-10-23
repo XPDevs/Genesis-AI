@@ -223,7 +223,7 @@
         </div>
 
         <button class="btn" id="legalContinueBtn" disabled>Continue</button>
-        <a href="../landing.html" class="back-link">&larr; Back</a>
+        <a href="../index.html" class="back-link">&larr; Back</a>
     </div>
 
     <div class="setup-card hidden" id="step2">
@@ -237,7 +237,7 @@
         <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off">
 
         <button class="btn" id="finishBtn">Finish Setup</button>
-        <a href="../landing.html" class="back-link">&larr; Back</a>
+        <a href="../index.html" class="back-link">&larr; Back</a>
     </div>
     
     <script>
@@ -287,7 +287,7 @@
             if (name) {
                 await setAppState('userInfo', JSON.stringify({ name: name }));
                 await setAppState('SETUP', 'FLAG_TRUE');
-                window.location.href = '../index.html';
+                window.location.href = '../chat.html';
             } else {
                 nameInput.focus();
             }
@@ -321,7 +321,7 @@
                         googleId: payload.sub
                     }));
                     await setAppState('SETUP', 'FLAG_TRUE');
-                    window.location.href = '../index.html';
+                    window.location.href = '../chat.html';
                 }
             } catch (e) {
                 console.error("Error parsing Google credential", e);

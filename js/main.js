@@ -3237,7 +3237,7 @@ function showShareModal(chatId) {
         shareLinkInput.disabled = true; copyShareLinkBtn.disabled = true; shareModal.style.display = "flex"; return;
     }
     const encoded = encodeChat(chat.messages);
-    const shareBaseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+    const shareBaseUrl = window.location.origin + window.location.pathname.replace('chat.html', '');
     shareLinkInput.value = `${shareBaseUrl}?q=${encoded}`;
     shareLinkInput.disabled = false; copyShareLinkBtn.disabled = false; shareModal.style.display = "flex";
 }
@@ -4570,6 +4570,23 @@ async function startApp() {
     }
     renderChatList();
     await renderMessages();
+
+    // Handle pending message from landing page chat bar
+    try {
+      const params = new URLSearchParams(window.location.search);
+      let pending = params.get('msg') || params.get('prompt') || params.get('message');
+      if (!pending) pending = sessionStorage.getItem('genesisPendingMessage');
+      if (pending) {
+        sessionStorage.removeItem('genesisPendingMessage');
+        userInput.value = pending;
+        updateSendButton && updateSendButton();
+        // remove param from URL without reload
+        const url = new URL(window.location.href);
+        url.searchParams.delete('msg'); url.searchParams.delete('prompt'); url.searchParams.delete('message');
+        window.history.replaceState({}, '', url.toString());
+        setTimeout(() => { sendMessage(); }, 100);
+      }
+    } catch (e) {}
 
     // Load web search preference from settings
     useWikipedia = await DB.get("useWikipedia", false);

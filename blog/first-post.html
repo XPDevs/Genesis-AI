@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Genesis-AI Blog - Welcome</title>
+<style>
+:root { --bg:#ffffff; --text:#1f1f1f; --input-bg:#f0f4f9; --border:#dee2e6; --primary:#1a73e8; }
+body.dark { --bg:#000000; --text:#e3e3e3; --input-bg:#1e1f20; --border:#444746; }
+* { box-sizing: border-box; }
+body { margin:0; font-family:"Inter","Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+.container { max-width:760px; margin:0 auto; padding:40px 24px; }
+a { color:var(--primary); text-decoration:none; }
+a:hover { text-decoration:underline; }
+h1 { font-size:2rem; margin:0 0 8px; }
+.meta { opacity:0.7; font-size:14px; margin-bottom:24px; }
+p { margin:0 0 16px; }
+.back { display:inline-block; margin-bottom:24px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="../index.html" class="back">&larr; Back to Genesis-AI</a>
+  <h1>Welcome to Genesis-AI</h1>
+  <div class="meta">Example blog post &middot; Genesis-AI</div>
+  <p>Genesis-AI is an experimental web-based AI platform that runs entirely in your browser. It uses structured JSON models instead of large neural networks, so you can read, edit, and understand how responses are generated.</p>
+  <p>This is an example blog post to demonstrate the blog section on the landing page. You can add more posts to the blog folder and link them from the landing page.</p>
+  <img src="../images/landing/homepage.png" alt="Genesis-AI screenshot" style="width:100%;border-radius:12px;border:1px solid var(--border);margin:16px 0;">
+  <p>Try the chat to see how pattern matching, Wikipedia lookups, and AI commands work together.</p>
+  <p><a href="../chat.html">Open the chat &rarr;</a></p>
+</div>
+<script>
+(function(){const t=localStorage.getItem('genesis-landing-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.body.classList.add('dark');})();
+</script>
+</body>
+</html>

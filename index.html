@@ -1,741 +1,593 @@
 <!DOCTYPE html>
-<html lang="en-GB" style="background-color: #000;">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<title>Genesis AI</title>
+<link rel="icon" type="image/x-icon" href="icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
+<title>Genesis-AI - Experimental Web-Based AI Platform</title>
 <style>
-  /* Immediate black-out and hide elements to prevent flash */
-  html, body { 
-    background-color: #000 !important; 
-    margin: 0; 
-    padding: 0; 
-    height: 100%;
-    font-family: sans-serif;
-    overflow: hidden;
-  }
-  body { visibility: hidden; }
-  .sidebar, .chat-main { display: none; }
+:root {
+  --bg: #ffffff;
+  --text: #1f1f1f;
+  --sidebar: #f0f4f9;
+  --content-bg: #ffffff;
+  --input-bg: #f0f4f9;
+  --border: #dee2e6;
+  --primary: #1a73e8;
+  --user-msg-bg: #f0f4f9;
+  --chat-bg: #ffffff;
+  --active-chat: #e2e7ed;
+  --active-item: #e2e7ed;
+  --modal-bg: #ffffff;
+}
+body.dark {
+  --bg: #000000;
+  --text: #e3e3e3;
+  --sidebar: #1e1f20;
+  --content-bg: #000000;
+  --chat-bg: #000000;
+  --input-bg: #1e1f20;
+  --border: #444746;
+  --user-msg-bg: #282a2c;
+  --active-chat: #333537;
+  --active-item: #333537;
+  --modal-bg: #1e1f20;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
 
-  /* Responsive Toggle visibility */
-  #sidebarToggle {
-    display: none; /* Hidden on desktop by default */
-    background: none; 
-    border: none; 
-    color: var(--text, #fff); 
-    cursor: pointer; 
-    padding: 0; 
-    margin-right: 15px; 
-    align-items: center;
-  }
+.topbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--content-bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 1000;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.topbar-brand img { width: 32px; height: 32px; border-radius: 8px; object-fit: contain; }
+.topbar-center { display: flex; gap: 8px; align-items: center; }
+.topbar-center a {
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+.topbar-center a:hover, .topbar-center a.active { background: var(--active-item); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.theme-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-btn:hover { background: rgba(128,128,128,0.1); opacity: 1; }
+.cta-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.cta-btn:hover { filter: brightness(0.9); transform: translateY(-1px); }
+.outline-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s ease;
+}
+.outline-btn:hover { background: var(--active-item); }
 
-  /* Mobile-specific overrides using Media Queries */
-  @media (max-width: 768px) {
-    #sidebarToggle {
-      display: flex;
-    }
-  }
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 24px 60px;
+  min-height: 70vh;
+}
+.hero-icon { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 24px; }
+.hero h1 { font-size: 2.8rem; font-weight: 700; margin: 0 0 12px; color: var(--text); letter-spacing: -0.02em; }
+.hero .tagline { font-size: 1.2rem; font-weight: 500; color: var(--primary); margin: 0 0 16px; }
+.hero p { max-width: 600px; font-size: 16px; line-height: 1.6; margin: 0 0 32px; opacity: 0.85; }
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
-  #suggestionBox {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    background: var(--input-bg, #222);
-    border: 1px solid var(--border, #444);
-    border-radius: 8px;
-    padding: 5px;
-    z-index: 1000;
-    margin-bottom: 5px;
-    min-width: 150px;
-  }
-  .suggestion-item {
-    padding: 8px 12px;
-    cursor: pointer;
-    color: var(--text, #fff);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .suggestion-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  .sidebar {
-    flex-direction: column;
-    height: 100%;
-  }
-  .chat-list {
-    flex-grow: 1;
-    overflow-y: auto;
-  }
-  #settingsBtn:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-  }
+.chat-bar {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 0 32px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 6px 6px 6px 18px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+body.dark .chat-bar { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.chat-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  padding: 10px 0;
+}
+.chat-bar button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.chat-bar button:hover { filter: brightness(0.9); transform: translateY(-1px); }
 
-  #maintenanceOverlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #fff;
-    z-index: 999999;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Inter', -apple-system, sans-serif;
-    text-align: center;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  #maintenanceOverlay .maint-icon-big {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 32px;
-  }
-  #maintenanceOverlay .brand-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  #maintenanceOverlay .brand-row img {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-  }
-  #maintenanceOverlay .brand-row span {
-    font-size: 16px;
-    font-weight: 500;
-    color: #6e6e73;
-  }
-  #maintenanceOverlay .maint-heading {
-    font-size: 1.8rem;
-    font-weight: 500;
-    color: #1f1f1f;
-    margin: 0 0 8px 0;
-  }
-  #maintenanceOverlay .maint-desc {
-    color: #6e6e73;
-    font-size: 16px;
-    margin: 0 0 32px 0;
-    line-height: 1.6;
-    max-width: 400px;
-  }
-  #maintenanceOverlay a {
-    background: #1a73e8;
-    color: #fff;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 24px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-  }
-  #maintenanceOverlay a:hover {
-    filter: brightness(0.9);
-    transform: translateY(-1px);
-  }
+.hero-screenshot, .section-screenshot, .cta-screenshot, .mid-screenshot {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: block;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.hero-screenshot { max-width: 900px; margin-top: 40px; }
+.section-screenshot { max-width: 800px; margin: 32px auto 0; }
+.cta-screenshot { max-width: 600px; margin: 32px auto 0; }
+.mid-screenshot { max-width: 700px; margin: 32px auto 0; }
+body.dark .hero-screenshot, body.dark .section-screenshot, body.dark .cta-screenshot, body.dark .mid-screenshot { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 
-  /* Bullet list handling - respect newlines from merged responses */
-  .message span {
-    white-space: pre-line;
-  }
+.section { padding: 60px 24px; max-width: 1100px; margin: 0 auto; }
+.section-title { font-size: 1.8rem; font-weight: 700; margin: 0 0 8px; color: var(--text); text-align: center; }
+.section-sub { text-align: center; font-size: 16px; line-height: 1.6; opacity: 0.85; max-width: 700px; margin: 0 auto 40px; }
 
-  /* Wiki spinner animation */
-  @keyframes wikiSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  .wiki-spinner {
-    animation: wikiSpin 2s linear infinite;
-  }
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.feature-card { background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: box-shadow 0.2s ease; }
+.feature-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+body.dark .feature-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.feature-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; color: var(--primary); }
+.feature-card p { font-size: 14px; line-height: 1.6; margin: 0; opacity: 0.85; }
+.feature-card ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.7; opacity: 0.85; }
+
+.steps { display: flex; flex-direction: column; gap: 16px; counter-reset: step; }
+.step { display: flex; align-items: flex-start; gap: 16px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; }
+.step-num { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.step-content h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 600; }
+.step-content p { margin: 0; font-size: 14px; line-height: 1.6; opacity: 0.85; }
+
+.arch-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+.arch-table th { background: var(--primary); color: #fff; padding: 14px 20px; font-weight: 600; font-size: 14px; text-align: left; }
+.arch-table td { padding: 14px 20px; font-size: 14px; line-height: 1.6; border-bottom: 1px solid var(--border); background: var(--content-bg); }
+.arch-table tr:last-child td { border-bottom: none; }
+.arch-table td:first-child { font-weight: 600; color: var(--primary); }
+
+.phil-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.phil-card { text-align: center; background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; }
+.phil-card .icon { width: 48px; height: 48px; border-radius: 50%; background: rgba(26,115,232,0.15); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 24px; font-weight: 700; }
+.phil-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.phil-card p { font-size: 14px; line-height: 1.6; margin: 0; opacity: 0.85; }
+
+.blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.blog-card { background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: box-shadow 0.2s ease; text-decoration: none; color: var(--text); display: block; }
+.blog-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+body.dark .blog-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.blog-card .tag { font-size: 12px; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.blog-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.blog-card p { font-size: 14px; line-height: 1.6; margin: 0; opacity: 0.85; }
+
+.cta-section { text-align: center; padding: 80px 24px; background: var(--input-bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cta-section h2 { font-size: 1.8rem; font-weight: 700; margin: 0 0 12px; }
+.cta-section p { font-size: 16px; line-height: 1.6; max-width: 500px; margin: 0 auto 28px; opacity: 0.85; }
+.cta-section .cta-btn { font-size: 16px; padding: 14px 32px; }
+
+.footer { padding: 32px 24px; text-align: center; font-size: 14px; opacity: 0.75; line-height: 2; }
+.footer a { color: var(--primary); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.footer .sep { margin: 0 8px; opacity: 0.4; }
+
+@media (max-width: 768px) {
+  .topbar { padding: 0 16px; height: 56px; }
+  .topbar-center { display: none; }
+  .topbar-brand { font-size: 1rem; }
+  .topbar-brand img { width: 28px; height: 28px; }
+  .topbar-actions .cta-btn { padding: 8px 16px; font-size: 13px; }
+  .hero h1 { font-size: 2rem; }
+  .hero { padding: 60px 20px 40px; min-height: 60vh; }
+  .hero-icon { width: 56px; height: 56px; }
+  .hero .tagline { font-size: 1rem; }
+  .hero p { font-size: 15px; }
+  .section { padding: 40px 20px; }
+  .section-title { font-size: 1.5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .phil-grid { grid-template-columns: 1fr; }
+  .blog-grid { grid-template-columns: 1fr; }
+  .arch-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .arch-table th, .arch-table td { padding: 10px 14px; white-space: nowrap; }
+  .step { flex-direction: column; }
+  .cta-section { padding: 60px 20px; }
+  .cta-section h2 { font-size: 1.4rem; }
+  .footer { padding: 24px 16px; font-size: 13px; line-height: 1.8; }
+  .footer .sep { margin: 0 4px; }
+}
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.6rem; }
+  .hero { padding: 48px 16px 32px; min-height: 50vh; }
+  .hero .tagline { font-size: 0.9rem; }
+  .hero p { font-size: 14px; margin-bottom: 24px; }
+  .hero-icon { width: 48px; height: 48px; margin-bottom: 16px; }
+  .hero-btns { flex-direction: column; align-items: center; width: 100%; }
+  .hero-btns .cta-btn, .hero-btns .outline-btn { width: 100%; max-width: 280px; justify-content: center; }
+  .section { padding: 32px 16px; }
+  .section-title { font-size: 1.3rem; }
+  .section-sub { font-size: 14px; margin-bottom: 24px; }
+  .feature-card { padding: 16px; }
+  .cta-section { padding: 48px 16px; }
+  .cta-section h2 { font-size: 1.2rem; }
+  .cta-section .cta-btn { font-size: 14px; padding: 12px 24px; width: 100%; max-width: 280px; justify-content: center; }
+  .footer { padding: 20px 12px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
-  <div id="maintenanceOverlay">
-    <img src="maintenance-icon.png" alt="" class="maint-icon-big">
-    <h1 class="maint-heading">Under Maintenance</h1>
-    <p class="maint-desc">Genesis-AI is currently under maintenance. We appreciate your patience and will be back soon.</p>
-    <div class="brand-row">
-      <img src="icon.png" alt="">
-      <span>Genesis-AI</span>
-    </div>
-    <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">View Status &rarr;</a>
+
+<nav class="topbar">
+  <a href="index.html" class="topbar-brand">
+    <img src="icon.png" alt="Genesis-AI">
+    <span class="brand-text">Genesis-AI</span>
+  </a>
+  <div class="topbar-center">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#blog">Blog</a>
   </div>
-
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <button id="newChatBtn">+ New Chat</button>
-    </div>
-    <ul id="chatList" class="chat-list"></ul>
-    <div class="sidebar-footer" style="margin-top: auto; padding: 10px; border-top: 1px solid var(--border, #444); display: flex; align-items: center; justify-content: center;">
-      <div id="userIcon" title="Profile" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #007bff, #0056b3); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; font-size: 1.1em; overflow: hidden; position: relative;">U</div>
-    </div>
+  <div class="topbar-actions">
+    <button class="theme-btn" id="landingThemeToggle" title="Toggle theme">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <a href="legal/setup.html" class="cta-btn">Get Started</a>
   </div>
+</nav>
 
-  <div class="chat-main">
-    <div class="chat-header">
-      <button id="sidebarToggle">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-      <div id="headerModelSelect" class="model-select" title="AI Model">
-        <button class="model-select-trigger" id="modelSelectTrigger">
-          <span class="model-select-info">
-            <span class="model-select-name" id="modelSelectName">Genesis 5.5-Thinking</span>
-            <span class="model-select-desc" id="modelSelectDesc">Latest and most advanced model</span>
-          </span>
-          <svg class="model-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <div class="model-select-dropdown" id="modelSelectDropdown"></div>
-      </div>
-      <h3 id="chatTitle">Genesis AI</h3>
-      <button id="settingsBtn" title="Settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div id="chatBox" class="chat-box"></div>
-    
-    <div class="input-container">
-      <div id="inputArea" class="input-area" style="position: relative;">
-        <div id="suggestionBox"></div>
-        <div class="input-main">
-          <div class="input-row-top">
-            <input type="text" id="userInput" placeholder="Ask Genesis AI">
-            <button id="sendBtn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
-              </svg>
-            </button>
-          </div>
-          <div class="input-row-bottom">
-            <div class="input-actions-left">
-              <button id="uploadBtn" class="input-action-btn" title="Upload image">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-              </button>
-              <button id="reasoningToggleBtn" class="input-action-btn reasoning-toggle" title="Show model thinking">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 18h6"/><path d="M10 22h4"/>
-                  <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <input type="file" id="imgUploadInput" accept="image/*" style="display: none;">
-      </div>
-
-      <div id="contentWarning">
-        Genesis may display inaccurate info, including about people, so double-check its responses.  
-        <br>
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy" target="_blank">Privacy Policy</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service" target="_blank">Terms Of Service</a> • 
-        <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html" target="_blank">Status</a>
-      </div>
-    </div>
+<section class="hero">
+  <img src="icon.png" alt="" class="hero-icon">
+  <h1>Genesis-AI</h1>
+  <div class="tagline">Experimental &middot; Web Based &middot; Privacy First</div>
+  <p>Genesis-AI is an experimental web-based AI platform from XPDevs that runs entirely in your browser. It uses readable JSON models instead of large neural networks, so responses are transparent, fast, and private.</p>
+  <div class="chat-bar">
+    <input type="text" id="landingChatInput" placeholder="Ask Genesis AI anything..." autocomplete="off">
+    <button id="landingChatSend" title="Send">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="white"/>
+      </svg>
+    </button>
   </div>
-
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <h2>Settings</h2>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0 10px 0;">
-        <span>Dark Mode <span class="help-icon" data-help="dark-mode">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="themeToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 5px 0;">
-        <span>Auto Theme <span class="help-icon" data-help="auto-theme">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="autoThemeToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
-        <span>Web Search <span class="help-icon" data-help="web-search">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="webSearchToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
-        <span>Shortened answers <span class="help-icon" data-help="shortened-answers">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="shortenedAnswersToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
-        <span>Quick Actions <span class="help-icon" data-help="quick-actions">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="quickActionsToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0;">
-        <span>Show Model Thinking <span class="help-icon" data-help="model-thinking">?</span></span>
-        <label class="toggle">
-          <input type="checkbox" id="reasoningToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 25px 0;">
-        <span>AI Model <span class="help-icon" data-help="ai-modal">?</span></span>
-        <select id="modelSelect" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border, #444); background: var(--input-bg, #222); color: var(--text, #fff); max-width: 200px;">
-          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/ed120a7c5_60.json">Genesis 6.0</option>
-          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/8897d4c1d_Genesis-55.json">Genesis 5.5-Flash (Default)</option>
-          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/9d01496ae_Genesis-SPT-50.json">Genesis SPT 5.0-Flash</option>
-          <option value="https://base44.app/api/apps/69ff62869abc2f6968205265/files/mp/public/69ff62869abc2f6968205265/46ab2cf3c_Genesis-SPT-46.json">Genesis SPT 4.6-Flash</option>
-          <option value="https://xpdevs.github.io/Genesis-AI/modals/Genesis-SPT-1.0.json">Genesis SPT 1.0 (Legacy)</option>
-        </select>
-      </div>
-      <p id="customModelStatus" style="font-size: 0.8em; opacity: 0.7; margin: 0 0 10px 0;"></p>
-      <div style="margin: 10px 0 25px 0;">
-        <button id="redownloadModelBtn" class="confirm" style="width: 100%; padding: 12px 20px; border-radius: 20px; font-weight: 500; background: var(--primary); color: #fff; border: none; cursor: pointer; transition: filter 0.2s ease;">Redownload Model</button>
-      </div>
-      <div style="margin: 20px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
-        <div style="font-weight: bold; margin-bottom: 8px;">Model Info</div>
-        <div style="font-size: 0.9em; opacity: 0.8;">Current Model: <span id="modelNameDisplay">Loading</span></div>
-        <div style="font-size: 0.9em; opacity: 0.8; display: flex; align-items: center; gap: 5px;">Parameters: <span id="modelParamsDisplay">0</span></div>
-      </div>
-      <div class="modal-actions">
-        <button class="confirm" onclick="window.location.href='https://xpdevs.github.io/Genesis-AI/developers/AI-Studio#'">Genesis AI Studio</button>
-        <button class="cancel" onclick="document.getElementById('settingsModal').style.display='none'">Close</button>
-      </div>
-    </div>
+  <div class="hero-btns">
+    <a href="chat.html" class="cta-btn">Open Chat &rarr;</a>
+    <a href="#features" class="outline-btn">Explore Features</a>
   </div>
+  <p style="margin-top: 48px; font-size: 14px; opacity: 0.7;">This is what the main page looks like when you open it. The chat area is in the center and your conversations are on the left.</p>
+  <img src="images/landing/homepage.png" alt="Genesis-AI screenshot" class="hero-screenshot">
+</section>
 
-  <div id="helpOverlay" class="help-overlay">
-    <div class="help-overlay-content">
-      <h3 id="helpTitle"></h3>
-      <p id="helpText"></p>
-      <button class="help-overlay-close" onclick="document.getElementById('helpOverlay').classList.remove('show')">Got it</button>
-    </div>
-  </div>
-
-  <div id="accountModal" class="modal">
-    <div class="modal-content">
-      <h2>Account</h2>
-      <div id="accountProfile">
-        <div id="accountAvatar" style="cursor: pointer;" title="Change profile picture">U</div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <h3 id="accountName" style="margin: 0;">User</h3>
-            <button id="editNameBtn" style="background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); opacity: 0.7;" title="Edit Name">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            </button>
-        </div>
-      </div>
-      <div id="googleSignInContainer" style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;"></div>
-      <div class="setting-item">
-        <button id="exportDataBtn">Export Data</button>
-      </div>
-      <div class="setting-item">
-        <button id="deleteAllChatsBtn">Delete All Chats</button>
-      </div>
-      <div class="modal-actions">
-        <button id="deleteAccountBtn" style="background:#ff4d4d;color:#fff;">Delete Account</button>
-        <button class="cancel" onclick="document.getElementById('accountModal').style.display='none'">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="importExportModal" class="modal">
-    <div class="modal-content" style="text-align: center; max-width: 400px;">
-      <h2 style="margin-top: 0; font-size: 1.4rem;">Data Management</h2>
-      <p style="margin: 8px 0 20px; opacity: 0.7; font-size: 0.85rem; line-height: 1.5;">Export your data as a backup or import previously exported data from ChatGPT, Claude, Gemini, DeepSeek, and more.</p>
-      <div style="display: flex; gap: 10px; margin: 0;">
-        <button id="importOptionBtn" style="flex: 1; background: var(--primary); color: #fff; border: none; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 80px;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>Import</span>
-        </button>
-        <button id="exportOptionBtn" style="flex: 1; background: var(--primary); color: #fff; border: none; padding: 12px 16px; border-radius: 14px; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 80px;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <span>Export</span>
-        </button>
-      </div>
-      <p style="margin: 14px 0 0; font-size: 0.75rem; opacity: 0.5;">Supports .json and .zip files</p>
-      <input type="file" id="importFileInput" accept=".json,.zip" style="display: none;">
-      <div class="modal-actions" style="justify-content: center;">
-        <button class="cancel" onclick="document.getElementById('importExportModal').style.display='none'">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="pfpModal" class="modal">
-    <div class="modal-content" style="text-align: center;">
-      <h2>Change Profile Picture</h2>
-      <div id="pfpPreview" style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #007bff, #0056b3); color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; margin: 15px auto; overflow: hidden; position: relative;">U</div>
-      <input type="file" id="pfpUploadInput" accept="image/*" style="display: none;">
-      <div class="setting-item">
-        <button id="pfpUploadBtn">Upload Photo</button>
-      </div>
-      <div class="setting-item">
-        <input type="text" id="pfpUrlInput" placeholder="Or paste an image URL..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; margin-top: 6px;">
-      </div>
-      <div class="setting-item" id="pfpRemoveContainer" style="display: none;">
-        <button id="pfpRemoveBtn" style="background: #ff4d4d;">Remove Photo</button>
-      </div>
-      <div class="setting-item" id="pfpGoogleContainer" style="display: none;">
-        <button id="pfpGoogleBtn">Use Google Photo</button>
-      </div>
-      <div class="modal-actions" style="justify-content: center;">
-        <button class="cancel" id="pfpCancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="customModelConfirmModal" class="modal" style="z-index: 100001;">
-    <div class="modal-content" style="max-width: 560px; width: 100%;">
-      <h2 style="margin-top: 0;">Load Custom Model</h2>
-
-      <div class="custom-model-tabs" style="display:flex;gap:0;margin-bottom:16px;background:rgba(127,127,127,0.1);border-radius:10px;overflow:hidden;border:1px solid var(--border,#444);">
-        <div class="custom-model-tab active" data-mode="json" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:var(--text,#e0e0e0);transition:all .2s;background:var(--primary,#3b82f6);font-weight:600;">JSON Model</div>
-        <div class="custom-model-tab" data-mode="onnx" style="flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;color:#888;transition:all .2s;">Local ONNX Model</div>
-      </div>
-
-      <div id="customModelTabJson">
-        <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
-          JSON models are just text files you can make yourself, edit in any editor, or load from a URL. Easy to tweak and share however you want. If you are just getting started or loading from the web, stick with JSON.
-        </p>
-        <div style="margin: 15px 0; padding: 15px; background: rgba(127, 127, 127, 0.1); border-radius: 12px;">
-          <div style="font-weight: bold; margin-bottom: 8px;" id="customModelConfirmName">Unknown Model</div>
-          <div style="font-size: 0.9em; opacity: 0.8;">Parameters: <span id="customModelConfirmParams">0</span></div>
-          <div style="font-size: 0.9em; opacity: 0.8; margin-top: 6px;" id="customModelConfirmReasoning">Reasoning: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
-          <div style="font-size: 0.9em; opacity: 0.8;" id="customModelConfirmWebSearch">Web Search: <span style="color: var(--green, #22c55e);">&#10003; Supported</span></div>
-        </div>
-        <div style="margin: 15px 0;">
-          <label style="font-size: 0.9em; opacity: 0.8; display: block; margin-bottom: 6px;">Or load from URL:</label>
-          <input type="text" id="customModelUrlInput" placeholder="https://example.com/model.json..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
-        </div>
-        <div style="margin: 15px 0;">
-          <input type="file" id="customModelConfirmInput" accept=".json" style="margin-top: 6px;">
-          <p style="font-size: 0.8em; opacity: 0.6; margin: 6px 0 0 0;">Upload a .json file, or paste a URL above.</p>
-        </div>
-      </div>
-
-      <div id="customModelTabOnnx" style="display:none;">
-        <p style="font-size:13px;line-height:1.6;opacity:0.8;margin:0 0 12px;color:var(--text,#e0e0e0);">
-          ONNX models use quantised weights so they run faster, but you need to upload both a .onnx file and a tokenizer.json. If you have a local model and want speed, ONNX is worth it.
-        </p>
-        <div style="margin: 15px 0;">
-          <div style="border:2px dashed var(--border,#444);border-radius:12px;padding:20px;margin-bottom:12px;cursor:pointer;text-align:center;" id="customOnnxBox" onclick="document.getElementById('customOnnxInput').click()">
-            <input type="file" id="customOnnxInput" accept=".onnx" style="display:none;">
-            <div style="font-weight:bold;">Model (.onnx)</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">INT8 quantized model</div>
-            <div style="font-size:12px;color:var(--primary);margin-top:4px;" id="customOnnxName"></div>
-          </div>
-          <div style="border:2px dashed var(--border,#444);border-radius:12px;padding:20px;cursor:pointer;text-align:center;" id="customTokBox" onclick="document.getElementById('customTokInput').click()">
-            <input type="file" id="customTokInput" accept=".json" style="display:none;">
-            <div style="font-weight:bold;">tokenizer.json</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">Tokenizer vocabulary</div>
-            <div style="font-size:12px;color:var(--primary);margin-top:4px;" id="customTokName"></div>
-          </div>
-          <p style="font-size:0.8em;opacity:0.6;margin:8px 0 0 0;">Upload both files to run a local ONNX model.</p>
-        </div>
-        <div id="customOnnxStatus" style="font-size:0.85em;margin:8px 0;color:var(--primary);"></div>
-        <div style="margin:12px 0;">
-          <input type="text" id="customSystemPromptInput" placeholder="System prompt (optional)..." style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);box-sizing:border-box;font-size:13px;">
-          <p style="font-size:0.8em;opacity:0.6;margin:4px 0 0 0;">Optional system prompt used when chatting with this model.</p>
-        </div>
-      </div>
-
-      <div style="margin:12px 0;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.9em;opacity:0.8;">Disable content filter</span>
-        <label class="toggle">
-          <input type="checkbox" id="customModelFilterToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <p id="customModelConfirmStatus" style="font-size: 0.85em; margin: 8px 0; color: var(--primary);"></p>
-      <div class="modal-actions">
-        <button class="cancel" id="customModelConfirmCancel">Cancel</button>
-        <button class="confirm" id="customModelConfirmOk">Load Model</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="renameModal" class="modal">
-    <div class="modal-content">
-      <h2>Rename Chat</h2>
-      <input type="text" id="renameInput" placeholder="Enter new name..." style="width: 100%; padding: 12px; margin: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
-      <div class="modal-actions">
-        <button class="cancel" id="renameCancel">Cancel</button>
-        <button class="confirm" id="renameConfirm">Rename</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete Chat?</h2>
-      <p>This action cannot be undone.</p>
-      <div class="modal-actions">
-        <button class="cancel" id="deleteCancel">Cancel</button>
-        <button class="confirm" id="deleteConfirm" style="background:#ff4d4d;color:#fff;">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteAccountModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete Account?</h2>
-      <p>This will permanently delete:</p>
-      <ul id="deleteAccountList" style="text-align: left; margin-bottom: 20px; padding-left: 20px;">
-        <li>All chat history</li>
-        <li>Your saved name</li>
-        <li>Agreement to Terms & Privacy Policy</li>
+<section class="section" id="features">
+  <h2 class="section-title">Features</h2>
+  <p class="section-sub">Everything runs directly in your browser, with no backend or cloud dependency for core chat.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <h3>Core AI</h3>
+      <ul>
+        <li>Human-readable JSON models for AI behavior</li>
+        <li>Keyword and phrase matching engine</li>
+        <li>Combines multiple relevant responses</li>
+        <li>Fallback handler when nothing matches</li>
+        <li>Load your own models from a file or URL</li>
       </ul>
-      <div class="modal-actions">
-        <button class="cancel" id="deleteAccountCancel">Cancel</button>
-        <button class="confirm" id="deleteAccountConfirm" style="background:#ff4d4d;color:#fff;">Delete All</button>
-      </div>
+    </div>
+    <div class="feature-card">
+      <h3>AI Commands</h3>
+      <ul>
+        <li><strong>@ImgAuth</strong> checks if an image was made by AI</li>
+        <li><strong>@txtauth</strong> checks if text was written by AI</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Knowledge and Search</h3>
+      <ul>
+        <li>Built-in Wikipedia lookup with summaries</li>
+        <li>Ask it to summarize any topic</li>
+        <li>Web search toggle for recent information</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Chat Management</h3>
+      <ul>
+        <li>Create, rename, delete, and pin chats</li>
+        <li>Share links to your conversations</li>
+        <li>Saves everything locally in your browser</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Input and Output</h3>
+      <ul>
+        <li>Type, upload images, or use your voice</li>
+        <li>Listen to responses with text-to-speech</li>
+        <li>Stop generation whenever you want</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Math and Calculations</h3>
+      <ul>
+        <li>Built-in calculator for math problems</li>
+        <li>Renders LaTeX formulas nicely</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Themes</h3>
+      <ul>
+        <li>Light mode, dark mode, or auto switch</li>
+        <li>Works on desktop and mobile</li>
+        <li>Optional shorter Wikipedia answers</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Privacy and Safety</h3>
+      <ul>
+        <li>Nothing leaves your computer for core chat</li>
+        <li>Built-in safety system for bad content</li>
+        <li>Warning modals with auto stop</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Account</h3>
+      <ul>
+        <li>Optional Google sign in to sync chats</li>
+        <li>Everything stored locally otherwise</li>
+      </ul>
+    </div>
+    <div class="feature-card">
+      <h3>Performance</h3>
+      <ul>
+        <li>Loads fast, responds fast</li>
+        <li>Works on any modern browser</li>
+        <li>Clear error messages when something breaks</li>
+      </ul>
     </div>
   </div>
+  <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">When you send a message, it shows up as a bubble on the right. The AI response appears on the left, with actions to copy or listen to replies.</p>
+  <img src="images/landing/message.png" alt="Chat interface screenshot" class="section-screenshot">
+  <p style="margin-top: 24px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">If you tap the question mark icon, a help overlay pops up with more info about whatever setting you are looking at, without leaving the page.</p>
+  <img src="images/landing/help-modal.png" alt="Help modal screenshot" class="mid-screenshot" style="margin-top:8px;">
+</section>
 
-  <div id="deleteAllModal" class="modal">
-    <div class="modal-content">
-      <h2>Delete everything?</h2>
-      <p>This will permanently remove all chat history.</p>
-      <div class="modal-actions">
-        <button class="cancel" id="deleteAllCancel">Cancel</button>
-        <button class="confirm" id="deleteAllConfirm" style="background:#ff4d4d;color:#fff;">Yes, Delete All</button>
+<section class="section" id="how-it-works">
+  <h2 class="section-title">How It Works</h2>
+  <p class="section-sub">Everything runs on your machine with no backend or cloud support needed. Your browser does all the work.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Open the Page</h3>
+        <p>Your browser loads the HTML, CSS, and JavaScript. There are no installation steps or API keys required.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Load the Model</h3>
+        <p>The AI brain is called a <strong>model</strong>, a JSON file containing keywords, answers, and personality settings. Your browser reads it directly.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Match Your Input</h3>
+        <p>The engine looks for patterns in what you typed, finds the best match, and builds a reply. Special commands like <code>@ImgAuth</code> trigger extra tools.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Look Up Knowledge</h3>
+        <p>If you ask about a topic, it can fetch a Wikipedia page and give you a short version, giving you far more knowledge than the model has on its own.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <div id="shareModal" class="modal">
-    <div class="modal-content">
-      <h2>Share Chat</h2>
-      <p>Copy this link to share your conversation.</p>
-      <div style="display: flex; gap: 8px; margin: 20px 0;">
-        <input type="text" id="shareLinkInput" readonly style="flex-grow: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);">
-        <button id="copyShareLinkBtn" style="background:var(--primary);color:#fff;border:none;padding:0 20px;border-radius:12px;cursor:pointer;">Copy</button>
-      </div>
-      <div class="modal-actions">
-        <button class="cancel" id="shareCancel">Close</button>
-      </div>
-    </div>
+<section class="section" id="architecture">
+  <h2 class="section-title">Architecture</h2>
+  <p class="section-sub">The project uses three layers that each handle their own job, so you can change one without touching the others.</p>
+  <table class="arch-table">
+    <thead><tr><th>Layer</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend (UI)</td><td>This is the HTML and CSS you see on screen, built to work on any screen size.</td></tr>
+      <tr><td>Logic Engine</td><td>JavaScript code that reads the model, manages the app state, and picks the right response for your input.</td></tr>
+      <tr><td>Model</td><td>A JSON file containing all the AI knowledge and responses. It is easy to edit and extend.</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top: 24px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; font-size: 14px; line-height: 1.6;">
+    <strong style="color: var(--primary);">Model Example</strong>
+    <pre style="margin: 12px 0 0; overflow-x: auto; font-size: 13px; opacity: 0.9;">{
+  "ver": "Genesis-SPT-1.0",
+  "hello": "Hello there! How can I help you today?",
+  "who are you": "I'm Genesis-AI, an experimental web-based intelligence by XPDevs."
+}</pre>
   </div>
-  <div id="devModal" class="modal" style="display: none; z-index: 100000;">
-    <div class="modal-content" style="max-width: 600px; width: 100%;">
-      <div id="devModalWaiting">
-        <h2 style="margin-top: 0;">Developer Access</h2>
-        <p>Enter the access code in the browser console to proceed.</p>
-        <p>Example: <code>devAccess("xpdevs_power_user")</code></p>
-        <div class="modal-actions">
-          <button id="devModalCancel" class="cancel">Close</button>
-        </div>
-      </div>
-      <div id="devModalOptions" style="display: none;">
-        <h2 style="margin-top: 0;">Developer Options</h2>
-        <div id="devModalStatus">
-          <p><strong>Current Model:</strong> <span id="devCurrentModalName"></span></p>
-          <p><strong>Mode:</strong> <span id="devCurrentModalMode"></span></p>
-        </div>
-        <hr style="margin: 20px 0; border-color: var(--border);">
-        <h4>Load Custom Session Model</h4>
-        <p style="font-size: 14px; color: var(--text-secondary);">Upload a custom .json model file. This will only be used for the current session and will be lost on refresh.</p>
-        <input type="file" id="customModelInput" accept=".json" style="margin-top: 10px;">
-        <p id="uploadStatus" style="font-size: 12px; margin-top: 8px; color: var(--primary);"></p>
-        <div class="modal-actions">
-          <button id="devModalClose" class="cancel">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
+</section>
 
-  <div id="editNameModal" class="modal">
-    <div class="modal-content">
-      <h2>Edit Name</h2>
-      <input type="text" id="editNameInput" placeholder="Enter your name..." style="width: 100%; padding: 12px; margin: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box;">
-      <div class="modal-actions">
-        <button class="cancel" id="editNameCancel">Cancel</button>
-        <button class="confirm" id="editNameConfirm">Save</button>
-      </div>
+<section class="section" id="philosophy">
+  <h2 class="section-title">How We Build Things</h2>
+  <p class="section-sub">We follow three rules that shape everything you see here.</p>
+  <div class="phil-grid">
+    <div class="phil-card">
+      <div class="icon">C</div>
+      <h3>Clarity</h3>
+      <p>You should understand everything at a glance with no hidden menus or confusing icons. Just straightforward design.</p>
+    </div>
+    <div class="phil-card">
+      <div class="icon">C</div>
+      <h3>Control</h3>
+      <p>Your data stays yours since everything runs locally. Nothing gets sent anywhere without you knowing about it.</p>
+    </div>
+    <div class="phil-card">
+      <div class="icon">S</div>
+      <h3>Simplicity</h3>
+      <p>Every feature earns its place here. If it doesn't make the experience better, it doesn't belong in the project.</p>
     </div>
   </div>
+  <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 700px; margin-left: auto; margin-right: auto; text-align: center;">You can set up a profile with your name and picture. If you sign in with Google, your chats sync across devices. Otherwise everything stays saved in your browser.</p>
+  <img src="images/landing/account.png" alt="Account screen" class="mid-screenshot">
+</section>
 
-  <div id="infoModal" class="modal">
-    <div class="modal-content" style="text-align: center;">
-      <h2 id="infoModalTitle">Info</h2>
-      <p id="infoModalMessage" style="margin: 15px 0;">Message</p>
-      <div class="modal-actions" style="justify-content: center;">
-        <button class="confirm" id="infoModalOk">OK</button>
-      </div>
-    </div>
+<section class="section" id="blog">
+  <h2 class="section-title">Blog</h2>
+  <p class="section-sub">Notes, updates, and deep dives from the Genesis-AI project.</p>
+  <div class="blog-grid">
+    <a href="blog/first-post.html" class="blog-card">
+      <img src="images/landing/homepage.png" alt="Genesis-AI screenshot" style="width:100%;border-radius:8px;margin-bottom:12px;">
+      <div class="tag">Welcome</div>
+      <h3>Welcome to Genesis-AI</h3>
+      <p>An introduction to the project, how it works, and why we built a transparent, browser-based AI.</p>
+    </a>
   </div>
+</section>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<section class="cta-section">
+  <h2>Want to give it a try?</h2>
+  <p>There is no sign up required and no credit card needed. Just open the page and start using it.</p>
+  <a href="legal/setup.html" class="cta-btn">Get Started &rarr;</a>
+  <p style="margin-top: 40px; font-size: 14px; opacity: 0.7; max-width: 600px; margin-left: auto; margin-right: auto;">The settings panel lets you switch between light and dark mode, pick an AI model, toggle web search, and more. You can also check which model version is running.</p>
+  <img src="images/landing/settings.png" alt="Settings screenshot" class="cta-screenshot">
+</section>
 
-  <div id="refreshWarningModal" class="modal">
-    <div class="modal-content">
-      <h2>Switch Model?</h2>
-      <p>Changing the AI model requires the page to reload. Any unsaved context might be lost.</p>
-      <div class="modal-actions">
-        <button class="cancel" id="refreshCancel">Cancel</button>
-        <button class="confirm" id="refreshConfirm">Switch & Reload</button>
-      </div>
-    </div>
-  </div>
+<footer class="footer">
+  <a href="https://xpdevs.github.io/Genesis-AI/chat">Chat</a>
+  <span class="sep">&middot;</span>
+  <a href="https://xpdevs.github.io/Genesis-AI/blog">Blog</a>
+  <span class="sep">&middot;</span>
+  <a href="https://xpdevs.github.io/Genesis-AI/legal/terms-of-service">Terms of Service</a>
+  <span class="sep">&middot;</span>
+  <a href="https://xpdevs.github.io/Genesis-AI/legal/privacy-policy">Privacy Policy</a>
+  <span class="sep">&middot;</span>
+  <a href="https://xpdevs.github.io/Genesis-AI/status/Status.html">Status</a>
+  <span class="sep">&middot;</span>
+  <a href="https://xpdevs.github.io/">XPDevs</a>
+  <br>
+  &copy; XPDevs
+</footer>
 
 <script>
-  const DESKTOP_MAINTENANCE = 0;
-  const MOBILE_MAINTENANCE = 0;
+(async function() {
+  const body = document.body;
 
-  const loadStyle = (href) => {
-    return new Promise((resolve) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = `${href}?v=${Date.now()}`;
-      link.onload = resolve;
-      link.onerror = () => { console.warn(`CSS failed: ${href}`); resolve(); };
-      document.head.appendChild(link);
-    });
-  };
-
-  const loadScript = (src, isAsync = true) => {
-    return new Promise((resolve) => {
-      const s = document.createElement('script');
-      s.src = `${src}?v=${Date.now()}`;
-      s.async = isAsync;
-      s.onload = resolve;
-      s.onerror = () => { console.warn(`Script failed: ${src}`); resolve(); };
-      document.head.appendChild(s);
-    });
-  };
-
-(async () => {
-  const isMobile = window.innerWidth <= 768;
-  if ((isMobile ? MOBILE_MAINTENANCE : DESKTOP_MAINTENANCE) === 1) {
-    const overlay = document.getElementById('maintenanceOverlay');
-    if (overlay) overlay.style.display = 'flex';
-    document.documentElement.style.backgroundColor = '#fff';
-    document.body.style.visibility = 'visible';
-    return;
+  const savedTheme = localStorage.getItem('genesis-landing-theme');
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    body.classList.add('dark');
   }
-  const isAuthenticated = await (() => {
-    return new Promise((resolve) => {
-      try {
-        const req = indexedDB.open('GenesisAI', 1);
-        req.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('appState'))
-            db.createObjectStore('appState', { keyPath: 'key' });
-        };
-        req.onsuccess = (e) => {
-          try {
-            const tx = e.target.result.transaction('appState', 'readonly');
-            const store = tx.objectStore('appState');
-            const get = store.get('SETUP');
-            get.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
-            get.onsuccess = () => resolve(get.result && get.result.value === 'FLAG_TRUE');
-          } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
-        };
-      } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
-    });
-  })();
-  if (!isAuthenticated) {
-    window.location.href = 'landing.html';
-    return;
-  }
-  window.GENESIS_CODE = "9980748324";
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/sidebar.css');
-if (isMobile) {
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/mobile-ui.css');
-} else {
-  await loadStyle('https://xpdevs.github.io/Genesis-AI/styles/ui.css');
-}
-  await loadScript('https://xpdevs.github.io/Genesis-AI/js/loading.js');
-  
-  document.body.style.visibility = 'visible';
-  const uiElements = document.querySelectorAll('.sidebar, .chat-main');
-  uiElements.forEach(el => el.style.display = 'flex');
-  
-await Promise.all([
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/type.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/greetings.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/fa.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/context.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/main.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/summarise.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/calc.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/ImgAuth.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/TXTAuth.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/modal_popup_fet.js')
-]);
 
-await Promise.all([
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/import.js'),
-  loadScript('https://xpdevs.github.io/Genesis-AI/js/export.js')
-]);
-  const toggleBtn = document.getElementById('sidebarToggle');
-  const sidebar = document.querySelector('.sidebar');
-  
-  if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sidebar.classList.toggle('open');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-        sidebar.classList.remove('open');
-      }
-    });
-  }
-  const formatParams = (num) => {
-    const n = parseFloat(num);
-    if (isNaN(n)) return num;
-    if (n < 1000) return n.toString();
-    if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    if (n < 1000000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    return (n / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
-  };
-
-  const paramsObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      const target = mutation.target.nodeType === 3 ? mutation.target.parentElement : mutation.target;
-      if (target && target.id === 'modelParamsDisplay') {
-        const val = target.textContent;
-        if (!isNaN(val) && val.trim() !== '') {
-          const formatted = formatParams(val);
-          if (val !== formatted) {
-            paramsObserver.disconnect();
-            target.textContent = formatted;
-            startParamsObserver();
-          }
-        }
-      }
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#landingThemeToggle')) {
+      body.classList.toggle('dark');
+      localStorage.setItem('genesis-landing-theme', body.classList.contains('dark') ? 'dark' : 'light');
     }
   });
 
-  const startParamsObserver = () => {
-    const el = document.getElementById('modelParamsDisplay');
-    if (el) paramsObserver.observe(el, { childList: true, characterData: true, subtree: true });
-  };
-  startParamsObserver();
+  // Auth check
+  const isAuthenticated = await new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('GenesisAI', 1);
+      req.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('appState'))
+          db.createObjectStore('appState', { keyPath: 'key' });
+      };
+      req.onsuccess = (e) => {
+        try {
+          const tx = e.target.result.transaction('appState', 'readonly');
+          const store = tx.objectStore('appState');
+          const get = store.get('SETUP');
+          get.onerror = () => resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE');
+          get.onsuccess = () => resolve(get.result && get.result.value === 'FLAG_TRUE');
+        } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+      };
+    } catch (_) { resolve(localStorage.getItem('SETUP') === 'FLAG_TRUE'); }
+  });
+  if (isAuthenticated) {
+    window.location.href = 'chat.html';
+    return;
+  }
+
+  const chatInput = document.getElementById('landingChatInput');
+  const chatSend = document.getElementById('landingChatSend');
+  function goChat() {
+    const text = (chatInput.value || '').trim();
+    if (!text) { window.location.href = 'chat.html'; return; }
+    try { sessionStorage.setItem('genesisPendingMessage', text); } catch (e) {}
+    window.location.href = 'chat.html?msg=' + encodeURIComponent(text);
+  }
+  if (chatSend) chatSend.addEventListener('click', goChat);
+  if (chatInput) chatInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); goChat(); }
+  });
 })();
 </script>
 </body>
