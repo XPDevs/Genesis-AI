@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="https://xpdevs.github.io/Genesis-AI/icon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Genesis-AI Blog - The Development of Genesis-SPT-7.0</title>
+<style>
+:root { --bg:#ffffff; --text:#1f1f1f; --input-bg:#f0f4f9; --border:#dee2e6; --primary:#1a73e8; }
+body.dark { --bg:#000000; --text:#e3e3e3; --input-bg:#1e1f20; --border:#444746; }
+* { box-sizing: border-box; }
+body { margin:0; font-family:"Inter","Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+.container { max-width:760px; margin:0 auto; padding:40px 24px; }
+a { color:var(--primary); text-decoration:none; }
+a:hover { text-decoration:underline; }
+h1 { font-size:2rem; margin:0 0 8px; }
+h2 { font-size:1.4rem; margin:32px 0 12px; color:var(--primary); }
+p { margin:0 0 16px; }
+.meta { opacity:0.7; font-size:14px; margin-bottom:24px; }
+.back { display:inline-block; margin-bottom:24px; }
+img.hero-img { width:100%; border-radius:16px; border:1px solid var(--border); margin:24px 0; }
+img.section-img { width:100%; border-radius:12px; border:1px solid var(--border); margin:20px 0; }
+.caption { font-size:13px; opacity:0.7; margin:-12px 0 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="../index" class="back">&larr; Back to Genesis-AI</a>
+  <h1>The Development of Genesis-SPT-7.0</h1>
+  <div class="meta">Genesis-AI Blog &middot; Development update</div>
+
+  <img src="../images/blog/genesis-spt-7-hero.png" alt="Genesis-SPT-7.0" class="hero-img">
+
+  <p>We are developing Genesis-SPT-7.0. It is the next model in the Genesis family. Development is ongoing and nothing has been confirmed yet. The one confirmed detail is the parameter size. Genesis-SPT-7.0 is being built at one and a half million parameters. Everything else is still subject to change.</p>
+
+  <h2>What we can share</h2>
+  <p>We can share the direction. The goal is a new architecture for generalisability. We want a model that handles a wider range of tasks without growing in size. The work is early. We are not ready to share architecture details, training data, or benchmarks. Those will come later.</p>
+
+  <img src="../images/blog/genesis-spt-7-architecture.png" alt="Genesis-SPT-7.0 in development" class="section-img">
+  <p class="caption">Details of the architecture are still being finalised.</p>
+
+  <h2>Why one and a half million parameters</h2>
+  <p>The parameter size is the one fixed point. One and a half million keeps the model small. Small models load fast and run on modest hardware. That matters because Genesis runs in a browser. We are exploring how far a model of that size can go.</p>
+
+  <h2>Availability</h2>
+  <p>Genesis-SPT-7.0 is not open source yet. The model is still in development. Once it is finished, it will be published on GitHub. After that, it will be available on the Genesis-AI website. You will be able to run it there without setting anything up yourself. No local install. No command line. Just open the page and use it.</p>
+
+  <p>We will share more details as development continues. Thank you for following along.</p>
+
+  <p><a href="../chat">Try Genesis-AI &rarr;</a></p>
+</div>
+<script>
+(function(){const t=localStorage.getItem('genesis-landing-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.body.classList.add('dark');})();
+</script>
+</body>
+</html>
